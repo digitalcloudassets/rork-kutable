@@ -102,4 +102,45 @@ export const api = {
       ];
     },
   },
+
+  stripe: {
+    createOrFetchAccount: async ({ barberId }: { barberId: string }) => {
+      await delay(800);
+      // In production, this would call the backend endpoint
+      // const response = await fetch('/api/stripe/create-or-fetch-account', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ barberId })
+      // });
+      // return response.json();
+      
+      return {
+        accountId: `acct_mock_${barberId}_${Date.now()}`
+      };
+    },
+
+    createAccountLink: async ({ barberId, refreshUrl, returnUrl }: { 
+      barberId: string; 
+      refreshUrl: string; 
+      returnUrl: string; 
+    }) => {
+      await delay(500);
+      // In production, this would call the backend endpoint
+      return {
+        url: `https://connect.stripe.com/express/oauth/authorize?client_id=mock&state=${barberId}&redirect_uri=${encodeURIComponent(returnUrl)}`
+      };
+    },
+
+    getAccountStatus: async ({ barberId }: { barberId: string }) => {
+      await delay(300);
+      // In production, this would call the backend endpoint
+      // const response = await fetch(`/api/stripe/account-status?barberId=${barberId}`);
+      // return response.json();
+      
+      return {
+        chargesEnabled: true,
+        payoutsEnabled: true
+      };
+    },
+  },
 };

@@ -41,6 +41,7 @@ export default function TabLayout() {
           name="dashboard"
           options={{
             title: "Dashboard",
+            headerShown: false,
             tabBarIcon: ({ color }) => <Scissors size={24} color={color} />,
           }}
         />
