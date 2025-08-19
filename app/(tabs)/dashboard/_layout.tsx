@@ -17,6 +17,12 @@ export default function DashboardLayout() {
           presentation: "modal",
         }} 
       />
+      <Stack.Screen 
+        name="services" 
+        options={{ 
+          title: "Manage Services",
+        }} 
+      />
     </Stack>
   );
 }

@@ -210,7 +210,7 @@ export default function DashboardScreen() {
         <View style={styles.actionsGrid}>
           <TouchableOpacity 
             style={styles.actionCard}
-            onPress={() => router.push("/manage-services")}
+            onPress={() => router.push("/dashboard/services")}
           >
             <Settings size={24} color={brandColors.primary} />
             <Text style={styles.actionText}>Manage Services</Text>

@@ -26,8 +26,55 @@ export const api = {
   services: {
     list: async ({ barberId }: { barberId: string }) => {
       await delay(300);
+      // In production, this would call the backend endpoint
+      // const response = await fetch('/api/services/list', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ barberId })
+      // });
+      // const data = await response.json();
+      // return data.services;
+      
       const barber = seedData.barbers.find(b => b.id === barberId);
       return barber?.services || [];
+    },
+
+    upsert: async ({ barberId, service }: { barberId: string; service: Partial<Service> }) => {
+      await delay(500);
+      // In production, this would call the backend endpoint
+      // const response = await fetch('/api/services/upsert', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ barberId, service })
+      // });
+      // const data = await response.json();
+      // return data.service;
+      
+      // Mock implementation
+      const updatedService: Service = {
+        id: service.id || Date.now().toString(),
+        barberId,
+        name: service.name || '',
+        durationMinutes: service.durationMinutes || 30,
+        priceCents: service.priceCents || 0,
+        description: service.description,
+        active: service.active !== undefined ? service.active : true,
+      };
+      return updatedService;
+    },
+
+    delete: async ({ barberId, serviceId }: { barberId: string; serviceId: string }) => {
+      await delay(300);
+      // In production, this would call the backend endpoint
+      // const response = await fetch('/api/services/delete', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ barberId, serviceId })
+      // });
+      // const data = await response.json();
+      // return data;
+      
+      return { ok: true };
     },
   },
 
