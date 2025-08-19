@@ -1,0 +1,105 @@
+import type { Barber, Service, Booking, EarningsSummary } from "@/types/models";
+import { seedData } from "@/lib/seedData";
+
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+export const api = {
+  barbers: {
+    list: async ({ search }: { search?: string }) => {
+      await delay(500);
+      let barbers = seedData.barbers;
+      if (search) {
+        barbers = barbers.filter(b => 
+          b.name.toLowerCase().includes(search.toLowerCase()) ||
+          b.shopName?.toLowerCase().includes(search.toLowerCase())
+        );
+      }
+      return barbers;
+    },
+    
+    profile: async ({ barberId }: { barberId: string }) => {
+      await delay(300);
+      return seedData.barbers.find(b => b.id === barberId) || null;
+    },
+  },
+
+  services: {
+    list: async ({ barberId }: { barberId: string }) => {
+      await delay(300);
+      const barber = seedData.barbers.find(b => b.id === barberId);
+      return barber?.services || [];
+    },
+  },
+
+  bookings: {
+    create: async (data: any) => {
+      await delay(1000);
+      const booking: Booking = {
+        id: Date.now().toString(),
+        ...data,
+        endISO: new Date(new Date(data.startISO).getTime() + 30 * 60000).toISOString(),
+        status: "pending",
+        createdAtISO: new Date().toISOString(),
+      };
+      return booking;
+    },
+
+    list: async ({ userId, barberId, date }: any) => {
+      await delay(500);
+      return seedData.bookings.filter(b => {
+        if (barberId && b.barberId !== barberId) return false;
+        if (date && !b.startISO.startsWith(date)) return false;
+        return true;
+      });
+    },
+  },
+
+  availability: {
+    list: async ({ barberId, date }: any) => {
+      await delay(300);
+      return {
+        blocks: seedData.availabilityBlocks.filter(b => 
+          b.barberId === barberId && b.startISO.startsWith(date)
+        ),
+        openSlots: [],
+      };
+    },
+
+    block: async (data: any) => {
+      await delay(500);
+      return { success: true };
+    },
+  },
+
+  payments: {
+    createIntent: async ({ bookingId }: { bookingId: string }) => {
+      await delay(1500);
+      return {
+        clientSecret: "pi_test_" + Date.now(),
+        paymentIntentId: "pi_" + Date.now(),
+      };
+    },
+  },
+
+  earnings: {
+    summary: async ({ barberId, range }: any) => {
+      await delay(500);
+      const amounts = {
+        week: { gross: 125000, fees: 7500, net: 117500 },
+        month: { gross: 542000, fees: 32500, net: 509500 },
+        year: { gross: 6504000, fees: 390200, net: 6113800 },
+      };
+      return amounts[range as keyof typeof amounts] || amounts.month;
+    },
+  },
+
+  payouts: {
+    list: async ({ barberId }: { barberId: string }) => {
+      await delay(500);
+      return [
+        { id: "1", amount: 117500, date: "2024-03-10", status: "completed" },
+        { id: "2", amount: 98000, date: "2024-03-03", status: "completed" },
+      ];
+    },
+  },
+};
