@@ -242,25 +242,85 @@ export const api = {
   },
 
   bookings: {
-    create: async (data: any) => {
-      await delay(1000);
-      const booking: Booking = {
-        id: Date.now().toString(),
-        ...data,
-        endISO: new Date(new Date(data.startISO).getTime() + 30 * 60000).toISOString(),
-        status: "pending",
-        createdAtISO: new Date().toISOString(),
-      };
-      return booking;
+    create: async (data: { barberId?: string; serviceId?: string; startISO?: string; clientName?: string; clientPhone?: string; note?: string; }) => {
+      const backendUrl = getBackendUrl();
+      if (!backendUrl) {
+        // No backend configured, use mock implementation
+        await delay(1000);
+        const booking: Booking = {
+          id: Date.now().toString(),
+          barberId: data.barberId || '',
+          serviceId: data.serviceId || '',
+          startISO: data.startISO || new Date().toISOString(),
+          endISO: new Date(new Date(data.startISO || new Date()).getTime() + 30 * 60000).toISOString(),
+          clientName: data.clientName || '',
+          clientPhone: data.clientPhone || '',
+          note: data.note,
+          status: "pending",
+          createdAtISO: new Date().toISOString(),
+        };
+        return booking;
+      }
+
+      try {
+        const response = await fetch(`${backendUrl}/api/bookings/create`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          return result.booking;
+        } else {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to create booking');
+        }
+      } catch (error) {
+        console.error('Error creating booking:', error);
+        throw error;
+      }
     },
 
-    list: async ({ userId, barberId, date }: any) => {
-      await delay(500);
-      return seedData.bookings.filter(b => {
-        if (barberId && b.barberId !== barberId) return false;
-        if (date && !b.startISO.startsWith(date)) return false;
-        return true;
-      });
+    list: async ({ userId, barberId, range }: { userId?: string; barberId?: string; range?: string; }) => {
+      const backendUrl = getBackendUrl();
+      if (!backendUrl) {
+        // No backend configured, use seed data
+        await delay(500);
+        return seedData.bookings.filter(b => {
+          if (barberId && b.barberId !== barberId) return false;
+          return true;
+        });
+      }
+
+      try {
+        const response = await fetch(`${backendUrl}/api/bookings/list`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, barberId, range }),
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          return result.bookings;
+        } else {
+          console.error('Failed to fetch bookings');
+          // Fallback to seed data
+          await delay(500);
+          return seedData.bookings.filter(b => {
+            if (barberId && b.barberId !== barberId) return false;
+            return true;
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching bookings:', error);
+        // Fallback to seed data
+        await delay(500);
+        return seedData.bookings.filter(b => {
+          if (barberId && b.barberId !== barberId) return false;
+          return true;
+        });
+      }
     },
   },
 
@@ -403,11 +463,34 @@ export const api = {
 
   payments: {
     createIntent: async ({ bookingId }: { bookingId: string }) => {
-      await delay(1500);
-      return {
-        clientSecret: "pi_test_" + Date.now(),
-        paymentIntentId: "pi_" + Date.now(),
-      };
+      const backendUrl = getBackendUrl();
+      if (!backendUrl) {
+        // No backend configured, use mock implementation
+        await delay(1500);
+        return {
+          clientSecret: "pi_test_" + Date.now(),
+          paymentIntentId: "pi_" + Date.now(),
+        };
+      }
+
+      try {
+        const response = await fetch(`${backendUrl}/api/payments/create-intent`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bookingId }),
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          return result;
+        } else {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to create payment intent');
+        }
+      } catch (error) {
+        console.error('Error creating payment intent:', error);
+        throw error;
+      }
     },
   },
 
