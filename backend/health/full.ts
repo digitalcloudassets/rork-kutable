@@ -1,4 +1,5 @@
 import { getAdminClient } from '../lib/supabase';
+import Stripe from 'stripe';
 
 interface HealthCheckResult {
   supabase: { ok: boolean; message: string };
@@ -107,6 +108,11 @@ async function checkStripe(): Promise<HealthCheckResult['stripe']> {
   }
   
   try {
+    // Initialize Stripe with the secret key
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: '2024-12-18.acacia',
+    });
+    
     const supabase = getAdminClient();
     
     // Check if any barber has a connected account
@@ -119,18 +125,19 @@ async function checkStripe(): Promise<HealthCheckResult['stripe']> {
     if (!error && barbers && barbers.length > 0) {
       result.connectedAccountFound = true;
       
-      // Try to check account status with Stripe (mock for now since we don't have real Stripe)
+      // Check account status with real Stripe API
       const accountId = barbers[0].connected_account_id;
       if (accountId && accountId.startsWith('acct_')) {
-        // In a real implementation, you would do:
-        // const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-        // const account = await stripe.accounts.retrieve(accountId);
-        // result.chargesEnabled = account.charges_enabled;
-        // result.payoutsEnabled = account.payouts_enabled;
-        
-        // For now, mock the response
-        result.chargesEnabled = accountId.includes('mock') ? false : true;
-        result.payoutsEnabled = accountId.includes('mock') ? false : true;
+        try {
+          const account = await stripe.accounts.retrieve(accountId);
+          result.chargesEnabled = account.charges_enabled;
+          result.payoutsEnabled = account.payouts_enabled;
+        } catch (stripeError) {
+          console.error('Stripe account retrieval error:', stripeError);
+          // If account doesn't exist or is invalid, mark as false
+          result.chargesEnabled = false;
+          result.payoutsEnabled = false;
+        }
       }
     }
   } catch (error) {

@@ -19,7 +19,7 @@ type HealthStatus = {
     services: boolean;
     bookings: boolean;
     availability_blocks: boolean;
-    gallery: boolean;
+    gallery_items: boolean;
   };
   stripe: {
     keysLoaded: boolean;
@@ -223,7 +223,7 @@ export default function SystemStatusScreen() {
           />
           <StatusItem
             label="Gallery Table"
-            status={healthStatus.tables.gallery}
+            status={healthStatus.tables.gallery_items}
           />
         </Section>
 
