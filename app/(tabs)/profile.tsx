@@ -20,7 +20,8 @@ import {
   Star,
   Calendar,
   Shield,
-  FileText
+  FileText,
+  Activity
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/providers/AuthProvider";
@@ -71,6 +72,7 @@ export default function ProfileScreen() {
       items: [
         { icon: HelpCircle, label: "Help Center", onPress: () => {} },
         { icon: Settings, label: "Settings", onPress: () => {} },
+        { icon: Activity, label: "Diagnostics", onPress: () => router.push("/profile/diagnostics") },
       ],
     },
     {
