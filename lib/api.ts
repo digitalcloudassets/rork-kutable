@@ -1,21 +1,15 @@
 import type { Service, Booking } from "@/types/models";
 import { seedData } from "@/lib/seedData";
 import { DATA_MODE, logFallback } from "@/config/dataMode";
+import { env } from '@/config/env';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// API base URL with fail-fast validation
-const BASE = process.env.EXPO_PUBLIC_API_URL;
-if (!BASE) {
-  console.warn('EXPO_PUBLIC_API_URL is not set. Set it to your backend like https://kutable.rork.app');
-}
-
 // Simplified API helper that matches the requested interface
 export async function api(path: string, init?: RequestInit) {
-  if (!BASE) throw new Error('API base URL not configured');
-  const url = `${BASE}${path}`;
-  const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
+  const base = env.API_URL || 'https://kutable.rork.app';
+  const res = await fetch(`${base}${path}`, {
+    headers: { 'Content-Type': 'application/json', ...(init?.headers||{}) },
     ...init,
   });
   if (!res.ok) throw new Error(`API ${path} ${res.status}`);
@@ -24,8 +18,9 @@ export async function api(path: string, init?: RequestInit) {
 
 // Generic API function for live mode (legacy)
 export async function apiRequest(path: string, init?: RequestInit) {
-  if (!BASE) throw new Error('API base URL not configured');
-  const url = `${BASE}${path}`;
+  const base = env.API_URL;
+  if (!base) throw new Error('API base URL not configured');
+  const url = `${base}${path}`;
   const res = await fetch(url, { 
     ...init, 
     headers: { 
@@ -39,7 +34,7 @@ export async function apiRequest(path: string, init?: RequestInit) {
 
 // Get backend URL with fallback
 const getBackendUrl = () => {
-  const backendUrl = process.env.EXPO_PUBLIC_API_URL;
+  const backendUrl = env.API_URL;
   if (!backendUrl) {
     console.warn('EXPO_PUBLIC_API_URL not configured, using fallback data');
     return null;

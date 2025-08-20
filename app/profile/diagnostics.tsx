@@ -2,7 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Stack } from 'expo-router';
 import { Activity, RefreshCw, CheckCircle, XCircle, AlertCircle } from 'lucide-react-native';
-import { DATA_MODE } from '@/config/dataMode';
+import { env, validateEnv } from '@/config/env';
+import { api } from '@/lib/api';
 import { Tokens } from '@/theme/tokens';
 import { ScrollScreen } from '@/components/Screen';
 
@@ -20,14 +21,18 @@ type ServerEnv = {
 export default function Diagnostics() {
   const [server, setServer] = useState<ServerEnv | null>(null);
   const [loading, setLoading] = useState(false);
-  const base = process.env.EXPO_PUBLIC_API_URL;
+  const [pingLoading, setPingLoading] = useState(false);
+  const [pingResult, setPingResult] = useState<string | null>(null);
+  
+  // Validate environment on component mount
+  useEffect(() => {
+    validateEnv();
+  }, []);
 
   const fetchEnv = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${base}/api/health/env`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const data = await api('/api/health/env');
       setServer(data);
     } catch (e: any) {
       setServer({ 
@@ -44,8 +49,21 @@ export default function Diagnostics() {
       setLoading(false);
     }
   };
+  
+  const pingServer = async () => {
+    setPingLoading(true);
+    setPingResult(null);
+    try {
+      const data = await api('/api/health/ping');
+      setPingResult(`Server OK: ${data.time || 'Response received'}`);
+    } catch (e: any) {
+      setPingResult(`Server Error: ${e.message}`);
+    } finally {
+      setPingLoading(false);
+    }
+  };
 
-  const fetchEnvCallback = useCallback(fetchEnv, [base]);
+  const fetchEnvCallback = useCallback(fetchEnv, []);
 
   useEffect(() => {
     fetchEnvCallback();
@@ -87,9 +105,9 @@ export default function Diagnostics() {
             <View style={styles.row}>
               <Text style={styles.label}>Data Mode</Text>
               <View style={styles.valueContainer}>
-                <View style={[styles.badge, DATA_MODE === 'live' ? styles.liveBadge : styles.mockBadge]}>
-                  <Text style={[styles.badgeText, DATA_MODE === 'live' ? styles.liveBadgeText : styles.mockBadgeText]}>
-                    {DATA_MODE.toUpperCase()}
+                <View style={[styles.badge, env.DATA_MODE === 'live' ? styles.liveBadge : styles.mockBadge]}>
+                  <Text style={[styles.badgeText, env.DATA_MODE === 'live' ? styles.liveBadgeText : styles.mockBadgeText]}>
+                    {env.DATA_MODE.toUpperCase()}
                   </Text>
                 </View>
               </View>
@@ -97,10 +115,42 @@ export default function Diagnostics() {
             <View style={styles.row}>
               <Text style={styles.label}>API Base URL</Text>
               <View style={styles.valueContainer}>
-                {base ? (
+                {env.API_URL ? (
                   <View style={styles.urlContainer}>
                     <CheckCircle size={16} color="#10B981" />
-                    <Text style={styles.urlText}>{base}</Text>
+                    <Text style={styles.urlText}>{env.API_URL}</Text>
+                  </View>
+                ) : (
+                  <View style={styles.urlContainer}>
+                    <XCircle size={16} color="#EF4444" />
+                    <Text style={[styles.urlText, { color: '#EF4444' }]}>Not configured</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Supabase URL</Text>
+              <View style={styles.valueContainer}>
+                {env.SUPABASE_URL ? (
+                  <View style={styles.urlContainer}>
+                    <CheckCircle size={16} color="#10B981" />
+                    <Text style={styles.urlText}>{env.SUPABASE_URL}</Text>
+                  </View>
+                ) : (
+                  <View style={styles.urlContainer}>
+                    <XCircle size={16} color="#EF4444" />
+                    <Text style={[styles.urlText, { color: '#EF4444' }]}>Not configured</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Supabase Anon Key</Text>
+              <View style={styles.valueContainer}>
+                {env.SUPABASE_ANON ? (
+                  <View style={styles.urlContainer}>
+                    <CheckCircle size={16} color="#10B981" />
+                    <Text style={styles.urlText}>••••••••</Text>
                   </View>
                 ) : (
                   <View style={styles.urlContainer}>
@@ -160,33 +210,21 @@ export default function Diagnostics() {
           <Text style={styles.sectionTitle}>Quick Health Check</Text>
           <View style={styles.buttonContainer}>
             <Pressable 
-              style={styles.healthButton}
-              onPress={() => {
-                fetch(`${base}/api/health/ping`)
-                  .then(res => res.json())
-                  .then(data => alert(`Server OK: ${data.time}`))
-                  .catch(e => alert(`Server Error: ${e.message}`));
-              }}
+              style={[styles.healthButton, pingLoading && styles.healthButtonDisabled]}
+              onPress={pingServer}
+              disabled={pingLoading}
             >
               <Activity size={20} color="#fff" />
-              <Text style={styles.healthButtonText}>Ping Server</Text>
+              <Text style={styles.healthButtonText}>
+                {pingLoading ? 'Pinging...' : 'Ping Server'}
+              </Text>
             </Pressable>
             
-            <Pressable 
-              style={[styles.healthButton, styles.stripeButton]}
-              onPress={() => {
-                fetch(`${base}/api/stripe/account-status?barberId=test`)
-                  .then(res => {
-                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                    return res.json();
-                  })
-                  .then(data => alert(`Stripe API OK: ${JSON.stringify(data)}`))
-                  .catch(e => alert(`Stripe API Error: ${e.message}`));
-              }}
-            >
-              <Activity size={20} color="#fff" />
-              <Text style={styles.healthButtonText}>Test Stripe API</Text>
-            </Pressable>
+            {pingResult && (
+              <View style={[styles.resultContainer, pingResult.includes('Error') ? styles.errorResult : styles.successResult]}>
+                <Text style={styles.resultText}>{pingResult}</Text>
+              </View>
+            )}
           </View>
         </View>
       </View>
@@ -327,8 +365,25 @@ const styles = StyleSheet.create({
   buttonContainer: {
     gap: 12,
   },
-  stripeButton: {
-    backgroundColor: '#635BFF',
+  healthButtonDisabled: {
+    opacity: 0.6,
+  },
+  resultContainer: {
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  successResult: {
+    backgroundColor: '#F0FDF4',
+    borderColor: '#BBF7D0',
+  },
+  errorResult: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+  },
+  resultText: {
+    fontSize: 14,
+    fontWeight: '500',
   },
   urlContainer: {
     flexDirection: 'row',
