@@ -31,7 +31,7 @@ export default function BarberProfileScreen() {
   const handleBookService = (service: Service) => {
     setSelectedBarber(barber);
     setSelectedService(service);
-    router.push(`/booking/service?barberId=${barber.id}&serviceId=${service.id}`);
+    router.push(`/book/${barber.id}/service`);
   };
 
   if (isLoading) {
