@@ -47,8 +47,24 @@ export default function EditProfileScreen() {
     website: "",
   });
 
+  const isValidUUID = (id: string) => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id);
+  };
+
   const loadBarberProfile = useCallback(async () => {
     if (!user?.id) return;
+
+    // Check if user ID is a valid UUID
+    if (!isValidUUID(user.id)) {
+      console.error("Invalid user ID format:", user.id);
+      Alert.alert(
+        "Authentication Error",
+        "Invalid user session detected. Please sign in again.",
+        [{ text: "OK", onPress: () => router.replace("/auth/welcome") }]
+      );
+      return;
+    }
 
     try {
       const { data, error } = await supabase
@@ -78,7 +94,7 @@ export default function EditProfileScreen() {
     } catch (error) {
       console.error("Failed to load barber profile:", error);
     }
-  }, [user]);
+  }, [user, router]);
 
   useEffect(() => {
     if (user?.role === "barber") {

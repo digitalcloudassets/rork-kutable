@@ -189,11 +189,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [saveUser]);
 
+  const isValidUUID = (id: string) => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id);
+  };
+
   const loadStoredUser = useCallback(async () => {
     try {
       const storedUser = await AsyncStorage.getItem("user");
       if (storedUser) {
-        setUser(JSON.parse(storedUser));
+        const userData = JSON.parse(storedUser);
+        // Validate that the user ID is a proper UUID
+        if (userData.id && !isValidUUID(userData.id)) {
+          console.log('Invalid user ID format detected, clearing stored user:', userData.id);
+          await AsyncStorage.removeItem("user");
+          return;
+        }
+        setUser(userData);
       }
     } catch (error) {
       console.error("Failed to load stored user:", error);
