@@ -1,11 +1,12 @@
 export const BRAND = {
   APP_NAME: "Kutable",
-  ACCENT: "#7C5CFF",
+  ACCENT: "#FF6A00",
   BG_DARK: "#0E1117",
   SURFACE_DARK: "#151A21",
   TEXT_PRIMARY: "#F7F8FA",
   TEXT_SECONDARY: "#A6AEBC",
-};
+  BORDER: "#202633",
+} as const;
 
 // Legacy colors for backward compatibility
 export const brandColors = {

@@ -4,10 +4,11 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { ThemeProvider } from "@react-navigation/native";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { BookingProvider } from "@/providers/BookingProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { BRAND } from "../config/brand";
+import { NavTheme, Tokens } from "@/theme/tokens";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -18,9 +19,9 @@ function RootLayoutNav() {
     <Stack screenOptions={{ 
       headerBackTitle: "Back",
       headerStyle: {
-        backgroundColor: BRAND.BG_DARK,
+        backgroundColor: Tokens.bg,
       },
-      headerTintColor: BRAND.TEXT_PRIMARY,
+      headerTintColor: Tokens.text,
       headerTitleStyle: {
         fontWeight: '700',
       },
@@ -54,14 +55,16 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <GestureHandlerRootView style={{ flex: 1, backgroundColor: BRAND.BG_DARK }}>
-          <StatusBar style="light" backgroundColor={BRAND.BG_DARK} translucent={false} />
-          <AuthProvider>
-            <BookingProvider>
-              <RootLayoutNav />
-            </BookingProvider>
-          </AuthProvider>
-        </GestureHandlerRootView>
+        <ThemeProvider value={NavTheme}>
+          <GestureHandlerRootView style={{ flex: 1, backgroundColor: Tokens.bg }}>
+            <StatusBar style="light" backgroundColor={Tokens.bg} translucent={false} />
+            <AuthProvider>
+              <BookingProvider>
+                <RootLayoutNav />
+              </BookingProvider>
+            </AuthProvider>
+          </GestureHandlerRootView>
+        </ThemeProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

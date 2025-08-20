@@ -1,14 +1,29 @@
+import { DarkTheme, Theme } from '@react-navigation/native';
 import { BRAND } from '../config/brand';
 
-export const themeTokens = {
-  background: BRAND.BG_DARK,
+export const NavTheme: Theme = {
+  ...DarkTheme,
+  dark: true,
+  colors: {
+    ...DarkTheme.colors,
+    primary: BRAND.ACCENT,
+    background: BRAND.BG_DARK,
+    card: BRAND.SURFACE_DARK,  // headers & tab bar
+    text: BRAND.TEXT_PRIMARY,
+    border: BRAND.BORDER,
+    notification: BRAND.ACCENT,
+  },
+};
+
+export const Tokens = {
+  bg: BRAND.BG_DARK,
   surface: BRAND.SURFACE_DARK,
-  textPrimary: BRAND.TEXT_PRIMARY,
-  textSecondary: BRAND.TEXT_SECONDARY,
+  text: BRAND.TEXT_PRIMARY,
+  textMuted: BRAND.TEXT_SECONDARY,
+  border: BRAND.BORDER,
   accent: BRAND.ACCENT,
   
   // Additional semantic tokens
-  border: '#202633',
   success: '#10B981',
   warning: '#F59E0B',
   error: '#EF4444',
@@ -52,4 +67,7 @@ export const themeTokens = {
   },
 };
 
-export type ThemeTokens = typeof themeTokens;
+export type ThemeTokens = typeof Tokens;
+
+// Legacy export for backward compatibility
+export const themeTokens = Tokens;

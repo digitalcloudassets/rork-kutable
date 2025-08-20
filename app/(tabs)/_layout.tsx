@@ -2,7 +2,7 @@ import { Tabs } from "expo-router";
 import { Search, Calendar, Settings, User } from "lucide-react-native";
 import React from "react";
 import { useAuth } from "@/providers/AuthProvider";
-import { BRAND } from "@/config/brand";
+import { Tokens } from "@/theme/tokens";
 
 export default function TabLayout() {
   const { user } = useAuth();
@@ -12,27 +12,19 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: true,
-        headerStyle: {
-          backgroundColor: BRAND.BG_DARK,
-        },
-        headerTintColor: BRAND.TEXT_PRIMARY,
         headerTitleStyle: {
           fontWeight: '700',
         },
         tabBarStyle: {
-          backgroundColor: BRAND.SURFACE_DARK,
-          borderTopColor: '#202633',
           borderTopWidth: 1,
         },
-        tabBarActiveTintColor: BRAND.TEXT_PRIMARY,
-        tabBarInactiveTintColor: BRAND.TEXT_SECONDARY,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: "Explore",
-          headerTitle: BRAND.APP_NAME,
+          headerTitle: "Kutable",
           tabBarIcon: ({ color }) => <Search size={24} color={color} />,
         }}
       />
