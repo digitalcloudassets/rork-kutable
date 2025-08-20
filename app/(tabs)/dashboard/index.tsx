@@ -32,7 +32,7 @@ export default function DashboardScreen() {
 
   const { data: earnings } = useQuery({
     queryKey: ["earnings", user?.id],
-    queryFn: () => api.earnings.summary({ barberId: user?.id, range: "month" }),
+    queryFn: () => api.earnings.summary({ barberId: user!.id, range: "month" }),
     enabled: !!user && user.role === "barber",
   });
 
