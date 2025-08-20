@@ -1,20 +1,91 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
   Text,
   View,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { CheckCircle, Calendar, Clock, MapPin, User } from "lucide-react-native";
+import { CheckCircle, Calendar, Clock, MapPin, User, Share2 } from "lucide-react-native";
 import { brandColors } from "@/config/brand";
+import { useBooking } from "@/providers/BookingProvider";
+import { addToCalendar, shareBooking, type BookingDetails } from "@/utils/calendarAndSharing";
+import { usePushNotifications } from "@/utils/usePushNotifications";
 
 export default function ConfirmationScreen() {
   const router = useRouter();
+  const { selectedBarber, selectedService, selectedTime, clientDetails, clearBooking } = useBooking();
+  const { registerForPushNotifications } = usePushNotifications();
+  const [isAddingToCalendar, setIsAddingToCalendar] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+
+  // Register for push notifications when confirmation loads
+  useEffect(() => {
+    registerForPushNotifications();
+  }, [registerForPushNotifications]);
 
   const handleDone = () => {
+    clearBooking();
     router.replace("/(tabs)/bookings");
+  };
+
+  const handleAddToCalendar = async () => {
+    if (!selectedBarber || !selectedService || !selectedTime) return;
+    
+    setIsAddingToCalendar(true);
+    
+    const bookingDetails: BookingDetails = {
+      barberName: selectedBarber.name,
+      serviceName: selectedService.name,
+      startTime: selectedTime.startISO,
+      endTime: selectedTime.endISO,
+      location: selectedBarber.shopName || 'Barbershop',
+      address: selectedBarber.shopAddress || 'Address not available',
+      notes: clientDetails?.note,
+    };
+    
+    await addToCalendar(bookingDetails);
+    setIsAddingToCalendar(false);
+  };
+
+  const handleShare = async () => {
+    if (!selectedBarber || !selectedService || !selectedTime) return;
+    
+    setIsSharing(true);
+    
+    const bookingDetails: BookingDetails = {
+      barberName: selectedBarber.name,
+      serviceName: selectedService.name,
+      startTime: selectedTime.startISO,
+      endTime: selectedTime.endISO,
+      location: selectedBarber.shopName || 'Barbershop',
+      address: selectedBarber.shopAddress || 'Address not available',
+      notes: clientDetails?.note,
+    };
+    
+    await shareBooking(bookingDetails);
+    setIsSharing(false);
+  };
+
+  // Format display data
+  const formatDate = (isoString: string) => {
+    const date = new Date(isoString);
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  const formatTime = (isoString: string) => {
+    const date = new Date(isoString);
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
   };
 
   return (
@@ -33,8 +104,16 @@ export default function ConfirmationScreen() {
         <View style={styles.detailRow}>
           <User size={16} color="#666" />
           <View style={styles.detailContent}>
+            <Text style={styles.detailLabel}>Service</Text>
+            <Text style={styles.detailValue}>{selectedService?.name || 'Service'}</Text>
+          </View>
+        </View>
+
+        <View style={styles.detailRow}>
+          <User size={16} color="#666" />
+          <View style={styles.detailContent}>
             <Text style={styles.detailLabel}>Barber</Text>
-            <Text style={styles.detailValue}>Marcus Johnson</Text>
+            <Text style={styles.detailValue}>{selectedBarber?.name || 'Barber'}</Text>
           </View>
         </View>
 
@@ -42,7 +121,9 @@ export default function ConfirmationScreen() {
           <Calendar size={16} color="#666" />
           <View style={styles.detailContent}>
             <Text style={styles.detailLabel}>Date</Text>
-            <Text style={styles.detailValue}>Tomorrow, March 15</Text>
+            <Text style={styles.detailValue}>
+              {selectedTime ? formatDate(selectedTime.startISO) : 'Date'}
+            </Text>
           </View>
         </View>
 
@@ -50,7 +131,9 @@ export default function ConfirmationScreen() {
           <Clock size={16} color="#666" />
           <View style={styles.detailContent}>
             <Text style={styles.detailLabel}>Time</Text>
-            <Text style={styles.detailValue}>2:00 PM</Text>
+            <Text style={styles.detailValue}>
+              {selectedTime ? `${formatTime(selectedTime.startISO)} - ${formatTime(selectedTime.endISO)}` : 'Time'}
+            </Text>
           </View>
         </View>
 
@@ -58,19 +141,26 @@ export default function ConfirmationScreen() {
           <MapPin size={16} color="#666" />
           <View style={styles.detailContent}>
             <Text style={styles.detailLabel}>Location</Text>
-            <Text style={styles.detailValue}>Elite Cuts Barbershop</Text>
-            <Text style={styles.detailAddress}>123 Main St, Downtown</Text>
+            <Text style={styles.detailValue}>{selectedBarber?.shopName || 'Barbershop'}</Text>
+            <Text style={styles.detailAddress}>{selectedBarber?.shopAddress || 'Address not available'}</Text>
           </View>
         </View>
+
+        {clientDetails?.note && (
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Notes</Text>
+            <Text style={styles.detailValue}>{clientDetails.note}</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.reminderCard}>
-        <Text style={styles.reminderTitle}>What's Next?</Text>
+        <Text style={styles.reminderTitle}>What&apos;s Next?</Text>
         <Text style={styles.reminderText}>
-          • We've sent a confirmation to your phone
+          • We&apos;ve sent a confirmation to your phone
         </Text>
         <Text style={styles.reminderText}>
-          • You'll receive a reminder 24 hours before
+          • You&apos;ll receive a reminder 24 hours before
         </Text>
         <Text style={styles.reminderText}>
           • Free cancellation up to 24 hours before
@@ -82,10 +172,33 @@ export default function ConfirmationScreen() {
           <Text style={styles.doneButtonText}>Done</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.addToCalendarButton}>
-          <Calendar size={20} color={brandColors.primary} />
-          <Text style={styles.addToCalendarText}>Add to Calendar</Text>
-        </TouchableOpacity>
+        <View style={styles.actionButtons}>
+          <TouchableOpacity 
+            style={[styles.actionButton, isAddingToCalendar && styles.actionButtonDisabled]} 
+            onPress={handleAddToCalendar}
+            disabled={isAddingToCalendar}
+          >
+            {isAddingToCalendar ? (
+              <ActivityIndicator size="small" color={brandColors.primary} />
+            ) : (
+              <Calendar size={20} color={brandColors.primary} />
+            )}
+            <Text style={styles.actionButtonText}>Add to Calendar</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.actionButton, isSharing && styles.actionButtonDisabled]} 
+            onPress={handleShare}
+            disabled={isSharing}
+          >
+            {isSharing ? (
+              <ActivityIndicator size="small" color={brandColors.primary} />
+            ) : (
+              <Share2 size={20} color={brandColors.primary} />
+            )}
+            <Text style={styles.actionButtonText}>Share</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </ScrollView>
   );
@@ -198,6 +311,30 @@ const styles = StyleSheet.create({
     borderColor: brandColors.primary,
   },
   addToCalendarText: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: brandColors.primary,
+    marginLeft: 8,
+  },
+  actionButtons: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: brandColors.primary,
+    backgroundColor: "#fff",
+  },
+  actionButtonDisabled: {
+    opacity: 0.6,
+  },
+  actionButtonText: {
     fontSize: 16,
     fontWeight: "500",
     color: brandColors.primary,
