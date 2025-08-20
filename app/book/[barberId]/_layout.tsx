@@ -1,9 +1,18 @@
 import React from 'react';
 import { Stack } from 'expo-router';
+import { BRAND } from '@/config/brand';
 
 export default function BookingLayout() {
   return (
-    <Stack>
+    <Stack screenOptions={{
+      headerStyle: {
+        backgroundColor: BRAND.BG_DARK,
+      },
+      headerTintColor: BRAND.TEXT_PRIMARY,
+      headerTitleStyle: {
+        fontWeight: '700',
+      },
+    }}>
       <Stack.Screen 
         name="service" 
         options={{ 

@@ -1,8 +1,18 @@
 import { Stack } from "expo-router";
+import { BRAND } from "@/config/brand";
 
 export default function DashboardLayout() {
   return (
-    <Stack screenOptions={{ headerShown: true }}>
+    <Stack screenOptions={{ 
+      headerShown: true,
+      headerStyle: {
+        backgroundColor: BRAND.BG_DARK,
+      },
+      headerTintColor: BRAND.TEXT_PRIMARY,
+      headerTitleStyle: {
+        fontWeight: '700',
+      },
+    }}>
       <Stack.Screen 
         name="index" 
         options={{ 

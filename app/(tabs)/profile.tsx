@@ -24,7 +24,7 @@ import {
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/providers/AuthProvider";
-import { brandColors } from "@/config/brand";
+import { brandColors, BRAND } from "@/config/brand";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -84,7 +84,7 @@ export default function ProfileScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.guestState}>
-          <User size={64} color="#ccc" />
+          <User size={64} color={BRAND.TEXT_SECONDARY} />
           <Text style={styles.guestTitle}>Welcome to Kutable</Text>
           <Text style={styles.guestDescription}>
             Sign in to access your profile, bookings, and personalized features.
@@ -131,10 +131,10 @@ export default function ProfileScreen() {
                 onPress={item.onPress}
               >
                 <View style={styles.menuItemLeft}>
-                  <item.icon size={20} color="#666" />
+                  <item.icon size={20} color={BRAND.TEXT_SECONDARY} />
                   <Text style={styles.menuItemText}>{item.label}</Text>
                 </View>
-                <ChevronRight size={20} color="#ccc" />
+                <ChevronRight size={20} color={BRAND.TEXT_SECONDARY} />
               </TouchableOpacity>
             ))}
           </View>
@@ -156,31 +156,31 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: BRAND.BG_DARK,
   },
   header: {
-    backgroundColor: "#fff",
+    backgroundColor: BRAND.SURFACE_DARK,
     alignItems: "center",
     paddingVertical: 32,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: '#202633',
   },
   avatar: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: '#202633',
     marginBottom: 12,
   },
   name: {
     fontSize: 20,
     fontWeight: "600",
-    color: "#1a1a1a",
+    color: BRAND.TEXT_PRIMARY,
     marginBottom: 4,
   },
   email: {
     fontSize: 14,
-    color: "#666",
+    color: BRAND.TEXT_SECONDARY,
   },
   barberBadge: {
     flexDirection: "row",
@@ -209,10 +209,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sectionContent: {
-    backgroundColor: "#fff",
+    backgroundColor: BRAND.SURFACE_DARK,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: "#f0f0f0",
+    borderColor: '#202633',
   },
   menuItem: {
     flexDirection: "row",
@@ -232,14 +232,14 @@ const styles = StyleSheet.create({
   },
   menuItemText: {
     fontSize: 16,
-    color: "#333",
+    color: BRAND.TEXT_PRIMARY,
     marginLeft: 12,
   },
   signOutButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#fff",
+    backgroundColor: BRAND.SURFACE_DARK,
     marginTop: 24,
     marginHorizontal: 16,
     paddingVertical: 16,
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 12,
-    color: "#999",
+    color: BRAND.TEXT_SECONDARY,
   },
   guestState: {
     flex: 1,
@@ -271,14 +271,14 @@ const styles = StyleSheet.create({
   guestTitle: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#1a1a1a",
+    color: BRAND.TEXT_PRIMARY,
     marginTop: 24,
     marginBottom: 12,
     textAlign: "center",
   },
   guestDescription: {
     fontSize: 16,
-    color: "#666",
+    color: BRAND.TEXT_SECONDARY,
     textAlign: "center",
     lineHeight: 24,
     marginBottom: 32,

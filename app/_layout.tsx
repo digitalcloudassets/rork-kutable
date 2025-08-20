@@ -15,7 +15,16 @@ const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   return (
-    <Stack screenOptions={{ headerBackTitle: "Back" }}>
+    <Stack screenOptions={{ 
+      headerBackTitle: "Back",
+      headerStyle: {
+        backgroundColor: BRAND.BG_DARK,
+      },
+      headerTintColor: BRAND.TEXT_PRIMARY,
+      headerTitleStyle: {
+        fontWeight: '700',
+      },
+    }}>
       <Stack.Screen name="auth/welcome" options={{ headerShown: false }} />
       <Stack.Screen name="auth/client-signup" options={{ title: "Client Sign Up", presentation: "modal" }} />
       <Stack.Screen name="auth/client-signin" options={{ title: "Client Sign In", presentation: "modal" }} />

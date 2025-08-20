@@ -11,7 +11,7 @@ import {
 import { Calendar, Clock, DollarSign, Settings, TrendingUp, Users, CreditCard, AlertTriangle, Camera, Activity } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
-import { brandColors } from "@/config/brand";
+import { brandColors, BRAND } from "@/config/brand";
 import { api } from "@/lib/api";
 import { useAuth } from "@/providers/AuthProvider";
 import type { Booking } from "@/types/models";
@@ -26,7 +26,7 @@ export default function DashboardScreen() {
 
   const { data: todayBookings, isLoading, refetch } = useQuery({
     queryKey: ["barber-bookings", user?.id, today],
-    queryFn: () => api.bookings.list({ barberId: user?.id, date: today }),
+    queryFn: () => api.bookings.list({ barberId: user?.id }),
     enabled: !!user && user.role === "barber",
   });
 
@@ -188,7 +188,7 @@ export default function DashboardScreen() {
           todayBookings?.map((booking: Booking) => (
             <View key={booking.id} style={styles.bookingItem}>
               <View style={styles.bookingTime}>
-                <Clock size={16} color="#666" />
+                <Clock size={16} color={BRAND.TEXT_SECONDARY} />
                 <Text style={styles.timeText}>{formatTime(booking.startISO)}</Text>
               </View>
               <View style={styles.bookingDetails}>
@@ -259,7 +259,7 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: BRAND.BG_DARK,
   },
   scrollContent: {
     paddingBottom: 20,
@@ -281,12 +281,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#1a1a1a",
+    color: BRAND.TEXT_PRIMARY,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 16,
-    color: "#666",
+    color: BRAND.TEXT_SECONDARY,
     textAlign: "center",
     marginBottom: 24,
     lineHeight: 24,
@@ -317,9 +317,9 @@ const styles = StyleSheet.create({
   },
   stripeHeader: {
     padding: 16,
-    backgroundColor: brandColors.white,
+    backgroundColor: BRAND.SURFACE_DARK,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: '#202633',
   },
   stripeStatus: {
     flexDirection: "row",
@@ -358,15 +358,12 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     minWidth: "47%",
-    backgroundColor: "#fff",
+    backgroundColor: BRAND.SURFACE_DARK,
     padding: 16,
     borderRadius: 12,
     borderLeftWidth: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderColor: '#202633',
+    borderWidth: 1,
   },
   statIcon: {
     width: 36,
@@ -379,12 +376,12 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#1a1a1a",
+    color: BRAND.TEXT_PRIMARY,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 13,
-    color: "#666",
+    color: BRAND.TEXT_SECONDARY,
   },
   section: {
     paddingHorizontal: 16,
@@ -399,7 +396,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#1a1a1a",
+    color: BRAND.TEXT_PRIMARY,
   },
   viewAllText: {
     fontSize: 14,
@@ -407,22 +404,26 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   emptySchedule: {
-    backgroundColor: "#fff",
+    backgroundColor: BRAND.SURFACE_DARK,
     padding: 24,
     borderRadius: 12,
     alignItems: "center",
+    borderColor: '#202633',
+    borderWidth: 1,
   },
   emptyScheduleText: {
     fontSize: 14,
-    color: "#999",
+    color: BRAND.TEXT_SECONDARY,
   },
   bookingItem: {
-    backgroundColor: "#fff",
+    backgroundColor: BRAND.SURFACE_DARK,
     padding: 16,
     borderRadius: 12,
     marginBottom: 8,
     flexDirection: "row",
     alignItems: "center",
+    borderColor: '#202633',
+    borderWidth: 1,
   },
   bookingTime: {
     flexDirection: "row",
@@ -432,7 +433,7 @@ const styles = StyleSheet.create({
   timeText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#333",
+    color: BRAND.TEXT_PRIMARY,
     marginLeft: 6,
   },
   bookingDetails: {
@@ -441,12 +442,12 @@ const styles = StyleSheet.create({
   clientName: {
     fontSize: 15,
     fontWeight: "500",
-    color: "#1a1a1a",
+    color: BRAND.TEXT_PRIMARY,
     marginBottom: 2,
   },
   serviceName: {
     fontSize: 13,
-    color: "#666",
+    color: BRAND.TEXT_SECONDARY,
   },
   statusButton: {
     backgroundColor: brandColors.primaryLight,
@@ -472,20 +473,17 @@ const styles = StyleSheet.create({
   actionCard: {
     flex: 1,
     minWidth: "47%",
-    backgroundColor: "#fff",
+    backgroundColor: BRAND.SURFACE_DARK,
     padding: 20,
     borderRadius: 12,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderColor: '#202633',
+    borderWidth: 1,
   },
   actionText: {
     fontSize: 13,
     fontWeight: "500",
-    color: "#333",
+    color: BRAND.TEXT_PRIMARY,
     marginTop: 8,
     textAlign: "center",
   },

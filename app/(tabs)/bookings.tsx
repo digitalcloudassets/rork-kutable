@@ -14,7 +14,7 @@ import {
 import { Calendar, Clock, User, ChevronRight, CalendarX, X } from "lucide-react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { brandColors } from "@/config/brand";
+import { brandColors, BRAND } from "@/config/brand";
 import { api } from "@/lib/api";
 import { useAuth } from "@/providers/AuthProvider";
 import type { Booking } from "@/types/models";
@@ -78,7 +78,7 @@ function RescheduleModal({ visible, booking, onClose, onReschedule }: Reschedule
         <View style={styles.modalHeader}>
           <Text style={styles.modalTitle}>Reschedule Appointment</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <X size={24} color="#666" />
+            <X size={24} color={BRAND.TEXT_SECONDARY} />
           </TouchableOpacity>
         </View>
 
@@ -312,7 +312,7 @@ export default function BookingsScreen() {
                 <View style={styles.dateTimeContainer}>
                   <Text style={styles.dateText}>{formatDate(booking.startISO)}</Text>
                   <View style={styles.timeRow}>
-                    <Clock size={14} color="#666" />
+                    <Clock size={14} color={BRAND.TEXT_SECONDARY} />
                     <Text style={styles.timeText}>{formatTime(booking.startISO)}</Text>
                   </View>
                 </View>
@@ -324,7 +324,7 @@ export default function BookingsScreen() {
               <View style={styles.bookingBody}>
                 <Text style={styles.serviceName}>{booking.serviceName}</Text>
                 <View style={styles.barberRow}>
-                  <User size={14} color="#666" />
+                  <User size={14} color={BRAND.TEXT_SECONDARY} />
                   <Text style={styles.barberName}>{booking.barberName}</Text>
                 </View>
                 {booking.note && (
@@ -376,14 +376,14 @@ export default function BookingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: BRAND.BG_DARK,
   },
   tabContainer: {
     flexDirection: "row",
-    backgroundColor: "#fff",
+    backgroundColor: BRAND.SURFACE_DARK,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: '#202633',
   },
   tab: {
     flex: 1,
@@ -414,15 +414,12 @@ const styles = StyleSheet.create({
   },
 
   bookingCard: {
-    backgroundColor: "#fff",
+    backgroundColor: BRAND.SURFACE_DARK,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderColor: '#202633',
+    borderWidth: 1,
   },
   bookingHeader: {
     flexDirection: "row",
@@ -435,7 +432,7 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#1a1a1a",
+    color: BRAND.TEXT_PRIMARY,
     marginBottom: 4,
   },
   timeRow: {
@@ -444,7 +441,7 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 14,
-    color: "#666",
+    color: BRAND.TEXT_SECONDARY,
     marginLeft: 4,
   },
   statusBadge: {
@@ -465,7 +462,7 @@ const styles = StyleSheet.create({
   serviceName: {
     fontSize: 16,
     fontWeight: "500",
-    color: "#333",
+    color: BRAND.TEXT_PRIMARY,
     marginBottom: 6,
   },
   barberRow: {
@@ -475,12 +472,12 @@ const styles = StyleSheet.create({
   },
   barberName: {
     fontSize: 14,
-    color: "#666",
+    color: BRAND.TEXT_SECONDARY,
     marginLeft: 6,
   },
   noteText: {
     fontSize: 13,
-    color: "#999",
+    color: BRAND.TEXT_SECONDARY,
     fontStyle: "italic",
     marginTop: 4,
   },
@@ -521,7 +518,7 @@ const styles = StyleSheet.create({
   // Modal styles
   modalContainer: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: BRAND.BG_DARK,
   },
   modalHeader: {
     flexDirection: "row",
@@ -534,7 +531,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#1a1a1a",
+    color: BRAND.TEXT_PRIMARY,
   },
   closeButton: {
     padding: 8,
@@ -546,7 +543,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#1a1a1a",
+    color: BRAND.TEXT_PRIMARY,
     marginBottom: 12,
     marginTop: 16,
   },
@@ -564,7 +561,7 @@ const styles = StyleSheet.create({
     borderColor: "#e0e0e0",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#fff",
+    backgroundColor: BRAND.SURFACE_DARK,
   },
   selectedDateOption: {
     backgroundColor: brandColors.primary,
@@ -578,7 +575,7 @@ const styles = StyleSheet.create({
   dateOptionDate: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#1a1a1a",
+    color: BRAND.TEXT_PRIMARY,
   },
   selectedDateOptionText: {
     color: "#fff",
@@ -594,7 +591,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#e0e0e0",
-    backgroundColor: "#fff",
+    backgroundColor: BRAND.SURFACE_DARK,
   },
   selectedSlotOption: {
     backgroundColor: brandColors.primary,
@@ -602,7 +599,7 @@ const styles = StyleSheet.create({
   },
   slotOptionText: {
     fontSize: 14,
-    color: "#1a1a1a",
+    color: BRAND.TEXT_PRIMARY,
   },
   selectedSlotOptionText: {
     color: "#fff",
