@@ -15,7 +15,7 @@ import { Camera, Save } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "@/providers/AuthProvider";
 import { supabase } from "@/lib/supabaseClient";
-import { brandColors } from "@/config/brand";
+import { Tokens } from "@/theme/tokens";
 import { formatToE164 } from "@/utils/phoneHelpers";
 
 interface BarberProfile {
@@ -229,9 +229,9 @@ export default function EditProfileScreen() {
               style={styles.saveButton}
             >
               {loading ? (
-                <ActivityIndicator size="small" color={brandColors.primary} />
+                <ActivityIndicator size="small" color={Tokens.accent} />
               ) : (
-                <Save size={20} color={brandColors.primary} />
+                <Save size={20} color={Tokens.accent} />
               )}
             </TouchableOpacity>
           ),
@@ -257,7 +257,7 @@ export default function EditProfileScreen() {
             onPress={pickImage}
             disabled={uploading}
           >
-            <Camera size={16} color={brandColors.primary} />
+            <Camera size={16} color={Tokens.accent} />
             <Text style={styles.changePhotoText}>Change Photo</Text>
           </TouchableOpacity>
         </View>
@@ -376,17 +376,17 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: Tokens.bg,
   },
   saveButton: {
     padding: 8,
   },
   avatarSection: {
-    backgroundColor: "#fff",
+    backgroundColor: Tokens.surface,
     alignItems: "center",
     paddingVertical: 32,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: Tokens.border,
   },
   avatarContainer: {
     position: "relative",
@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: Tokens.border,
   },
   uploadingOverlay: {
     position: "absolute",
@@ -416,10 +416,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: brandColors.primary,
+    borderColor: Tokens.accent,
   },
   changePhotoText: {
-    color: brandColors.primary,
+    color: Tokens.accent,
     fontSize: 14,
     fontWeight: "600",
     marginLeft: 6,
@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#1a1a1a",
+    color: Tokens.text,
     marginBottom: 16,
   },
   field: {
@@ -442,18 +442,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#333",
+    color: Tokens.text,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: Tokens.surface,
     borderWidth: 1,
-    borderColor: "#e0e0e0",
+    borderColor: Tokens.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    color: "#333",
+    color: Tokens.text,
   },
   textArea: {
     minHeight: 80,

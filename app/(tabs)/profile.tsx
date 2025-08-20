@@ -24,7 +24,7 @@ import {
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/providers/AuthProvider";
-import { brandColors, BRAND } from "@/config/brand";
+import { BRAND } from "@/config/brand";
 import { Tokens } from "@/theme/tokens";
 import { ScrollScreen } from "@/components/Screen";
 
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   barberBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: brandColors.primary,
+    backgroundColor: Tokens.accent,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#999",
+    color: Tokens.textMuted,
     textTransform: "uppercase",
     marginHorizontal: 16,
     marginBottom: 8,
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   signInButton: {
-    backgroundColor: brandColors.primary,
+    backgroundColor: Tokens.accent,
     paddingHorizontal: 32,
     paddingVertical: 16,
     borderRadius: 12,
