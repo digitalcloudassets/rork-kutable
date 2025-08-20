@@ -14,6 +14,11 @@ const queryClient = new QueryClient();
 function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerBackTitle: "Back" }}>
+      <Stack.Screen name="auth/welcome" options={{ headerShown: false }} />
+      <Stack.Screen name="auth/client-signup" options={{ title: "Client Sign Up", presentation: "modal" }} />
+      <Stack.Screen name="auth/client-signin" options={{ title: "Client Sign In", presentation: "modal" }} />
+      <Stack.Screen name="auth/barber-signup" options={{ title: "Barber Sign Up", presentation: "modal" }} />
+      <Stack.Screen name="auth/barber-signin" options={{ title: "Barber Sign In", presentation: "modal" }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="barber/[id]" options={{ title: "Barber Profile", presentation: "card" }} />
       <Stack.Screen name="booking/service" options={{ title: "Select Service", presentation: "modal" }} />

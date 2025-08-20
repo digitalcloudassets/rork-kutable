@@ -19,7 +19,7 @@ import { api } from "@/lib/api";
 import type { Barber, Service } from "@/types/models";
 import { seedData } from "@/lib/seedData";
 
-export default function ExploreScreen() {
+export default function HomeScreen() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedServiceId, setSelectedServiceId] = useState<string | undefined>();
