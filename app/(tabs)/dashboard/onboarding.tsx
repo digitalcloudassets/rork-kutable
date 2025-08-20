@@ -116,7 +116,7 @@ export default function OnboardingScreen() {
       <View style={styles.container}>
         <Stack.Screen options={{ title: "Connect Stripe" }} />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={brandColors.primary} />
+          <ActivityIndicator size="large" color={Tokens.accent} />
           <Text style={styles.loadingText}>
             {isPolling ? "Waiting for Stripe setup completion..." : "Checking connection status..."}
           </Text>
@@ -131,11 +131,11 @@ export default function OnboardingScreen() {
       
       <View style={styles.content}>
         <View style={styles.header}>
-          <View style={[styles.iconContainer, { backgroundColor: isConnected ? brandColors.success + "20" : brandColors.primary + "20" }]}>
+          <View style={[styles.iconContainer, { backgroundColor: isConnected ? Tokens.success + "20" : Tokens.accent + "20" }]}>
             {isConnected ? (
-              <CheckCircle size={48} color={brandColors.success} />
+              <CheckCircle size={48} color={Tokens.success} />
             ) : (
-              <CreditCard size={48} color={brandColors.primary} />
+              <CreditCard size={48} color={Tokens.accent} />
             )}
           </View>
           
@@ -154,11 +154,11 @@ export default function OnboardingScreen() {
         {isConnected ? (
           <View style={styles.statusContainer}>
             <View style={styles.statusItem}>
-              <CheckCircle size={20} color={brandColors.success} />
+              <CheckCircle size={20} color={Tokens.success} />
               <Text style={styles.statusText}>Charges enabled</Text>
             </View>
             <View style={styles.statusItem}>
-              <CheckCircle size={20} color={brandColors.success} />
+              <CheckCircle size={20} color={Tokens.success} />
               <Text style={styles.statusText}>Payouts enabled</Text>
             </View>
           </View>
@@ -166,19 +166,19 @@ export default function OnboardingScreen() {
           <View style={styles.featuresContainer}>
             <Text style={styles.featuresTitle}>What you'll get:</Text>
             <View style={styles.featureItem}>
-              <CheckCircle size={16} color={brandColors.success} />
+              <CheckCircle size={16} color={Tokens.success} />
               <Text style={styles.featureText}>Accept credit card payments</Text>
             </View>
             <View style={styles.featureItem}>
-              <CheckCircle size={16} color={brandColors.success} />
+              <CheckCircle size={16} color={Tokens.success} />
               <Text style={styles.featureText}>Automatic payouts to your bank</Text>
             </View>
             <View style={styles.featureItem}>
-              <CheckCircle size={16} color={brandColors.success} />
+              <CheckCircle size={16} color={Tokens.success} />
               <Text style={styles.featureText}>Transaction history and reporting</Text>
             </View>
             <View style={styles.featureItem}>
-              <CheckCircle size={16} color={brandColors.success} />
+              <CheckCircle size={16} color={Tokens.success} />
               <Text style={styles.featureText}>Secure payment processing</Text>
             </View>
           </View>
@@ -221,7 +221,7 @@ export default function OnboardingScreen() {
 
         {!isConnected && (
           <View style={styles.disclaimer}>
-            <AlertCircle size={16} color={brandColors.textLight} />
+            <AlertCircle size={16} color={Tokens.textMuted} />
             <Text style={styles.disclaimerText}>
               You'll be redirected to Stripe to complete the setup process. This is secure and takes just a few minutes.
             </Text>
@@ -235,7 +235,7 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: brandColors.background,
+    backgroundColor: Tokens.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: brandColors.textLight,
+    color: Tokens.textMuted,
     marginTop: 16,
   },
   content: {
@@ -267,18 +267,18 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "700",
-    color: brandColors.text,
+    color: Tokens.text,
     textAlign: "center",
     marginBottom: 12,
   },
   subtitle: {
     fontSize: 16,
-    color: brandColors.textLight,
+    color: Tokens.textMuted,
     textAlign: "center",
     lineHeight: 24,
   },
   statusContainer: {
-    backgroundColor: brandColors.white,
+    backgroundColor: Tokens.surface,
     borderRadius: 12,
     padding: 20,
     marginBottom: 32,
@@ -290,12 +290,12 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 16,
-    color: brandColors.text,
+    color: Tokens.text,
     marginLeft: 12,
     fontWeight: "500",
   },
   featuresContainer: {
-    backgroundColor: brandColors.white,
+    backgroundColor: Tokens.surface,
     borderRadius: 12,
     padding: 20,
     marginBottom: 32,
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
   featuresTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: brandColors.text,
+    color: Tokens.text,
     marginBottom: 16,
   },
   featureItem: {
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
   },
   featureText: {
     fontSize: 15,
-    color: brandColors.textLight,
+    color: Tokens.textMuted,
     marginLeft: 12,
   },
   actions: {
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   primaryButton: {
-    backgroundColor: brandColors.primary,
+    backgroundColor: Tokens.accent,
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 12,
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   primaryButtonText: {
-    color: brandColors.white,
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: "600",
   },
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   secondaryButtonText: {
-    color: brandColors.textLight,
+    color: Tokens.textMuted,
     fontSize: 16,
     fontWeight: "500",
   },
@@ -354,13 +354,13 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: 8,
     padding: 16,
-    backgroundColor: brandColors.background,
+    backgroundColor: Tokens.bg,
     borderRadius: 8,
   },
   disclaimerText: {
     flex: 1,
     fontSize: 13,
-    color: brandColors.textLight,
+    color: Tokens.textMuted,
     lineHeight: 18,
   },
 });
