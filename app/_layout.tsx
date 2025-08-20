@@ -5,6 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ThemeProvider } from "@react-navigation/native";
+import Toast from 'react-native-toast-message';
 import { AuthProvider } from "@/providers/AuthProvider";
 import { BookingProvider } from "@/providers/BookingProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -61,6 +62,7 @@ export default function RootLayout() {
             <AuthProvider>
               <BookingProvider>
                 <RootLayoutNav />
+                <Toast />
               </BookingProvider>
             </AuthProvider>
           </GestureHandlerRootView>

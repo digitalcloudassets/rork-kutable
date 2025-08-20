@@ -1,11 +1,13 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, ActivityIndicator, ScrollView, TouchableOpacity, RefreshControl, Pressable, Alert, TextInput, Modal } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import Toast from 'react-native-toast-message';
 import dayjs from 'dayjs';
 import { Screen } from '@/components/Screen';
 import { Tokens } from '@/theme/tokens';
 import { apiClient } from '@/lib/api';
 import { getUserId } from '@/lib/session';
+import { Clock, Plus, Trash2 } from 'lucide-react-native';
 
 type Block = { id: string; start_utc: string; end_utc: string; reason?: string };
 
@@ -85,10 +87,18 @@ export default function CalendarAvailability() {
 
       resetBlockForm();
       await loadBlocks();
-      Alert.alert('Success', 'Time has been blocked successfully');
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: 'Time has been blocked successfully',
+      });
     } catch (error: any) {
       console.error('Error blocking time:', error);
-      Alert.alert('Error', error.message || 'Failed to block time. Please try again.');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message || 'Failed to block time. Please try again.',
+      });
     } finally {
       setBlocking(false);
     }
@@ -114,8 +124,17 @@ export default function CalendarAvailability() {
               });
               
               await loadBlocks();
+              Toast.show({
+                type: 'success',
+                text1: 'Success',
+                text2: 'Blocked time has been deleted',
+              });
             } catch (error: any) {
-              Alert.alert('Error', error.message || 'Failed to delete block');
+              Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: error.message || 'Failed to delete block',
+              });
             }
           },
         },
@@ -134,72 +153,129 @@ export default function CalendarAvailability() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <View style={{ padding: 16 }}>
-          <Text style={{ 
-            color: Tokens.text, 
-            fontSize: 22, 
-            fontWeight: '700', 
-            marginBottom: 12 
+          <View style={{ 
+            flexDirection: 'row', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            marginBottom: 20 
           }}>
-            Calendar & Availability
-          </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Clock size={24} color={Tokens.text} style={{ marginRight: 8 }} />
+              <Text style={{ 
+                color: Tokens.text, 
+                fontSize: 22, 
+                fontWeight: '700' 
+              }}>
+                Calendar & Availability
+              </Text>
+            </View>
+            <TouchableOpacity 
+              onPress={() => setShowBlockModal(true)}
+              style={{ 
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 8,
+                backgroundColor: Tokens.accent,
+              }}
+            >
+              <Plus size={16} color="#FFFFFF" style={{ marginRight: 4 }} />
+              <Text style={{ color: '#FFFFFF', fontWeight: '600', fontSize: 14 }}>
+                Block Time
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           {loading ? (
             <ActivityIndicator size="large" color={Tokens.accent} />
           ) : blocks.length === 0 ? (
             <View style={{ 
-              padding: 16, 
+              padding: 24, 
               borderRadius: 12, 
               backgroundColor: Tokens.surface, 
               borderColor: Tokens.border, 
-              borderWidth: 1 
+              borderWidth: 1,
+              alignItems: 'center' 
             }}>
-              <Text style={{ color: Tokens.textMuted }}>
-                No blocked time in the next 14 days.
+              <Clock size={48} color={Tokens.textMuted} style={{ marginBottom: 12 }} />
+              <Text style={{ 
+                color: Tokens.text, 
+                fontSize: 16, 
+                fontWeight: '600',
+                marginBottom: 4 
+              }}>
+                No blocked time
+              </Text>
+              <Text style={{ 
+                color: Tokens.textMuted, 
+                textAlign: 'center',
+                lineHeight: 20 
+              }}>
+                You haven't blocked any time in the next 14 days. Tap "Block Time" to add unavailable periods.
               </Text>
             </View>
           ) : (
-            blocks.map(b => (
-              <Pressable 
-                key={b.id}
-                onLongPress={() => handleDeleteBlock(b.id)}
-                style={{ 
-                  padding: 16, 
-                  borderRadius: 12, 
-                  backgroundColor: Tokens.surface, 
-                  borderWidth: 1, 
-                  borderColor: Tokens.border, 
-                  marginBottom: 12 
-                }}
-              >
-                <Text style={{ color: Tokens.text, fontWeight: '700' }}>
-                  {dayjs(b.start_utc).format('ddd, MMM D • h:mm A')} → {dayjs(b.end_utc).format('h:mm A')}
-                </Text>
-                {b.reason && (
-                  <Text style={{ color: Tokens.textMuted, marginTop: 6 }}>
-                    {b.reason}
-                  </Text>
-                )}
-                <Text style={{ color: Tokens.textMuted, marginTop: 8, fontSize: 12 }}>
-                  (Long-press to delete)
-                </Text>
-              </Pressable>
-            ))
+            <View style={{ gap: 12 }}>
+              {blocks.map(b => (
+                <View 
+                  key={b.id}
+                  style={{ 
+                    padding: 16, 
+                    borderRadius: 12, 
+                    backgroundColor: Tokens.surface, 
+                    borderWidth: 1, 
+                    borderColor: Tokens.border,
+                  }}
+                >
+                  <View style={{ 
+                    flexDirection: 'row', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'flex-start' 
+                  }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ 
+                        color: Tokens.text, 
+                        fontWeight: '700',
+                        fontSize: 16,
+                        marginBottom: 4 
+                      }}>
+                        {dayjs(b.start_utc).format('ddd, MMM D')}
+                      </Text>
+                      <Text style={{ 
+                        color: Tokens.textMuted, 
+                        fontSize: 14,
+                        marginBottom: b.reason ? 8 : 0 
+                      }}>
+                        {dayjs(b.start_utc).format('h:mm A')} → {dayjs(b.end_utc).format('h:mm A')}
+                      </Text>
+                      {b.reason && (
+                        <Text style={{ 
+                          color: Tokens.text, 
+                          fontSize: 14,
+                          fontStyle: 'italic' 
+                        }}>
+                          {b.reason}
+                        </Text>
+                      )}
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => handleDeleteBlock(b.id)}
+                      style={{
+                        padding: 8,
+                        borderRadius: 8,
+                        backgroundColor: '#FF3B3020',
+                      }}
+                    >
+                      <Trash2 size={16} color="#FF3B30" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </View>
           )}
 
-          <TouchableOpacity 
-            onPress={() => setShowBlockModal(true)}
-            style={{ 
-              marginTop: 16, 
-              padding: 16, 
-              borderRadius: 12, 
-              backgroundColor: Tokens.accent, 
-              alignItems: 'center' 
-            }}
-          >
-            <Text style={{ color: '#FFFFFF', fontWeight: '700' }}>
-              Block Time
-            </Text>
-          </TouchableOpacity>
+
         </View>
       </ScrollView>
 

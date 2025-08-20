@@ -645,10 +645,10 @@ export const apiClient = {
       }
 
       try {
-        const response = await fetch(`${backendUrl}/api/availability/unblock`, {
-          method: 'POST',
+        // Use DELETE endpoint for better REST semantics
+        const response = await fetch(`${backendUrl}/api/availability/block/${blockId}?barberId=${barberId}`, {
+          method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ barberId, blockId }),
         });
         
         if (response.ok) {
