@@ -1,18 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
-  View,
-  Text,
   StyleSheet,
+  Text,
+  View,
   ScrollView,
   TouchableOpacity,
+  RefreshControl,
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { CheckCircle, XCircle, RefreshCw, ExternalLink } from 'lucide-react-native';
-import { router } from 'expo-router';
+import {
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  RefreshCw,
+  ExternalLink,
+  Database,
+  CreditCard,
+  Server,
+  Settings,
+  MapPin,
+  Users,
+  DollarSign,
+} from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
+import { brandColors } from '@/config/brand';
 
-type HealthStatus = {
+interface HealthCheckResult {
   supabase: { ok: boolean; message: string };
   tables: {
     barbers: boolean;
@@ -40,54 +55,67 @@ type HealthStatus = {
     commit: string | null;
     buildTime: string;
   };
-};
+}
 
-type StatusItemProps = {
+interface StatusItemProps {
   label: string;
   status: boolean | null;
   message?: string;
   onFix?: () => void;
   fixLabel?: string;
-};
+}
 
 function StatusItem({ label, status, message, onFix, fixLabel }: StatusItemProps) {
   const getIcon = () => {
-    if (status === null) return <View style={styles.iconPlaceholder} />;
+    if (status === null) return <AlertCircle size={20} color={brandColors.warning} />;
     return status ? (
-      <CheckCircle size={20} color="#10B981" />
+      <CheckCircle size={20} color={brandColors.success} />
     ) : (
-      <XCircle size={20} color="#EF4444" />
+      <XCircle size={20} color={brandColors.error} />
     );
+  };
+
+  const getStatusColor = () => {
+    if (status === null) return brandColors.warning;
+    return status ? brandColors.success : brandColors.error;
   };
 
   return (
     <View style={styles.statusItem}>
-      <View style={styles.statusRow}>
-        {getIcon()}
-        <View style={styles.statusContent}>
+      <View style={styles.statusInfo}>
+        <View style={styles.statusHeader}>
+          {getIcon()}
           <Text style={styles.statusLabel}>{label}</Text>
-          {message && <Text style={styles.statusMessage}>{message}</Text>}
         </View>
-        {onFix && !status && (
-          <TouchableOpacity style={styles.fixButton} onPress={onFix}>
-            <ExternalLink size={16} color="#3B82F6" />
-            <Text style={styles.fixButtonText}>{fixLabel || 'Fix'}</Text>
-          </TouchableOpacity>
+        {message && (
+          <Text style={[styles.statusMessage, { color: getStatusColor() }]}>
+            {message}
+          </Text>
         )}
       </View>
+      {onFix && (
+        <TouchableOpacity style={styles.fixButton} onPress={onFix}>
+          <ExternalLink size={16} color={brandColors.primary} />
+          <Text style={styles.fixButtonText}>{fixLabel || 'Fix'}</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
 
-type SectionProps = {
+interface SectionProps {
   title: string;
+  icon: React.ComponentType<{ size: number; color: string }>;
   children: React.ReactNode;
-};
+}
 
-function Section({ title, children }: SectionProps) {
+function Section({ title, icon: Icon, children }: SectionProps) {
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <View style={styles.sectionHeader}>
+        <Icon size={20} color={brandColors.primary} />
+        <Text style={styles.sectionTitle}>{title}</Text>
+      </View>
       <View style={styles.sectionContent}>
         {children}
       </View>
@@ -96,299 +124,281 @@ function Section({ title, children }: SectionProps) {
 }
 
 export default function SystemStatusScreen() {
-  const [healthStatus, setHealthStatus] = useState<HealthStatus | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchHealthStatus = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
-      if (!backendUrl) {
-        throw new Error('Backend URL not configured');
-      }
-
-      const response = await fetch(`${backendUrl}/health/full`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
+  const { data: healthData, isLoading, refetch, error } = useQuery({
+    queryKey: ['system-health'],
+    queryFn: async (): Promise<HealthCheckResult> => {
+      const response = await fetch('/backend/health/full');
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        throw new Error(`Health check failed: ${response.status}`);
       }
+      return response.json();
+    },
+    refetchInterval: 30000, // Auto-refresh every 30 seconds
+  });
 
-      const data = await response.json();
-      setHealthStatus(data);
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
     } catch (err) {
-      console.error('Error fetching health status:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      Alert.alert('Error', 'Failed to refresh system status');
     } finally {
-      setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  useEffect(() => {
-    fetchHealthStatus();
-  }, []);
-
-  const handleRefresh = () => {
-    fetchHealthStatus();
-  };
-
-  const navigateToFix = (route: string) => {
+  const handleNavigation = (route: string) => {
     try {
       router.push(route as any);
     } catch (err) {
-      Alert.alert('Navigation Error', 'Could not navigate to the requested screen.');
+      Alert.alert('Navigation Error', 'Could not navigate to the requested screen');
     }
   };
 
-  if (loading) {
+  if (isLoading && !healthData) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3B82F6" />
-          <Text style={styles.loadingText}>Checking system status...</Text>
-        </View>
-      </SafeAreaView>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={brandColors.primary} />
+        <Text style={styles.loadingText}>Checking system status...</Text>
+      </View>
     );
   }
 
-  if (error) {
+  if (error && !healthData) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.errorContainer}>
-          <XCircle size={48} color="#EF4444" />
-          <Text style={styles.errorTitle}>Health Check Failed</Text>
-          <Text style={styles.errorMessage}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={handleRefresh}>
-            <RefreshCw size={20} color="#FFFFFF" />
-            <Text style={styles.retryButtonText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (!healthStatus) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorTitle}>No Data Available</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={handleRefresh}>
-            <RefreshCw size={20} color="#FFFFFF" />
-            <Text style={styles.retryButtonText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <View style={styles.errorContainer}>
+        <XCircle size={48} color={brandColors.error} />
+        <Text style={styles.errorTitle}>Health Check Failed</Text>
+        <Text style={styles.errorMessage}>
+          {error instanceof Error ? error.message : 'Unknown error occurred'}
+        </Text>
+        <TouchableOpacity style={styles.retryButton} onPress={handleRefresh}>
+          <RefreshCw size={20} color="#fff" />
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <Text style={styles.title}>System Status</Text>
-          <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
-            <RefreshCw size={20} color="#3B82F6" />
-            <Text style={styles.refreshButtonText}>Re-run checks</Text>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+      }
+    >
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.title}>System Status</Text>
+        <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
+          <RefreshCw size={20} color={brandColors.primary} />
+          <Text style={styles.refreshButtonText}>Re-run Checks</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Version Info */}
+      {healthData?.version && (
+        <View style={styles.versionCard}>
+          <Text style={styles.versionTitle}>Version Information</Text>
+          <Text style={styles.versionText}>
+            Build: {new Date(healthData.version.buildTime).toLocaleString()}
+          </Text>
+          {healthData.version.commit && (
+            <Text style={styles.versionText}>
+              Commit: {healthData.version.commit.substring(0, 8)}
+            </Text>
+          )}
+        </View>
+      )}
+
+      {/* Supabase Section */}
+      <Section title="Database Connection" icon={Database}>
+        <StatusItem
+          label="Supabase Connection"
+          status={healthData?.supabase.ok ?? false}
+          message={healthData?.supabase.message}
+        />
+      </Section>
+
+      {/* Tables Section */}
+      <Section title="Database Tables" icon={Server}>
+        <StatusItem
+          label="Barbers Table"
+          status={healthData?.tables.barbers ?? false}
+        />
+        <StatusItem
+          label="Services Table"
+          status={healthData?.tables.services ?? false}
+          onFix={() => handleNavigation('/(tabs)/dashboard/services')}
+          fixLabel="Manage Services"
+        />
+        <StatusItem
+          label="Bookings Table"
+          status={healthData?.tables.bookings ?? false}
+        />
+        <StatusItem
+          label="Availability Blocks Table"
+          status={healthData?.tables.availability_blocks ?? false}
+          onFix={() => handleNavigation('/(tabs)/dashboard/calendar')}
+          fixLabel="Manage Calendar"
+        />
+        <StatusItem
+          label="Gallery Table"
+          status={healthData?.tables.gallery_items ?? false}
+          onFix={() => handleNavigation('/(tabs)/dashboard/gallery')}
+          fixLabel="Manage Gallery"
+        />
+      </Section>
+
+      {/* Stripe Section */}
+      <Section title="Payment Processing" icon={CreditCard}>
+        <StatusItem
+          label="Stripe Keys Loaded"
+          status={healthData?.stripe.keysLoaded ?? false}
+        />
+        <StatusItem
+          label="Connected Account Found"
+          status={healthData?.stripe.connectedAccountFound ?? false}
+          onFix={() => handleNavigation('/(tabs)/dashboard/onboarding')}
+          fixLabel="Connect Stripe"
+        />
+        <StatusItem
+          label="Charges Enabled"
+          status={healthData?.stripe.chargesEnabled ?? null}
+          message={healthData?.stripe.chargesEnabled === null ? 'No connected account' : undefined}
+        />
+        <StatusItem
+          label="Payouts Enabled"
+          status={healthData?.stripe.payoutsEnabled ?? null}
+          message={healthData?.stripe.payoutsEnabled === null ? 'No connected account' : undefined}
+        />
+      </Section>
+
+      {/* API Endpoints Section */}
+      <Section title="API Endpoints" icon={Settings}>
+        <StatusItem
+          label="Services API"
+          status={healthData?.endpoints['services.list'] ?? false}
+          onFix={() => handleNavigation('/(tabs)/dashboard/services')}
+          fixLabel="Services"
+        />
+        <StatusItem
+          label="Availability API"
+          status={healthData?.endpoints['availability.list'] ?? false}
+          onFix={() => handleNavigation('/(tabs)/dashboard/calendar')}
+          fixLabel="Calendar"
+        />
+        <StatusItem
+          label="Open Slots API"
+          status={healthData?.endpoints['availability.openSlots'] ?? false}
+        />
+        <StatusItem
+          label="Bookings API"
+          status={healthData?.endpoints['bookings.create'] ?? false}
+        />
+        <StatusItem
+          label="Payments API"
+          status={healthData?.endpoints['payments.createIntent'] ?? false}
+        />
+        <StatusItem
+          label="Gallery API"
+          status={healthData?.endpoints['gallery.list'] ?? false}
+          onFix={() => handleNavigation('/(tabs)/dashboard/gallery')}
+          fixLabel="Gallery"
+        />
+        <StatusItem
+          label="Analytics API"
+          status={healthData?.endpoints['analytics.summary'] ?? false}
+          onFix={() => handleNavigation('/(tabs)/dashboard/analytics')}
+          fixLabel="Analytics"
+        />
+      </Section>
+
+      {/* Quick Actions */}
+      <Section title="Quick Actions" icon={ExternalLink}>
+        <View style={styles.quickActions}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => handleNavigation('/(tabs)')}
+          >
+            <MapPin size={20} color={brandColors.primary} />
+            <Text style={styles.actionButtonText}>Explore</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => handleNavigation('/(tabs)/profile')}
+          >
+            <Users size={20} color={brandColors.primary} />
+            <Text style={styles.actionButtonText}>Profile</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => handleNavigation('/(tabs)/dashboard/earnings')}
+          >
+            <DollarSign size={20} color={brandColors.primary} />
+            <Text style={styles.actionButtonText}>Earnings</Text>
           </TouchableOpacity>
         </View>
-
-        <Section title="Database">
-          <StatusItem
-            label="Supabase Connection"
-            status={healthStatus.supabase.ok}
-            message={!healthStatus.supabase.ok ? healthStatus.supabase.message : undefined}
-          />
-          <StatusItem
-            label="Barbers Table"
-            status={healthStatus.tables.barbers}
-          />
-          <StatusItem
-            label="Services Table"
-            status={healthStatus.tables.services}
-          />
-          <StatusItem
-            label="Bookings Table"
-            status={healthStatus.tables.bookings}
-          />
-          <StatusItem
-            label="Availability Blocks Table"
-            status={healthStatus.tables.availability_blocks}
-          />
-          <StatusItem
-            label="Gallery Table"
-            status={healthStatus.tables.gallery_items}
-          />
-        </Section>
-
-        <Section title="Stripe Integration">
-          <StatusItem
-            label="API Keys Loaded"
-            status={healthStatus.stripe.keysLoaded}
-          />
-          <StatusItem
-            label="Connected Account Found"
-            status={healthStatus.stripe.connectedAccountFound}
-            onFix={() => navigateToFix('/(tabs)/dashboard/onboarding')}
-            fixLabel="Connect"
-          />
-          <StatusItem
-            label="Charges Enabled"
-            status={healthStatus.stripe.chargesEnabled}
-          />
-          <StatusItem
-            label="Payouts Enabled"
-            status={healthStatus.stripe.payoutsEnabled}
-          />
-        </Section>
-
-        <Section title="API Endpoints">
-          <StatusItem
-            label="Services List"
-            status={healthStatus.endpoints['services.list']}
-            onFix={() => navigateToFix('/(tabs)/dashboard/services')}
-            fixLabel="Manage"
-          />
-          <StatusItem
-            label="Availability List"
-            status={healthStatus.endpoints['availability.list']}
-            onFix={() => navigateToFix('/(tabs)/dashboard/calendar')}
-            fixLabel="Setup"
-          />
-          <StatusItem
-            label="Open Slots"
-            status={healthStatus.endpoints['availability.openSlots']}
-            onFix={() => navigateToFix('/(tabs)/dashboard/calendar')}
-            fixLabel="Setup"
-          />
-          <StatusItem
-            label="Bookings Create"
-            status={healthStatus.endpoints['bookings.create']}
-            onFix={() => navigateToFix('/(tabs)/')}
-            fixLabel="Test"
-          />
-          <StatusItem
-            label="Payment Intent"
-            status={healthStatus.endpoints['payments.createIntent']}
-          />
-          <StatusItem
-            label="Gallery List"
-            status={healthStatus.endpoints['gallery.list']}
-            onFix={() => navigateToFix('/(tabs)/dashboard/gallery')}
-            fixLabel="Manage"
-          />
-          <StatusItem
-            label="Analytics Summary"
-            status={healthStatus.endpoints['analytics.summary']}
-            onFix={() => navigateToFix('/(tabs)/dashboard/analytics')}
-            fixLabel="View"
-          />
-        </Section>
-
-        <Section title="Quick Actions">
-          <View style={styles.quickActions}>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => navigateToFix('/(tabs)/')}
-            >
-              <Text style={styles.actionButtonText}>Test Explore</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => navigateToFix('/(tabs)/profile')}
-            >
-              <Text style={styles.actionButtonText}>Test Profile</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => navigateToFix('/(tabs)/dashboard/earnings')}
-            >
-              <Text style={styles.actionButtonText}>View Earnings</Text>
-            </TouchableOpacity>
-          </View>
-        </Section>
-
-        {healthStatus.version && (
-          <Section title="Version Info">
-            <StatusItem
-              label="Build Time"
-              status={true}
-              message={healthStatus.version.buildTime}
-            />
-            {healthStatus.version.commit && (
-              <StatusItem
-                label="Commit"
-                status={true}
-                message={healthStatus.version.commit}
-              />
-            )}
-          </Section>
-        )}
-      </ScrollView>
-    </SafeAreaView>
+      </Section>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
-  scrollView: {
-    flex: 1,
+    backgroundColor: '#f8f9fa',
   },
   scrollContent: {
-    padding: 16,
+    paddingBottom: 20,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 32,
+    backgroundColor: '#f8f9fa',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#6B7280',
-    textAlign: 'center',
+    color: '#666',
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#f8f9fa',
     padding: 32,
   },
   errorTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#111827',
+    fontSize: 24,
+    fontWeight: '700',
+    color: brandColors.error,
     marginTop: 16,
     marginBottom: 8,
-    textAlign: 'center',
   },
   errorMessage: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: 16,
+    color: '#666',
     textAlign: 'center',
     marginBottom: 24,
+    lineHeight: 24,
   },
   retryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#3B82F6',
-    paddingHorizontal: 20,
+    backgroundColor: brandColors.primary,
+    paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
   retryButtonText: {
-    color: '#FFFFFF',
+    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -396,101 +406,138 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    padding: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
-    color: '#111827',
+    color: '#1a1a1a',
   },
   refreshButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderRadius: 6,
+    backgroundColor: brandColors.primaryLight,
     gap: 6,
   },
   refreshButtonText: {
-    color: '#3B82F6',
+    color: brandColors.primary,
     fontSize: 14,
     fontWeight: '600',
   },
+  versionCard: {
+    backgroundColor: '#fff',
+    margin: 16,
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  versionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginBottom: 8,
+  },
+  versionText: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
   section: {
-    marginBottom: 24,
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    gap: 8,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111827',
-    marginBottom: 12,
+    color: '#1a1a1a',
   },
   sectionContent: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    padding: 16,
   },
   statusItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: '#f5f5f5',
   },
-  statusRow: {
+  statusInfo: {
+    flex: 1,
+  },
+  statusHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    gap: 12,
-  },
-  iconPlaceholder: {
-    width: 20,
-    height: 20,
-  },
-  statusContent: {
-    flex: 1,
+    gap: 8,
   },
   statusLabel: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#111827',
+    color: '#1a1a1a',
   },
   statusMessage: {
     fontSize: 14,
-    color: '#6B7280',
-    marginTop: 2,
+    marginTop: 4,
+    marginLeft: 28,
   },
   fixButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EFF6FF',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
+    backgroundColor: brandColors.primaryLight,
     gap: 4,
   },
   fixButtonText: {
-    color: '#3B82F6',
-    fontSize: 14,
+    color: brandColors.primary,
+    fontSize: 12,
     fontWeight: '600',
   },
   quickActions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
-    padding: 16,
   },
   actionButton: {
-    backgroundColor: '#F3F4F6',
+    flex: 1,
+    minWidth: '30%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
     paddingHorizontal: 16,
-    paddingVertical: 10,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    backgroundColor: brandColors.primaryLight,
+    gap: 8,
   },
   actionButtonText: {
-    color: '#374151',
+    color: brandColors.primary,
     fontSize: 14,
     fontWeight: '600',
   },
