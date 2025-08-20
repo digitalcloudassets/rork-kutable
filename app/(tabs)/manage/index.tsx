@@ -84,7 +84,7 @@ export default function ManageScreen() {
       title: "Settings",
       description: "Account and app preferences",
       icon: <Settings size={24} color={BRAND.ACCENT} />,
-      route: "/profile",
+      route: "/(tabs)/profile",
       testId: "manage-settings-button",
     },
   ];
