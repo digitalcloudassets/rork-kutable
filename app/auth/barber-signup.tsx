@@ -17,6 +17,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/providers/AuthProvider';
 import { brandConfig, BRAND } from '../../config/brand';
 import type { User } from '@/types/models';
+import { formatToE164 } from '@/utils/phoneHelpers';
 
 export default function BarberSignUpScreen() {
   const [name, setName] = useState('');
@@ -66,21 +67,25 @@ export default function BarberSignUpScreen() {
       }
 
       if (authData.user) {
+        // Format phone to E.164
+        const phoneE164 = formatToE164(phone.trim());
+        
         // Create barber record in database
         const { error: barberError } = await supabase
           .from('barbers')
-          .insert({
+          .upsert({
             id: authData.user.id,
             name: name.trim(),
-            phone: phone.trim(),
+            email: authData.user.email ?? null,
+            phone_e164: phoneE164,
             shop_name: shopName.trim(),
-            bio: '',
-            shop_address: '',
-            photo_url: '',
+            bio: null,
+            shop_address: null,
+            photo_url: null,
             rating: null,
             review_count: 0,
             connected_account_id: null,
-          });
+          }, { onConflict: 'id' });
 
         if (barberError) {
           console.error('Error creating barber record:', barberError);
@@ -105,7 +110,7 @@ export default function BarberSignUpScreen() {
             text: 'OK', 
             onPress: () => {
               // Route to Stripe Connect onboarding
-              router.replace('/barber-onboarding');
+              router.replace('/(tabs)/dashboard/onboarding');
             }
           }]
         );
