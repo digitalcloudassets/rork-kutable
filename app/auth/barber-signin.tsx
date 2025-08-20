@@ -15,8 +15,17 @@ import { Stack, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/providers/AuthProvider';
-import { brandConfig, BRAND } from '../../config/brand';
+import { brandConfig, BRAND } from '@/config/brand';
 import type { User } from '@/types/models';
+
+// Safe brand constants with fallbacks
+const BRAND_SAFE = {
+  BG_DARK: (BRAND && BRAND.BG_DARK) || '#0E1117',
+  SURFACE_DARK: (BRAND && BRAND.SURFACE_DARK) || '#151A21',
+  TEXT_PRIMARY: (BRAND && BRAND.TEXT_PRIMARY) || '#F7F8FA',
+  TEXT_SECONDARY: (BRAND && BRAND.TEXT_SECONDARY) || '#A6AEBC',
+  ACCENT: (BRAND && BRAND.ACCENT) || '#7C5CFF',
+} as const;
 
 export default function BarberSignInScreen() {
   const [email, setEmail] = useState('');
@@ -164,7 +173,7 @@ export default function BarberSignInScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BRAND.BG_DARK,
+    backgroundColor: BRAND_SAFE.BG_DARK,
   },
   keyboardView: {
     flex: 1,
@@ -188,13 +197,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold' as const,
-    color: BRAND.TEXT_PRIMARY,
+    color: BRAND_SAFE.TEXT_PRIMARY,
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: BRAND.TEXT_SECONDARY,
+    color: BRAND_SAFE.TEXT_SECONDARY,
     textAlign: 'center',
     marginBottom: 32,
   },
@@ -207,7 +216,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600' as const,
-    color: BRAND.TEXT_PRIMARY,
+    color: BRAND_SAFE.TEXT_PRIMARY,
     marginBottom: 8,
   },
   input: {
@@ -216,11 +225,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    backgroundColor: BRAND.SURFACE_DARK,
-    color: BRAND.TEXT_PRIMARY,
+    backgroundColor: BRAND_SAFE.SURFACE_DARK,
+    color: BRAND_SAFE.TEXT_PRIMARY,
   },
   signInButton: {
-    backgroundColor: BRAND.ACCENT,
+    backgroundColor: BRAND_SAFE.ACCENT,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -241,11 +250,11 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 16,
-    color: BRAND.TEXT_SECONDARY,
+    color: BRAND_SAFE.TEXT_SECONDARY,
   },
   linkText: {
     fontSize: 16,
-    color: BRAND.ACCENT,
+    color: BRAND_SAFE.ACCENT,
     fontWeight: '600' as const,
   },
 });
