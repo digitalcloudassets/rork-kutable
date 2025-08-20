@@ -15,6 +15,7 @@ import { FlashList } from '@shopify/flash-list';
 import { Plus, Edit3, Trash2, DollarSign, Clock } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '@/lib/api';
+import { useAuth } from '@/providers/AuthProvider';
 import type { Service } from '@/types/models';
 
 interface ServiceFormData {
@@ -47,8 +48,22 @@ export default function ServicesScreen() {
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState<boolean>(false);
 
-  // Mock barber ID - in production, get from auth context
-  const barberId = 'barber-1';
+  const { user } = useAuth();
+  const barberId = user?.id;
+
+  // Don't render if no authenticated barber
+  if (!barberId || user?.role !== 'barber') {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorTitle}>Access Denied</Text>
+          <Text style={styles.errorDescription}>
+            You must be logged in as a barber to manage services
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const loadServices = useCallback(async () => {
     try {
@@ -57,7 +72,8 @@ export default function ServicesScreen() {
       setServices(servicesList);
     } catch (error) {
       console.error('Failed to load services:', error);
-      Alert.alert('Error', 'Failed to load services');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load services';
+      Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -112,10 +128,12 @@ export default function ServicesScreen() {
       }
 
       handleCloseModal();
-      Alert.alert('Success', `Service ${editingService ? 'updated' : 'created'} successfully`);
+      // Show success feedback without blocking UI
+      console.log(`Service ${editingService ? 'updated' : 'created'} successfully`);
     } catch (error) {
       console.error('Failed to save service:', error);
-      Alert.alert('Error', 'Failed to save service');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save service';
+      Alert.alert('Error', errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -134,10 +152,12 @@ export default function ServicesScreen() {
             try {
               await api.services.delete({ barberId, serviceId: service.id });
               setServices(prev => prev.filter(s => s.id !== service.id));
-              Alert.alert('Success', 'Service deleted successfully');
+              // Show success feedback without blocking UI
+              console.log('Service deleted successfully');
             } catch (error) {
               console.error('Failed to delete service:', error);
-              Alert.alert('Error', 'Failed to delete service');
+              const errorMessage = error instanceof Error ? error.message : 'Failed to delete service';
+              Alert.alert('Error', errorMessage);
             }
           },
         },
@@ -212,6 +232,8 @@ export default function ServicesScreen() {
             style={styles.actionButton}
             onPress={() => handleEdit(item)}
             testID={`edit-service-${item.id}`}
+            accessibilityLabel={`Edit ${item.name}`}
+            accessibilityHint="Opens edit form for this service"
           >
             <Edit3 size={18} color="#007AFF" />
           </TouchableOpacity>
@@ -219,6 +241,8 @@ export default function ServicesScreen() {
             style={styles.actionButton}
             onPress={() => handleDelete(item)}
             testID={`delete-service-${item.id}`}
+            accessibilityLabel={`Delete ${item.name}`}
+            accessibilityHint="Deletes this service permanently"
           >
             <Trash2 size={18} color="#FF3B30" />
           </TouchableOpacity>
@@ -651,5 +675,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     lineHeight: 18,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FF3B30',
+    marginBottom: 8,
+  },
+  errorDescription: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 22,
   },
 });
