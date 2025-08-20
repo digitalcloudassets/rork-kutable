@@ -4,13 +4,29 @@ import { DATA_MODE, logFallback } from "@/config/dataMode";
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Generic API function for live mode
+// API base URL with fail-fast validation
+const BASE = process.env.EXPO_PUBLIC_API_URL;
+if (!BASE) {
+  console.warn('EXPO_PUBLIC_API_URL is not set. Set it to your backend like https://kutable.rork.app');
+}
+
+// Simplified API helper that matches the requested interface
+export async function api(path: string, init?: RequestInit) {
+  if (!BASE) throw new Error('API base URL not configured');
+  const url = `${BASE}${path}`;
+  const res = await fetch(url, {
+    headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
+    ...init,
+  });
+  if (!res.ok) throw new Error(`API ${path} ${res.status}`);
+  return res.json();
+}
+
+// Generic API function for live mode (legacy)
 export async function apiRequest(path: string, init?: RequestInit) {
-  const base = process.env.EXPO_PUBLIC_API_URL || process.env.EXPO_PUBLIC_BACKEND_URL;
-  if (!base) {
-    throw new Error('API URL not configured');
-  }
-  const res = await fetch(`${base}${path}`, { 
+  if (!BASE) throw new Error('API base URL not configured');
+  const url = `${BASE}${path}`;
+  const res = await fetch(url, { 
     ...init, 
     headers: { 
       'Content-Type': 'application/json', 
@@ -23,15 +39,15 @@ export async function apiRequest(path: string, init?: RequestInit) {
 
 // Get backend URL with fallback
 const getBackendUrl = () => {
-  const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
+  const backendUrl = process.env.EXPO_PUBLIC_API_URL;
   if (!backendUrl) {
-    console.warn('EXPO_PUBLIC_BACKEND_URL not configured, using fallback data');
+    console.warn('EXPO_PUBLIC_API_URL not configured, using fallback data');
     return null;
   }
   return backendUrl;
 };
 
-export const api = {
+export const apiClient = {
   barbers: {
     search: async ({ q, serviceId }: { q?: string; serviceId?: string }) => {
       let data;
@@ -70,7 +86,7 @@ export const api = {
 
     list: async ({ search }: { search?: string }) => {
       // Deprecated: use search instead
-      return api.barbers.search({ q: search });
+      return apiClient.barbers.search({ q: search });
     },
     
     profile: async ({ barberId }: { barberId: string }) => {

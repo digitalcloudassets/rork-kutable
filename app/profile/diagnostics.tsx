@@ -96,7 +96,9 @@ export default function Diagnostics() {
             </View>
             <View style={styles.row}>
               <Text style={styles.label}>API Base URL</Text>
-              <Text style={styles.value}>{base || 'Not set'}</Text>
+              <Text style={[styles.value, !base && { color: '#EF4444' }]}>
+                {base || 'Not configured'}
+              </Text>
             </View>
           </View>
         </View>

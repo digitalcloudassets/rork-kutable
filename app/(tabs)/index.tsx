@@ -16,7 +16,7 @@ import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { Tokens } from "@/theme/tokens";
 import { Screen } from "@/components/Screen";
-import { api } from "@/lib/api";
+import { apiClient } from "@/lib/api";
 import type { Barber, Service } from "@/types/models";
 import { seedData } from "@/lib/seedData";
 import { EmptyState } from "@/components/EmptyState";
@@ -30,7 +30,7 @@ export default function HomeScreen() {
 
   const { data: barbers, isLoading, error, refetch } = useQuery({
     queryKey: ["barbers", searchQuery, selectedServiceId],
-    queryFn: () => api.barbers.search({ q: searchQuery || undefined, serviceId: selectedServiceId }),
+    queryFn: () => apiClient.barbers.search({ q: searchQuery || undefined, serviceId: selectedServiceId }),
     retry: 2,
     retryDelay: 1000,
   });

@@ -13,7 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useBooking } from "@/providers/BookingProvider";
 import { Tokens } from "@/theme/tokens";
 import { Screen } from "@/components/Screen";
-import { api } from "@/lib/api";
+import { apiClient } from "@/lib/api";
 
 export default function SelectTimeScreen() {
   const router = useRouter();
@@ -42,7 +42,7 @@ export default function SelectTimeScreen() {
       if (!selectedBarber?.id || !selectedService?.id) {
         throw new Error('Missing barber or service');
       }
-      return api.availability.openSlots({
+      return apiClient.availability.openSlots({
         barberId: selectedBarber.id,
         serviceId: selectedService.id,
         date: formatDateForAPI(selectedDate),

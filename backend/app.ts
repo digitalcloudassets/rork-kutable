@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { cors } from 'hono/cors';
 import { getAdminClient } from './lib/supabase';
 
 // Import API handlers (only those with default exports)
@@ -26,6 +27,13 @@ import galleryDelete from './api/gallery/delete';
 import galleryUpload from './api/gallery/upload';
 
 const app = new Hono();
+
+// Allow mobile app to call API
+app.use('/*', cors({
+  origin: '*',
+  allowMethods: ['GET','POST','PUT','DELETE','OPTIONS'],
+  allowHeaders: ['Content-Type','Authorization'],
+}));
 
 // helper: base URL
 function baseUrlFrom(req: Request) {

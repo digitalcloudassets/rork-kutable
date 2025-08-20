@@ -12,7 +12,7 @@ import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { MapPin, Phone, Star, Clock, DollarSign, User } from "lucide-react-native";
 import { useQuery } from "@tanstack/react-query";
 import { Tokens } from "@/theme/tokens";
-import { api } from "@/lib/api";
+import { apiClient } from "@/lib/api";
 import { useBooking } from "@/providers/BookingProvider";
 import type { Service, GalleryItem } from "@/types/models";
 
@@ -23,7 +23,7 @@ export default function BarberProfileScreen() {
 
   const { data: barber, isLoading } = useQuery({
     queryKey: ["barber", id],
-    queryFn: () => api.barbers.profile({ barberId: id as string }),
+    queryFn: () => apiClient.barbers.profile({ barberId: id as string }),
   });
 
   const galleryItems = barber?.galleryTop || [];
