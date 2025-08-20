@@ -13,7 +13,8 @@ import { CreditCard, Lock, Check } from "lucide-react-native";
 import { useMutation } from "@tanstack/react-query";
 import { useBooking } from "@/providers/BookingProvider";
 import { useAuth } from "@/providers/AuthProvider";
-import { brandColors } from "@/config/brand";
+import { Tokens } from "@/theme/tokens";
+import { Screen } from "@/components/Screen";
 import { api } from "@/lib/api";
 
 export default function PaymentScreen() {
@@ -66,11 +67,12 @@ export default function PaymentScreen() {
   const totalAmount = (selectedService?.priceCents || 0) / 100;
 
   return (
-    <ScrollView style={styles.container}>
+    <Screen>
+      <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Payment</Text>
         <View style={styles.secureRow}>
-          <Lock size={14} color="#10B981" />
+          <Lock size={14} color={Tokens.success} />
           <Text style={styles.secureText}>Secure Payment via Stripe</Text>
         </View>
       </View>
@@ -96,7 +98,7 @@ export default function PaymentScreen() {
         
         <TouchableOpacity style={styles.paymentOption}>
           <View style={styles.paymentOptionLeft}>
-            <CreditCard size={20} color="#333" />
+            <CreditCard size={20} color={Tokens.text} />
             <View style={styles.paymentDetails}>
               <Text style={styles.paymentMethodName}>Credit/Debit Card</Text>
               <Text style={styles.paymentMethodDesc}>Powered by Stripe</Text>
@@ -111,15 +113,15 @@ export default function PaymentScreen() {
       <View style={styles.infoCard}>
         <Text style={styles.infoTitle}>Payment Protection</Text>
         <View style={styles.infoRow}>
-          <Check size={16} color="#10B981" />
+          <Check size={16} color={Tokens.success} />
           <Text style={styles.infoText}>Your payment is secure and encrypted</Text>
         </View>
         <View style={styles.infoRow}>
-          <Check size={16} color="#10B981" />
+          <Check size={16} color={Tokens.success} />
           <Text style={styles.infoText}>Free cancellation up to 24 hours before</Text>
         </View>
         <View style={styles.infoRow}>
-          <Check size={16} color="#10B981" />
+          <Check size={16} color={Tokens.success} />
           <Text style={styles.infoText}>Instant confirmation after payment</Text>
         </View>
       </View>
@@ -141,25 +143,25 @@ export default function PaymentScreen() {
           By completing this payment, you agree to our Terms of Service and Privacy Policy
         </Text>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
   },
   header: {
-    backgroundColor: "#fff",
+    backgroundColor: Tokens.surface,
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: Tokens.border,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#1a1a1a",
+    color: Tokens.text,
     marginBottom: 8,
   },
   secureRow: {
@@ -168,24 +170,21 @@ const styles = StyleSheet.create({
   },
   secureText: {
     fontSize: 13,
-    color: "#10B981",
+    color: Tokens.success,
     marginLeft: 6,
   },
   summaryCard: {
-    backgroundColor: "#fff",
+    backgroundColor: Tokens.surface,
     margin: 16,
     padding: 16,
     borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: Tokens.border,
   },
   summaryTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
+    color: Tokens.text,
     marginBottom: 16,
   },
   summaryRow: {
@@ -195,39 +194,41 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 14,
-    color: "#666",
+    color: Tokens.textMuted,
   },
   summaryValue: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#333",
+    color: Tokens.text,
   },
   divider: {
     height: 1,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: Tokens.border,
     marginVertical: 12,
   },
   totalLabel: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
+    color: Tokens.text,
   },
   totalValue: {
     fontSize: 18,
     fontWeight: "700",
-    color: brandColors.primary,
+    color: Tokens.accent,
   },
   paymentMethodCard: {
-    backgroundColor: "#fff",
+    backgroundColor: Tokens.surface,
     marginHorizontal: 16,
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: Tokens.border,
   },
   cardTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
+    color: Tokens.text,
     marginBottom: 16,
   },
   paymentOption: {
@@ -246,11 +247,11 @@ const styles = StyleSheet.create({
   paymentMethodName: {
     fontSize: 15,
     fontWeight: "500",
-    color: "#333",
+    color: Tokens.text,
   },
   paymentMethodDesc: {
     fontSize: 13,
-    color: "#666",
+    color: Tokens.textMuted,
     marginTop: 2,
   },
   radioOuter: {
@@ -258,7 +259,7 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: brandColors.primary,
+    borderColor: Tokens.accent,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -266,19 +267,21 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: brandColors.primary,
+    backgroundColor: Tokens.accent,
   },
   infoCard: {
-    backgroundColor: "#F0FDF4",
+    backgroundColor: Tokens.surface,
     marginHorizontal: 16,
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: Tokens.success + '40',
   },
   infoTitle: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#065F46",
+    color: Tokens.success,
     marginBottom: 12,
   },
   infoRow: {
@@ -288,7 +291,7 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 13,
-    color: "#065F46",
+    color: Tokens.text,
     marginLeft: 8,
     flex: 1,
   },
@@ -296,23 +299,23 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   payButton: {
-    backgroundColor: brandColors.primary,
+    backgroundColor: Tokens.accent,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: "center",
     marginBottom: 12,
   },
   disabledButton: {
-    backgroundColor: "#ccc",
+    backgroundColor: Tokens.textMuted,
   },
   payButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#fff",
+    color: "white",
   },
   disclaimer: {
     fontSize: 12,
-    color: "#999",
+    color: Tokens.textMuted,
     textAlign: "center",
     lineHeight: 18,
   },

@@ -11,7 +11,8 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { Clock, DollarSign, AlertCircle } from "lucide-react-native";
 import { useQuery } from "@tanstack/react-query";
 import { useBooking } from "@/providers/BookingProvider";
-import { brandColors } from "@/config/brand";
+import { Tokens } from "@/theme/tokens";
+import { Screen } from "@/components/Screen";
 import { api } from "@/lib/api";
 import type { Service } from "@/types/models";
 
@@ -39,25 +40,25 @@ export default function SelectServiceScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={brandColors.primary} />
+      <Screen style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={Tokens.accent} />
         <Text style={styles.loadingText}>Loading services...</Text>
-      </View>
+      </Screen>
     );
   }
 
   if (!barber) {
     return (
-      <View style={styles.errorContainer}>
-        <AlertCircle size={48} color="#ff6b6b" />
+      <Screen style={styles.errorContainer}>
+        <AlertCircle size={48} color={Tokens.error} />
         <Text style={styles.errorTitle}>Barber not found</Text>
         <Text style={styles.errorText}>Please try again</Text>
-      </View>
+      </Screen>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <Screen>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Select a Service</Text>
         <Text style={styles.headerSubtitle}>Book with {barber.name}</Text>
@@ -99,42 +100,34 @@ export default function SelectServiceScreen() {
           ))}
         </ScrollView>
       )}
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-  },
   loadingContainer: {
-    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f8f9fa",
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: "#666",
+    color: Tokens.textMuted,
   },
   errorContainer: {
-    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f8f9fa",
     paddingHorizontal: 32,
   },
   errorTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#333",
+    color: Tokens.text,
     marginTop: 12,
   },
   errorText: {
     fontSize: 14,
-    color: "#666",
+    color: Tokens.textMuted,
     marginTop: 4,
     textAlign: "center",
   },
@@ -147,44 +140,41 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#333",
+    color: Tokens.text,
     marginTop: 12,
   },
   emptyText: {
     fontSize: 14,
-    color: "#666",
+    color: Tokens.textMuted,
     marginTop: 4,
     textAlign: "center",
   },
   header: {
-    backgroundColor: "#fff",
+    backgroundColor: Tokens.surface,
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: Tokens.border,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#1a1a1a",
+    color: Tokens.text,
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: "#666",
+    color: Tokens.textMuted,
   },
   servicesList: {
     padding: 16,
   },
   serviceCard: {
-    backgroundColor: "#fff",
+    backgroundColor: Tokens.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: Tokens.border,
   },
   serviceInfo: {
     flex: 1,
@@ -192,12 +182,12 @@ const styles = StyleSheet.create({
   serviceName: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#333",
+    color: Tokens.text,
     marginBottom: 6,
   },
   serviceDescription: {
     fontSize: 14,
-    color: "#666",
+    color: Tokens.textMuted,
     marginBottom: 12,
     lineHeight: 20,
   },
@@ -211,7 +201,7 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 14,
-    color: "#666",
+    color: Tokens.textMuted,
     marginLeft: 6,
   },
 });

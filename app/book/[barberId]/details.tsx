@@ -12,7 +12,8 @@ import {
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useBooking } from "@/providers/BookingProvider";
 import { useAuth } from "@/providers/AuthProvider";
-import { brandColors } from "@/config/brand";
+import { Tokens } from "@/theme/tokens";
+import { Screen } from "@/components/Screen";
 
 export default function BookingDetailsScreen() {
   const router = useRouter();
@@ -33,10 +34,11 @@ export default function BookingDetailsScreen() {
   const isValid = name.trim() && phone.trim();
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
+    <Screen>
+      <KeyboardAvoidingView 
+        style={styles.container}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Your Details</Text>
@@ -144,49 +146,46 @@ export default function BookingDetailsScreen() {
           <Text style={styles.continueButtonText}>Continue to Payment</Text>
         </TouchableOpacity>
       </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
   },
   scrollView: {
     flex: 1,
   },
   header: {
-    backgroundColor: "#fff",
+    backgroundColor: Tokens.surface,
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: Tokens.border,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#1a1a1a",
+    color: Tokens.text,
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: "#666",
+    color: Tokens.textMuted,
   },
   summaryCard: {
-    backgroundColor: "#fff",
+    backgroundColor: Tokens.surface,
     margin: 16,
     padding: 16,
     borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: Tokens.border,
   },
   summaryTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
+    color: Tokens.text,
     marginBottom: 12,
   },
   summaryRow: {
@@ -196,28 +195,28 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 14,
-    color: "#666",
+    color: Tokens.textMuted,
   },
   summaryValue: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#333",
+    color: Tokens.text,
   },
   priceRow: {
     marginTop: 8,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
+    borderTopColor: Tokens.border,
   },
   priceLabel: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
+    color: Tokens.text,
   },
   priceValue: {
     fontSize: 18,
     fontWeight: "700",
-    color: brandColors.primary,
+    color: Tokens.accent,
   },
   form: {
     padding: 16,
@@ -228,41 +227,41 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#333",
+    color: Tokens.text,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: Tokens.surface,
     borderWidth: 1,
-    borderColor: "#e0e0e0",
+    borderColor: Tokens.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 16,
-    color: "#333",
+    color: Tokens.text,
   },
   textArea: {
     height: 80,
     textAlignVertical: "top",
   },
   footer: {
-    backgroundColor: "#fff",
+    backgroundColor: Tokens.surface,
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
+    borderTopColor: Tokens.border,
   },
   continueButton: {
-    backgroundColor: brandColors.primary,
+    backgroundColor: Tokens.accent,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: "center",
   },
   disabledButton: {
-    backgroundColor: "#ccc",
+    backgroundColor: Tokens.textMuted,
   },
   continueButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#fff",
+    color: "white",
   },
 });

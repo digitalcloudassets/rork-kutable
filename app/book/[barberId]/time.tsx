@@ -11,7 +11,8 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { Clock, AlertCircle } from "lucide-react-native";
 import { useQuery } from "@tanstack/react-query";
 import { useBooking } from "@/providers/BookingProvider";
-import { brandColors } from "@/config/brand";
+import { Tokens } from "@/theme/tokens";
+import { Screen } from "@/components/Screen";
 import { api } from "@/lib/api";
 
 export default function SelectTimeScreen() {
@@ -82,7 +83,7 @@ export default function SelectTimeScreen() {
   });
 
   return (
-    <View style={styles.container}>
+    <Screen>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Select Date & Time</Text>
         <Text style={styles.headerSubtitle}>
@@ -116,18 +117,18 @@ export default function SelectTimeScreen() {
         <Text style={styles.sectionTitle}>Available Times</Text>
         {isLoading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={brandColors.primary} />
+            <ActivityIndicator size="large" color={Tokens.accent} />
             <Text style={styles.loadingText}>Finding available times...</Text>
           </View>
         ) : error ? (
           <View style={styles.errorContainer}>
-            <AlertCircle size={48} color="#ff6b6b" />
+            <AlertCircle size={48} color={Tokens.error} />
             <Text style={styles.errorTitle}>Unable to load times</Text>
             <Text style={styles.errorText}>Please try selecting a different date</Text>
           </View>
         ) : availableSlots.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Clock size={48} color="#ccc" />
+            <Clock size={48} color={Tokens.textMuted} />
             <Text style={styles.emptyTitle}>No available times</Text>
             <Text style={styles.emptyText}>Please pick another date to see available slots</Text>
             <TouchableOpacity 
@@ -179,36 +180,32 @@ export default function SelectTimeScreen() {
           <Text style={styles.continueButtonText}>Continue</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-  },
   header: {
-    backgroundColor: "#fff",
+    backgroundColor: Tokens.surface,
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: Tokens.border,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#1a1a1a",
+    color: Tokens.text,
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: "#666",
+    color: Tokens.textMuted,
   },
   dateSelector: {
-    backgroundColor: "#fff",
+    backgroundColor: Tokens.surface,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: Tokens.border,
   },
   dateCard: {
     alignItems: "center",
@@ -216,24 +213,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginHorizontal: 6,
     borderRadius: 12,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: Tokens.bg,
+    borderWidth: 1,
+    borderColor: Tokens.border,
     minWidth: 60,
   },
   selectedDateCard: {
-    backgroundColor: brandColors.primary,
+    backgroundColor: Tokens.accent,
+    borderColor: Tokens.accent,
   },
   dayName: {
     fontSize: 12,
-    color: "#666",
+    color: Tokens.textMuted,
     marginBottom: 4,
   },
   dayNumber: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#333",
+    color: Tokens.text,
   },
   selectedDateText: {
-    color: "#fff",
+    color: "white",
   },
   timeSlotsContainer: {
     flex: 1,
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
+    color: Tokens.text,
     marginBottom: 12,
   },
   timeSlotsGrid: {
@@ -251,26 +251,26 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   timeSlot: {
-    backgroundColor: "#fff",
+    backgroundColor: Tokens.surface,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#e0e0e0",
+    borderColor: Tokens.border,
     minWidth: "30%",
     alignItems: "center",
   },
   selectedSlot: {
-    backgroundColor: brandColors.primary,
-    borderColor: brandColors.primary,
+    backgroundColor: Tokens.accent,
+    borderColor: Tokens.accent,
   },
   timeSlotText: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#333",
+    color: Tokens.text,
   },
   selectedSlotText: {
-    color: "#fff",
+    color: "white",
   },
   loadingContainer: {
     alignItems: "center",
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: "#666",
+    color: Tokens.textMuted,
   },
   errorContainer: {
     alignItems: "center",
@@ -288,12 +288,12 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#333",
+    color: Tokens.text,
     marginTop: 12,
   },
   errorText: {
     fontSize: 14,
-    color: "#666",
+    color: Tokens.textMuted,
     marginTop: 4,
     textAlign: "center",
   },
@@ -304,45 +304,45 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#333",
+    color: Tokens.text,
     marginTop: 12,
   },
   emptyText: {
     fontSize: 14,
-    color: "#666",
+    color: Tokens.textMuted,
     marginTop: 4,
     textAlign: "center",
     marginBottom: 20,
   },
   pickDateButton: {
-    backgroundColor: brandColors.primary,
+    backgroundColor: Tokens.accent,
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
   },
   pickDateButtonText: {
-    color: "#fff",
+    color: "white",
     fontSize: 14,
     fontWeight: "600",
   },
   footer: {
-    backgroundColor: "#fff",
+    backgroundColor: Tokens.surface,
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
+    borderTopColor: Tokens.border,
   },
   continueButton: {
-    backgroundColor: brandColors.primary,
+    backgroundColor: Tokens.accent,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: "center",
   },
   disabledButton: {
-    backgroundColor: "#ccc",
+    backgroundColor: Tokens.textMuted,
   },
   continueButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#fff",
+    color: "white",
   },
 });

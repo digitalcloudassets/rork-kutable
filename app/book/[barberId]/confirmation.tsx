@@ -10,7 +10,8 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { CheckCircle, Calendar, Clock, MapPin, User, Share2 } from "lucide-react-native";
-import { brandColors } from "@/config/brand";
+import { Tokens } from "@/theme/tokens";
+import { Screen } from "@/components/Screen";
 import { useBooking } from "@/providers/BookingProvider";
 import { addToCalendar, shareBooking, type BookingDetails } from "@/utils/calendarAndSharing";
 import { usePushNotifications } from "@/utils/usePushNotifications";
@@ -114,7 +115,8 @@ export default function ConfirmationScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <Screen>
+      <ScrollView style={styles.container}>
       <View style={styles.successContainer}>
         <Animated.View 
           style={[
@@ -125,7 +127,7 @@ export default function ConfirmationScreen() {
             }
           ]}
         >
-          <CheckCircle size={64} color="#10B981" />
+          <CheckCircle size={64} color={Tokens.success} />
         </Animated.View>
         <Animated.View style={{ opacity: fadeAnim }}>
           <Text style={styles.successTitle}>Booking Confirmed!</Text>
@@ -139,7 +141,7 @@ export default function ConfirmationScreen() {
         <Text style={styles.cardTitle}>Booking Details</Text>
         
         <View style={styles.detailRow}>
-          <User size={16} color="#666" />
+          <User size={16} color={Tokens.textMuted} />
           <View style={styles.detailContent}>
             <Text style={styles.detailLabel}>Service</Text>
             <Text style={styles.detailValue}>{selectedService?.name || 'Service'}</Text>
@@ -147,7 +149,7 @@ export default function ConfirmationScreen() {
         </View>
 
         <View style={styles.detailRow}>
-          <User size={16} color="#666" />
+          <User size={16} color={Tokens.textMuted} />
           <View style={styles.detailContent}>
             <Text style={styles.detailLabel}>Barber</Text>
             <Text style={styles.detailValue}>{selectedBarber?.name || 'Barber'}</Text>
@@ -155,7 +157,7 @@ export default function ConfirmationScreen() {
         </View>
 
         <View style={styles.detailRow}>
-          <Calendar size={16} color="#666" />
+          <Calendar size={16} color={Tokens.textMuted} />
           <View style={styles.detailContent}>
             <Text style={styles.detailLabel}>Date</Text>
             <Text style={styles.detailValue}>
@@ -165,7 +167,7 @@ export default function ConfirmationScreen() {
         </View>
 
         <View style={styles.detailRow}>
-          <Clock size={16} color="#666" />
+          <Clock size={16} color={Tokens.textMuted} />
           <View style={styles.detailContent}>
             <Text style={styles.detailLabel}>Time</Text>
             <Text style={styles.detailValue}>
@@ -175,7 +177,7 @@ export default function ConfirmationScreen() {
         </View>
 
         <View style={styles.detailRow}>
-          <MapPin size={16} color="#666" />
+          <MapPin size={16} color={Tokens.textMuted} />
           <View style={styles.detailContent}>
             <Text style={styles.detailLabel}>Location</Text>
             <Text style={styles.detailValue}>{selectedBarber?.shopName || 'Barbershop'}</Text>
@@ -216,9 +218,9 @@ export default function ConfirmationScreen() {
             disabled={isAddingToCalendar}
           >
             {isAddingToCalendar ? (
-              <ActivityIndicator size="small" color={brandColors.primary} />
+              <ActivityIndicator size="small" color={Tokens.accent} />
             ) : (
-              <Calendar size={20} color={brandColors.primary} />
+              <Calendar size={20} color={Tokens.accent} />
             )}
             <Text style={styles.actionButtonText}>Add to Calendar</Text>
           </TouchableOpacity>
@@ -229,27 +231,27 @@ export default function ConfirmationScreen() {
             disabled={isSharing}
           >
             {isSharing ? (
-              <ActivityIndicator size="small" color={brandColors.primary} />
+              <ActivityIndicator size="small" color={Tokens.accent} />
             ) : (
-              <Share2 size={20} color={brandColors.primary} />
+              <Share2 size={20} color={Tokens.accent} />
             )}
             <Text style={styles.actionButtonText}>Share</Text>
           </TouchableOpacity>
         </View>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
   },
   successContainer: {
     alignItems: "center",
     paddingVertical: 40,
-    backgroundColor: "#fff",
+    backgroundColor: Tokens.surface,
   },
   successIconContainer: {
     marginBottom: 16,
@@ -257,31 +259,28 @@ const styles = StyleSheet.create({
   successTitle: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#1a1a1a",
+    color: Tokens.text,
     marginTop: 16,
     marginBottom: 8,
   },
   successSubtitle: {
     fontSize: 16,
-    color: "#666",
+    color: Tokens.textMuted,
     textAlign: "center",
     paddingHorizontal: 32,
   },
   bookingCard: {
-    backgroundColor: "#fff",
+    backgroundColor: Tokens.surface,
     margin: 16,
     padding: 20,
     borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: Tokens.border,
   },
   cardTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#333",
+    color: Tokens.text,
     marginBottom: 20,
   },
   detailRow: {
@@ -294,35 +293,37 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 12,
-    color: "#999",
+    color: Tokens.textMuted,
     marginBottom: 2,
   },
   detailValue: {
     fontSize: 15,
     fontWeight: "500",
-    color: "#333",
+    color: Tokens.text,
   },
   detailAddress: {
     fontSize: 13,
-    color: "#666",
+    color: Tokens.textMuted,
     marginTop: 2,
   },
   reminderCard: {
-    backgroundColor: "#F0FDF4",
+    backgroundColor: Tokens.surface,
     marginHorizontal: 16,
     padding: 16,
     borderRadius: 12,
     marginBottom: 24,
+    borderWidth: 1,
+    borderColor: Tokens.success + '40',
   },
   reminderTitle: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#065F46",
+    color: Tokens.success,
     marginBottom: 12,
   },
   reminderText: {
     fontSize: 13,
-    color: "#065F46",
+    color: Tokens.text,
     marginBottom: 6,
     lineHeight: 18,
   },
@@ -330,7 +331,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   doneButton: {
-    backgroundColor: brandColors.primary,
+    backgroundColor: Tokens.accent,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: "center",
@@ -339,7 +340,7 @@ const styles = StyleSheet.create({
   doneButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#fff",
+    color: "white",
   },
   actionButtons: {
     flexDirection: "row",
@@ -353,8 +354,8 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: brandColors.primary,
-    backgroundColor: "#fff",
+    borderColor: Tokens.accent,
+    backgroundColor: Tokens.surface,
   },
   actionButtonDisabled: {
     opacity: 0.6,
@@ -362,7 +363,7 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 16,
     fontWeight: "500",
-    color: brandColors.primary,
+    color: Tokens.accent,
     marginLeft: 8,
   },
 });
