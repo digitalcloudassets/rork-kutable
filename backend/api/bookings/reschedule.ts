@@ -20,21 +20,25 @@ export default async function handler(req: any, res: any) {
       .from('bookings')
       .select(`
         *,
-        services!inner(duration_minutes)
+        services!inner(duration_minutes),
+        barbers!inner(user_id)
       `)
       .eq('id', bookingId)
       .single();
 
     if (fetchError || !bookingWithService) {
+      console.error('Error fetching booking:', fetchError);
       return res.status(404).json({ error: 'Booking not found' });
     }
 
     const booking = bookingWithService;
     const serviceDuration = booking.services.duration_minutes;
 
-    // Check if user has permission to reschedule (barber owner or client)
-    const canReschedule = booking.barber_id === userId || booking.client_user_id === userId;
-    if (!canReschedule) {
+    // Check if user is authorized to reschedule (either the client or the barber)
+    const isClient = booking.client_user_id === userId;
+    const isBarber = booking.barbers?.user_id === userId;
+    
+    if (!isClient && !isBarber) {
       return res.status(403).json({ error: 'Not authorized to reschedule this booking' });
     }
 

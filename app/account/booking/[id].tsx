@@ -6,7 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  SafeAreaView,
+  Modal,
 } from "react-native";
 import {
   Calendar,
@@ -14,19 +14,153 @@ import {
   MapPin,
   Phone,
   MessageSquare,
-  Share,
+  Share2,
   X,
   CalendarPlus,
+  Edit3,
+  XCircle,
 } from "lucide-react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams, Stack } from "expo-router";
-import { brandColors } from "@/config/brand";
+import { brandColors, BRAND } from "@/config/brand";
+import { Tokens } from "@/theme/tokens";
+import { Screen } from "@/components/Screen";
 import { api } from "@/lib/api";
 import { useAuth } from "@/providers/AuthProvider";
 import type { Booking } from "@/types/models";
 import { formatDate, formatTime } from "@/utils/dateHelpers";
 import { addToCalendar, shareBooking, type BookingDetails } from "@/utils/calendarAndSharing";
-import { ErrorState } from "@/components/ErrorState";
+import { EmptyState } from "@/components/EmptyState";
+
+interface RescheduleModalProps {
+  visible: boolean;
+  booking: Booking | null;
+  onClose: () => void;
+  onReschedule: (bookingId: string, newStartISO: string) => void;
+}
+
+function RescheduleModal({ visible, booking, onClose, onReschedule }: RescheduleModalProps) {
+  const [selectedDate, setSelectedDate] = useState<string>("");
+  const [selectedSlot, setSelectedSlot] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const { data: slots } = useQuery({
+    queryKey: ["openSlots", booking?.barberId, booking?.serviceId, selectedDate, booking],
+    queryFn: () => {
+      if (!booking || !selectedDate) return { slots: [] };
+      return api.availability.openSlots({
+        barberId: booking.barberId,
+        serviceId: booking.serviceId,
+        date: selectedDate,
+      });
+    },
+    enabled: !!booking && !!selectedDate,
+  });
+
+  const handleReschedule = async () => {
+    if (!booking || !selectedSlot) return;
+    
+    setIsLoading(true);
+    try {
+      await onReschedule(booking.id, selectedSlot);
+      onClose();
+    } catch (error) {
+      console.error('Error rescheduling:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const generateDateOptions = () => {
+    const dates = [];
+    const today = new Date();
+    for (let i = 1; i <= 14; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      dates.push(date.toISOString().split('T')[0]);
+    }
+    return dates;
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
+      <View style={styles.modalContainer}>
+        <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle}>Reschedule Appointment</Text>
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <X size={24} color={BRAND.TEXT_SECONDARY} />
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView style={styles.modalContent}>
+          <Text style={styles.sectionTitle}>Select New Date</Text>
+          <View style={styles.dateGrid}>
+            {generateDateOptions().map((date) => {
+              const dateObj = new Date(date);
+              const isSelected = selectedDate === date;
+              return (
+                <TouchableOpacity
+                  key={date}
+                  style={[styles.dateOption, isSelected && styles.selectedDateOption]}
+                  onPress={() => {
+                    setSelectedDate(date);
+                    setSelectedSlot("");
+                  }}
+                >
+                  <Text style={[styles.dateOptionText, isSelected && styles.selectedDateOptionText]}>
+                    {dateObj.toLocaleDateString('en-US', { weekday: 'short' })}
+                  </Text>
+                  <Text style={[styles.dateOptionDate, isSelected && styles.selectedDateOptionText]}>
+                    {dateObj.getDate()}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {selectedDate && (
+            <>
+              <Text style={styles.sectionTitle}>Available Times</Text>
+              <View style={styles.slotsGrid}>
+                {slots?.slots?.map((slot: string) => {
+                  const slotTime = new Date(slot);
+                  const isSelected = selectedSlot === slot;
+                  return (
+                    <TouchableOpacity
+                      key={slot}
+                      style={[styles.slotOption, isSelected && styles.selectedSlotOption]}
+                      onPress={() => setSelectedSlot(slot)}
+                    >
+                      <Text style={[styles.slotOptionText, isSelected && styles.selectedSlotOptionText]}>
+                        {slotTime.toLocaleTimeString('en-US', {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true,
+                        })}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </>
+          )}
+        </ScrollView>
+
+        <View style={styles.modalFooter}>
+          <TouchableOpacity
+            style={[styles.rescheduleButton, (!selectedSlot || isLoading) && styles.disabledButton]}
+            onPress={handleReschedule}
+            disabled={!selectedSlot || isLoading}
+          >
+            <Text style={styles.rescheduleButtonText}>
+              {isLoading ? "Rescheduling..." : "Confirm Reschedule"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
 
 export default function BookingDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -34,6 +168,7 @@ export default function BookingDetailsScreen() {
   const queryClient = useQueryClient();
   const [isAddingToCalendar, setIsAddingToCalendar] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const [rescheduleModal, setRescheduleModal] = useState<{ visible: boolean; booking: Booking | null }>({ visible: false, booking: null });
 
   // Get booking from cache or fetch it
   const { data: bookings } = useQuery({
@@ -95,11 +230,25 @@ export default function BookingDetailsScreen() {
     );
   };
 
+  const rescheduleMutation = useMutation({
+    mutationFn: ({ bookingId, newStartISO }: { bookingId: string; newStartISO: string }) => 
+      api.bookings.reschedule({ bookingId, newStartISO, userId: user?.id || "" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookings", user?.id] });
+      Alert.alert("Success", "Booking rescheduled successfully");
+    },
+    onError: (error: Error) => {
+      Alert.alert("Error", error.message || "Failed to reschedule booking");
+    },
+  });
+
   const handleReschedule = () => {
     if (!booking) return;
-    // Navigate back to bookings with reschedule modal
-    router.back();
-    // Note: In a real implementation, you might want to pass parameters to open the reschedule modal
+    setRescheduleModal({ visible: true, booking });
+  };
+
+  const onReschedule = async (bookingId: string, newStartISO: string) => {
+    await rescheduleMutation.mutateAsync({ bookingId, newStartISO });
   };
 
   const handleAddToCalendar = async () => {
@@ -150,15 +299,17 @@ export default function BookingDetailsScreen() {
 
   if (!booking) {
     return (
-      <SafeAreaView style={styles.container}>
+      <Screen>
         <Stack.Screen options={{ title: "Booking Details" }} />
-        <ErrorState
-          title="Booking Not Found"
-          message="The booking you're looking for could not be found."
-          onRetry={() => router.back()}
+        <EmptyState
+          icon={Calendar}
+          title="Booking not found"
+          description="This booking may have been deleted or you don't have access to it."
+          actionLabel="Go Back"
+          onAction={() => router.back()}
           testID="booking-not-found"
         />
-      </SafeAreaView>
+      </Screen>
     );
   }
 
@@ -168,17 +319,8 @@ export default function BookingDetailsScreen() {
   const canModify = isUpcoming && (booking.status === "confirmed" || booking.status === "pending");
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Stack.Screen 
-        options={{ 
-          title: "Booking Details",
-          headerRight: () => (
-            <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
-              <X size={24} color="#666" />
-            </TouchableOpacity>
-          ),
-        }} 
-      />
+    <Screen>
+      <Stack.Screen options={{ title: "Booking Details" }} />
       
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Status Header */}
@@ -265,7 +407,7 @@ export default function BookingDetailsScreen() {
             disabled={isSharing}
             testID="share-button"
           >
-            <Share size={20} color={brandColors.primary} />
+            <Share2 size={20} color={brandColors.primary} />
             <Text style={styles.actionButtonText}>
               {isSharing ? "Sharing..." : "Share"}
             </Text>
@@ -280,9 +422,13 @@ export default function BookingDetailsScreen() {
               <TouchableOpacity 
                 style={styles.rescheduleButton}
                 onPress={handleReschedule}
+                disabled={rescheduleMutation.isPending}
                 testID="reschedule-detail-button"
               >
-                <Text style={styles.rescheduleButtonText}>Reschedule</Text>
+                <Edit3 size={20} color="#fff" />
+                <Text style={styles.rescheduleButtonText}>
+                  {rescheduleMutation.isPending ? "Rescheduling..." : "Reschedule"}
+                </Text>
               </TouchableOpacity>
               
               <TouchableOpacity 
@@ -291,6 +437,7 @@ export default function BookingDetailsScreen() {
                 disabled={cancelMutation.isPending}
                 testID="cancel-detail-button"
               >
+                <XCircle size={20} color="#EF4444" />
                 <Text style={styles.cancelButtonText}>
                   {cancelMutation.isPending ? "Cancelling..." : "Cancel Booking"}
                 </Text>
@@ -299,18 +446,18 @@ export default function BookingDetailsScreen() {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+      
+      <RescheduleModal
+        visible={rescheduleModal.visible}
+        booking={rescheduleModal.booking}
+        onClose={() => setRescheduleModal({ visible: false, booking: null })}
+        onReschedule={onReschedule}
+      />
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f8f9fa",
-  },
-  headerButton: {
-    padding: 8,
-  },
   scrollView: {
     flex: 1,
   },
@@ -445,10 +592,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   rescheduleButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: brandColors.primary,
     paddingVertical: 14,
     borderRadius: 8,
-    alignItems: "center",
+    gap: 8,
   },
   rescheduleButtonText: {
     fontSize: 16,
@@ -456,16 +606,117 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   cancelButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: "#fff",
     borderWidth: 1,
     borderColor: "#EF4444",
     paddingVertical: 14,
     borderRadius: 8,
-    alignItems: "center",
+    gap: 8,
   },
   cancelButtonText: {
     fontSize: 16,
     fontWeight: "600",
     color: "#EF4444",
+  },
+
+  // Modal styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: Tokens.bg,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Tokens.border,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: Tokens.text,
+  },
+  closeButton: {
+    padding: 8,
+  },
+  modalContent: {
+    flex: 1,
+    padding: 16,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: Tokens.text,
+    marginBottom: 12,
+    marginTop: 16,
+  },
+  dateGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 16,
+  },
+  dateOption: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Tokens.surface,
+  },
+  selectedDateOption: {
+    backgroundColor: brandColors.primary,
+    borderColor: brandColors.primary,
+  },
+  dateOptionText: {
+    fontSize: 12,
+    color: "#666",
+    marginBottom: 2,
+  },
+  dateOptionDate: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: Tokens.text,
+  },
+  selectedDateOptionText: {
+    color: "#fff",
+  },
+  slotsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  slotOption: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    backgroundColor: Tokens.surface,
+  },
+  selectedSlotOption: {
+    backgroundColor: brandColors.primary,
+    borderColor: brandColors.primary,
+  },
+  slotOptionText: {
+    fontSize: 14,
+    color: Tokens.text,
+  },
+  selectedSlotOptionText: {
+    color: "#fff",
+  },
+  modalFooter: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: Tokens.border,
+  },
+  disabledButton: {
+    backgroundColor: "#ccc",
   },
 });

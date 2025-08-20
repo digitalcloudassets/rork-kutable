@@ -15,20 +15,26 @@ export default async function handler(req: any, res: any) {
 
     const supabase = getAdminClient();
 
-    // First, get the booking to validate ownership and status
+    // First, fetch the booking to verify ownership and status
     const { data: booking, error: fetchError } = await supabase
       .from('bookings')
-      .select('*')
+      .select(`
+        *,
+        barbers!inner(user_id)
+      `)
       .eq('id', bookingId)
       .single();
 
     if (fetchError || !booking) {
+      console.error('Error fetching booking:', fetchError);
       return res.status(404).json({ error: 'Booking not found' });
     }
 
-    // Check if user has permission to cancel (barber owner or client)
-    const canCancel = booking.barber_id === userId || booking.client_user_id === userId;
-    if (!canCancel) {
+    // Check if user is authorized to cancel (either the client or the barber)
+    const isClient = booking.client_user_id === userId;
+    const isBarber = booking.barbers?.user_id === userId;
+    
+    if (!isClient && !isBarber) {
       return res.status(403).json({ error: 'Not authorized to cancel this booking' });
     }
 
