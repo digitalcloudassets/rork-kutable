@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { Camera, Save } from "lucide-react-native";
-import * as ImagePicker from "expo-image-picker";
+import { pickAndUploadAvatar } from "@/lib/uploadAvatar";
 import { useAuth } from "@/providers/AuthProvider";
 import { supabase } from "@/lib/supabaseClient";
 import { Tokens } from "@/theme/tokens";
@@ -105,66 +105,28 @@ export default function EditProfileScreen() {
 
 
   const pickImage = async () => {
-    try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert(
-          "Permission Required",
-          "Sorry, we need camera roll permissions to change your profile photo."
-        );
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        await uploadImage(result.assets[0].uri);
-      }
-    } catch (error) {
-      console.error("Error picking image:", error);
-      Alert.alert("Error", "Failed to pick image. Please try again.");
-    }
-  };
-
-  const uploadImage = async (uri: string) => {
     if (!user?.id) return;
-
+    
     setUploading(true);
     try {
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      const arrayBuffer = await blob.arrayBuffer();
-      const fileExt = uri.split(".").pop()?.toLowerCase() || "jpg";
-      const fileName = `avatars/${user.id}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("barber-media")
-        .upload(fileName, arrayBuffer, {
-          contentType: `image/${fileExt}`,
-          upsert: true,
-        });
-
-      if (uploadError) {
-        throw uploadError;
+      const publicUrl = await pickAndUploadAvatar(user.id);
+      if (publicUrl) {
+        setProfile(prev => ({ ...prev, photo_url: publicUrl }));
       }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from("barber-media")
-        .getPublicUrl(fileName);
-
-      setProfile(prev => ({ ...prev, photo_url: publicUrl }));
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      Alert.alert("Error", "Failed to upload image. Please try again.");
+    } catch (error: any) {
+      console.error("Error uploading avatar:", error);
+      Alert.alert(
+        "Error", 
+        error.message === 'Permission required' 
+          ? "Camera roll permission is required to change your profile photo."
+          : "Failed to upload image. Please try again."
+      );
     } finally {
       setUploading(false);
     }
   };
+
+
 
   const saveProfile = async () => {
     if (!user?.id) return;
