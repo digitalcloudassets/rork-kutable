@@ -1,11 +1,13 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { BookingProvider } from "@/providers/BookingProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { BRAND } from "@/config/brand";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -43,7 +45,8 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <GestureHandlerRootView style={{ flex: 1 }}>
+        <GestureHandlerRootView style={{ flex: 1, backgroundColor: BRAND.BG_DARK }}>
+          <StatusBar style="light" backgroundColor={BRAND.BG_DARK} translucent={false} />
           <AuthProvider>
             <BookingProvider>
               <RootLayoutNav />

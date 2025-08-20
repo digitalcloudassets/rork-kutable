@@ -1,19 +1,29 @@
+export const BRAND = {
+  APP_NAME: "Kutable",
+  ACCENT: "#7C5CFF",
+  BG_DARK: "#0E1117",
+  SURFACE_DARK: "#151A21",
+  TEXT_PRIMARY: "#F7F8FA",
+  TEXT_SECONDARY: "#A6AEBC",
+};
+
+// Legacy colors for backward compatibility
 export const brandColors = {
-  primary: "#FF6B35",
-  primaryLight: "#FFE5DC",
+  primary: BRAND.ACCENT,
+  primaryLight: "#E5DCFF",
   secondary: "#004E89",
-  accent: "#A8DADC",
+  accent: BRAND.ACCENT,
   success: "#10B981",
   warning: "#F59E0B",
   error: "#EF4444",
-  text: "#1a1a1a",
-  textLight: "#666666",
-  background: "#f8f9fa",
+  text: BRAND.TEXT_PRIMARY,
+  textLight: BRAND.TEXT_SECONDARY,
+  background: BRAND.BG_DARK,
   white: "#ffffff",
 };
 
 export const brandConfig = {
-  name: "Kutable",
+  name: BRAND.APP_NAME,
   tagline: "Book Your Perfect Cut",
   logo: "https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/4jo70wqigtgig4k3qgayd",
 };

@@ -15,7 +15,7 @@ import { Stack, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/providers/AuthProvider';
-import { brandConfig } from '@/config/brand';
+import { brandConfig, BRAND } from '@/config/brand';
 import type { User } from '@/types/models';
 
 export default function ClientSignInScreen() {
@@ -163,7 +163,7 @@ export default function ClientSignInScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: BRAND.BG_DARK,
   },
   keyboardView: {
     flex: 1,
@@ -187,13 +187,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold' as const,
-    color: '#1a1a1a',
+    color: BRAND.TEXT_PRIMARY,
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: BRAND.TEXT_SECONDARY,
     textAlign: 'center',
     marginBottom: 32,
   },
@@ -206,19 +206,20 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600' as const,
-    color: '#1a1a1a',
+    color: BRAND.TEXT_PRIMARY,
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#202633',
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: BRAND.SURFACE_DARK,
+    color: BRAND.TEXT_PRIMARY,
   },
   signInButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: BRAND.ACCENT,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -239,11 +240,11 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 16,
-    color: '#666',
+    color: BRAND.TEXT_SECONDARY,
   },
   linkText: {
     fontSize: 16,
-    color: '#007AFF',
+    color: BRAND.ACCENT,
     fontWeight: '600' as const,
   },
 });

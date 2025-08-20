@@ -8,19 +8,15 @@ import {
 } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Scissors, Users } from 'lucide-react-native';
-import { brandConfig } from '@/config/brand';
+import { brandConfig, BRAND } from '@/config/brand';
 
 export default function WelcomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
       
-      <LinearGradient
-        colors={['#007AFF', '#5856D6']}
-        style={styles.gradient}
-      >
+      <View style={styles.background}>
         <View style={styles.content}>
           <View style={styles.header}>
             <View style={styles.logoContainer}>
@@ -43,7 +39,7 @@ export default function WelcomeScreen() {
               testID="client-signup-button"
             >
               <View style={styles.buttonContent}>
-                <Users size={24} color="#007AFF" />
+                <Users size={24} color={BRAND.ACCENT} />
                 <View style={styles.buttonText}>
                   <Text style={styles.buttonTitle}>I&apos;m a Client</Text>
                   <Text style={styles.buttonSubtitle}>Book appointments</Text>
@@ -79,7 +75,7 @@ export default function WelcomeScreen() {
             </View>
           </View>
         </View>
-      </LinearGradient>
+      </View>
     </SafeAreaView>
   );
 }
@@ -88,8 +84,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  gradient: {
+  background: {
     flex: 1,
+    backgroundColor: BRAND.BG_DARK,
   },
   content: {
     flex: 1,
@@ -104,7 +101,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: BRAND.SURFACE_DARK,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
@@ -117,12 +114,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold' as const,
-    color: '#fff',
+    color: BRAND.TEXT_PRIMARY,
     marginBottom: 12,
   },
   subtitle: {
     fontSize: 18,
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: BRAND.TEXT_SECONDARY,
     textAlign: 'center',
     lineHeight: 24,
   },
@@ -130,21 +127,16 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   clientButton: {
-    backgroundColor: '#fff',
+    backgroundColor: BRAND.SURFACE_DARK,
     borderRadius: 16,
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#202633',
   },
   barberButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: BRAND.ACCENT,
     borderRadius: 16,
     padding: 20,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   buttonContent: {
     flexDirection: 'row',
@@ -157,12 +149,12 @@ const styles = StyleSheet.create({
   buttonTitle: {
     fontSize: 18,
     fontWeight: '600' as const,
-    color: '#1a1a1a',
+    color: BRAND.TEXT_PRIMARY,
     marginBottom: 4,
   },
   buttonSubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: BRAND.TEXT_SECONDARY,
   },
   barberButtonTitle: {
     fontSize: 18,
@@ -172,7 +164,7 @@ const styles = StyleSheet.create({
   },
   barberButtonSubtitle: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: 'rgba(255, 255, 255, 0.9)',
   },
   footer: {
     alignItems: 'center',
@@ -180,7 +172,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: BRAND.TEXT_SECONDARY,
     marginBottom: 12,
   },
   signInLinks: {
@@ -189,11 +181,11 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontSize: 16,
-    color: '#fff',
+    color: BRAND.TEXT_PRIMARY,
     fontWeight: '600' as const,
   },
   separator: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: BRAND.TEXT_SECONDARY,
   },
 });
