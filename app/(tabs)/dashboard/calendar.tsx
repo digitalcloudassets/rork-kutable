@@ -3,7 +3,7 @@ import { View, Text, ActivityIndicator, ScrollView, TouchableOpacity, RefreshCon
 import dayjs from 'dayjs';
 import { Screen } from '@/components/Screen';
 import { Tokens } from '@/theme/tokens';
-import { api } from '@/lib/api';
+import { apiClient } from '@/lib/api';
 import { getUserId } from '@/lib/session';
 
 type Block = { id: string; start_utc: string; end_utc: string; reason?: string };
@@ -20,7 +20,7 @@ export default function CalendarAvailability() {
     try {
       const uid = await getUserId();
       if (!uid) throw new Error('Not signed in');
-      const data = await api.availability.list({ 
+      const data = await apiClient.availability.list({ 
         barberId: uid, 
         startISO: start, 
         endISO: end 

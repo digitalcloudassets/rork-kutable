@@ -16,7 +16,7 @@ import { FlashList } from '@shopify/flash-list';
 import { Plus, Edit3, Trash2, DollarSign, Clock } from 'lucide-react-native';
 import { Screen } from '@/components/Screen';
 import { Tokens } from '@/theme/tokens';
-import { api } from '@/lib/api';
+import { apiClient } from '@/lib/api';
 import { getUserId } from '@/lib/session';
 import type { Service } from '@/types/models';
 
@@ -56,7 +56,7 @@ export default function ServicesScreen() {
       setLoading(true);
       const uid = await getUserId();
       if (!uid) throw new Error('Not signed in');
-      const servicesList = await api.services.list({ barberId: uid });
+      const servicesList = await apiClient.services.list({ barberId: uid });
       setServices(servicesList);
     } catch (error) {
       console.error('Failed to load services:', error);
@@ -115,7 +115,7 @@ export default function ServicesScreen() {
 
       const uid = await getUserId();
       if (!uid) throw new Error('Not signed in');
-      const savedService = await api.services.upsert({ barberId: uid, service: serviceData });
+      const savedService = await apiClient.services.upsert({ barberId: uid, service: serviceData });
       
       if (editingService) {
         setServices(prev => prev.map(s => s.id === savedService.id ? savedService : s));
@@ -147,7 +147,7 @@ export default function ServicesScreen() {
             try {
               const uid = await getUserId();
               if (!uid) throw new Error('Not signed in');
-              await api.services.delete({ barberId: uid, serviceId: service.id });
+              await apiClient.services.delete({ barberId: uid, serviceId: service.id });
               setServices(prev => prev.filter(s => s.id !== service.id));
               console.log('Service deleted successfully');
             } catch (error) {

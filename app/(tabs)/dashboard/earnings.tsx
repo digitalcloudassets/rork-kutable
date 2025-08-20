@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,33 +6,33 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  Alert,
+  ActivityIndicator,
 } from 'react-native';
-import { Stack } from 'expo-router';
 import { DollarSign, TrendingUp, Clock, CheckCircle, AlertCircle, ExternalLink } from 'lucide-react-native';
-import { useAuth } from '@/providers/AuthProvider';
 import { Screen } from '@/components/Screen';
 import { Tokens } from '@/theme/tokens';
+import { apiClient } from '@/lib/api';
+import { getUserId } from '@/lib/session';
 
 interface EarningsSummary {
-  grossCents: number;
-  feesCents: number;
-  netCents: number;
+  gross: number;
+  fees: number;
+  net: number;
   range?: string;
 }
 
 interface Payout {
   id: string;
-  amountCents: number;
-  status: 'pending' | 'in_transit' | 'paid' | 'failed' | 'canceled';
-  arrivalDateISO: string;
-  createdAtISO: string;
+  amount: number;
+  status: 'pending' | 'in_transit' | 'paid' | 'failed' | 'canceled' | 'completed';
+  date: string;
+  arrivalDate?: string;
 }
 
 type TimeRange = 'today' | 'week' | 'month';
 
 const formatCurrency = (cents: number): string => {
-  return `$${(cents / 100).toFixed(2)}`;
+  return `${(cents / 100).toFixed(2)}`;
 };
 
 const formatDate = (isoString: string): string => {
@@ -47,17 +47,18 @@ const formatDate = (isoString: string): string => {
 const getStatusColor = (status: Payout['status']): string => {
   switch (status) {
     case 'paid':
-      return '#10B981';
+    case 'completed':
+      return Tokens.success;
     case 'in_transit':
-      return '#F59E0B';
+      return Tokens.warning;
     case 'pending':
-      return '#6B7280';
+      return Tokens.textMuted;
     case 'failed':
-      return '#EF4444';
+      return Tokens.error;
     case 'canceled':
-      return '#6B7280';
+      return Tokens.textMuted;
     default:
-      return '#6B7280';
+      return Tokens.textMuted;
   }
 };
 
@@ -67,6 +68,7 @@ const getStatusIcon = (status: Payout['status']) => {
   
   switch (status) {
     case 'paid':
+    case 'completed':
       return <CheckCircle size={size} color={color} />;
     case 'in_transit':
       return <Clock size={size} color={color} />;
@@ -81,151 +83,54 @@ const getStatusIcon = (status: Payout['status']) => {
 };
 
 export default function EarningsScreen() {
-  const { user } = useAuth();
-  const [selectedRange, setSelectedRange] = useState<TimeRange>('week');
+  const [selectedRange, setSelectedRange] = useState<TimeRange>('month');
   const [earnings, setEarnings] = useState<EarningsSummary>({
-    grossCents: 0,
-    feesCents: 0,
-    netCents: 0,
+    gross: 0,
+    fees: 0,
+    net: 0,
   });
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchEarnings = async (range: TimeRange) => {
-    if (!user?.id) return;
-
-    const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
-    if (!backendUrl) {
-      console.warn('Backend URL not configured, using mock earnings data');
-      const mockData = {
-        today: { grossCents: 8500, feesCents: 500, netCents: 8000 },
-        week: { grossCents: 125000, feesCents: 7500, netCents: 117500 },
-        month: { grossCents: 542000, feesCents: 32500, netCents: 509500 },
-      };
-      setEarnings(mockData[range] || mockData.month);
-      return;
-    }
-
+  const fetchEarnings = useCallback(async (range: TimeRange) => {
     try {
-      const response = await fetch(
-        `${backendUrl}/api/earnings/summary?barberId=${user.id}&range=${range}`
-      );
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Earnings API error:', response.status, errorText);
-        throw new Error(`Failed to fetch earnings: ${response.status}`);
-      }
-      
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        console.error('Non-JSON response from earnings API:', text.substring(0, 200));
-        throw new Error('Server returned invalid response format');
-      }
-      
-      const data = await response.json();
-      console.log(`Live earnings data for ${range}:`, data);
+      const uid = await getUserId();
+      if (!uid) throw new Error('Not signed in');
+      const data = await apiClient.earnings.summary({ barberId: uid, range });
       setEarnings(data);
     } catch (error) {
-      console.error('Error fetching earnings summary:', error);
-      // Fallback to mock data
-      const mockData = {
-        today: { grossCents: 8500, feesCents: 500, netCents: 8000 },
-        week: { grossCents: 125000, feesCents: 7500, netCents: 117500 },
-        month: { grossCents: 542000, feesCents: 32500, netCents: 509500 },
-      };
-      setEarnings(mockData[range] || mockData.month);
-      console.warn('Using fallback earnings data due to API error');
+      console.error('Failed to load earnings:', error);
+      setEarnings({ gross: 0, fees: 0, net: 0 });
     }
-  };
+  }, []);
 
-  const fetchPayouts = async () => {
-    if (!user?.id) return;
-
-    const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
-    if (!backendUrl) {
-      console.warn('Backend URL not configured, using mock payouts data');
-      const mockPayouts = [
-        {
-          id: '1',
-          amountCents: 117500,
-          status: 'paid' as const,
-          arrivalDateISO: '2024-03-10T00:00:00Z',
-          createdAtISO: '2024-03-08T00:00:00Z',
-        },
-        {
-          id: '2',
-          amountCents: 98000,
-          status: 'paid' as const,
-          arrivalDateISO: '2024-03-03T00:00:00Z',
-          createdAtISO: '2024-03-01T00:00:00Z',
-        },
-      ];
-      setPayouts(mockPayouts);
-      return;
-    }
-
+  const fetchPayouts = useCallback(async () => {
     try {
-      const response = await fetch(
-        `${backendUrl}/api/payouts/list?barberId=${user.id}`
-      );
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Payouts API error:', response.status, errorText);
-        throw new Error(`Failed to fetch payouts: ${response.status}`);
-      }
-      
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        console.error('Non-JSON response from payouts API:', text.substring(0, 200));
-        throw new Error('Server returned invalid response format');
-      }
-      
-      const data = await response.json();
-      console.log(`Live payouts data:`, data.payouts?.length || 0, 'payouts');
-      setPayouts(data.payouts || []);
+      const uid = await getUserId();
+      if (!uid) throw new Error('Not signed in');
+      const data = await apiClient.payouts.list({ barberId: uid });
+      setPayouts(data);
     } catch (error) {
-      console.error('Error fetching payouts:', error);
-      // Fallback to mock data
-      const mockPayouts = [
-        {
-          id: '1',
-          amountCents: 117500,
-          status: 'paid' as const,
-          arrivalDateISO: '2024-03-10T00:00:00Z',
-          createdAtISO: '2024-03-08T00:00:00Z',
-        },
-        {
-          id: '2',
-          amountCents: 98000,
-          status: 'paid' as const,
-          arrivalDateISO: '2024-03-03T00:00:00Z',
-          createdAtISO: '2024-03-01T00:00:00Z',
-        },
-      ];
-      setPayouts(mockPayouts);
-      console.warn('Using fallback payouts data due to API error');
+      console.error('Failed to load payouts:', error);
+      setPayouts([]);
     }
-  };
+  }, []);
 
-  const loadData = async (range: TimeRange = selectedRange) => {
+  const loadData = useCallback(async (range: TimeRange = selectedRange) => {
     setLoading(true);
     await Promise.all([
       fetchEarnings(range),
       fetchPayouts(),
     ]);
     setLoading(false);
-  };
+  }, [selectedRange, fetchEarnings, fetchPayouts]);
 
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     await loadData();
     setRefreshing(false);
-  };
+  }, [loadData]);
 
   const handleRangeChange = (range: TimeRange) => {
     setSelectedRange(range);
@@ -234,7 +139,7 @@ export default function EarningsScreen() {
 
   useEffect(() => {
     loadData();
-  }, [user?.id]);
+  }, [loadData]);
 
   const getRangeLabel = (range: TimeRange): string => {
     switch (range) {
@@ -247,9 +152,19 @@ export default function EarningsScreen() {
     }
   };
 
+  if (loading) {
+    return (
+      <Screen>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Tokens.accent} />
+          <Text style={styles.loadingText}>Loading earnings...</Text>
+        </View>
+      </Screen>
+    );
+  }
+
   return (
     <Screen>
-      <Stack.Screen options={{ title: 'Earnings' }} />
       
       <ScrollView
         style={styles.scrollView}
@@ -284,21 +199,21 @@ export default function EarningsScreen() {
         <View style={styles.summaryContainer}>
           <View style={styles.summaryCard}>
             <View style={styles.summaryHeader}>
-              <DollarSign size={24} color="#10B981" />
+              <DollarSign size={24} color={Tokens.success} />
               <Text style={styles.summaryTitle}>Gross Revenue</Text>
             </View>
             <Text style={styles.summaryAmount}>
-              {formatCurrency(earnings.grossCents)}
+              {formatCurrency(earnings.gross)}
             </Text>
           </View>
 
           <View style={styles.summaryCard}>
             <View style={styles.summaryHeader}>
-              <TrendingUp size={24} color="#F59E0B" />
+              <TrendingUp size={24} color={Tokens.warning} />
               <Text style={styles.summaryTitle}>Platform Fees</Text>
             </View>
             <Text style={styles.summaryAmount}>
-              -{formatCurrency(earnings.feesCents)}
+              -{formatCurrency(earnings.fees)}
             </Text>
           </View>
 
@@ -310,7 +225,7 @@ export default function EarningsScreen() {
               </Text>
             </View>
             <Text style={[styles.summaryAmount, styles.netEarningsAmount]}>
-              {formatCurrency(earnings.netCents)}
+              {formatCurrency(earnings.net)}
             </Text>
           </View>
         </View>
@@ -327,10 +242,10 @@ export default function EarningsScreen() {
           
           {payouts.length === 0 ? (
             <View style={styles.emptyState}>
-              <DollarSign size={48} color="#9CA3AF" />
+              <DollarSign size={48} color={Tokens.textMuted} />
               <Text style={styles.emptyStateTitle}>No payouts yet</Text>
               <Text style={styles.emptyStateText}>
-                {earnings.netCents > 0 
+                {earnings.net > 0 
                   ? 'Complete more bookings to trigger your first payout'
                   : 'Complete bookings and connect Stripe to start earning payouts'
                 }
@@ -348,22 +263,22 @@ export default function EarningsScreen() {
                       </Text>
                     </View>
                     <Text style={styles.payoutAmount}>
-                      {formatCurrency(payout.amountCents)}
+                      {formatCurrency(payout.amount)}
                     </Text>
                   </View>
                   
                   <View style={styles.payoutDetails}>
                     <Text style={styles.payoutDate}>
-                      Created: {formatDate(payout.createdAtISO)}
+                      Created: {formatDate(payout.date)}
                     </Text>
-                    {payout.status === 'in_transit' && (
+                    {payout.status === 'in_transit' && payout.arrivalDate && (
                       <Text style={styles.payoutArrival}>
-                        Arriving: {formatDate(payout.arrivalDateISO)}
+                        Arriving: {formatDate(payout.arrivalDate)}
                       </Text>
                     )}
-                    {payout.status === 'pending' && (
+                    {payout.status === 'pending' && payout.arrivalDate && (
                       <Text style={styles.payoutArrival}>
-                        Expected: {formatDate(payout.arrivalDateISO)}
+                        Expected: {formatDate(payout.arrivalDate)}
                       </Text>
                     )}
                   </View>
@@ -529,6 +444,16 @@ const styles = StyleSheet.create({
   },
   payoutArrival: {
     fontSize: 12,
+    color: Tokens.textMuted,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
     color: Tokens.textMuted,
   },
 });
