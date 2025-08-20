@@ -15,6 +15,8 @@ import { Calendar, Clock, User, ChevronRight, CalendarX, X } from "lucide-react-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { brandColors, BRAND } from "@/config/brand";
+import { Tokens } from "@/theme/tokens";
+import { Screen } from "@/components/Screen";
 import { api } from "@/lib/api";
 import { useAuth } from "@/providers/AuthProvider";
 import type { Booking } from "@/types/models";
@@ -241,7 +243,7 @@ export default function BookingsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <Screen>
       <View style={styles.tabContainer}>
         <TouchableOpacity
           style={[styles.tab, activeTab === "upcoming" && styles.activeTab]}
@@ -369,21 +371,20 @@ export default function BookingsScreen() {
         onClose={() => setRescheduleModal({ visible: false, booking: null })}
         onReschedule={onReschedule}
       />
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BRAND.BG_DARK,
   },
   tabContainer: {
     flexDirection: "row",
-    backgroundColor: BRAND.SURFACE_DARK,
+    backgroundColor: Tokens.surface,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#202633',
+    borderBottomColor: Tokens.border,
   },
   tab: {
     flex: 1,
@@ -414,11 +415,11 @@ const styles = StyleSheet.create({
   },
 
   bookingCard: {
-    backgroundColor: BRAND.SURFACE_DARK,
+    backgroundColor: Tokens.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    borderColor: '#202633',
+    borderColor: Tokens.border,
     borderWidth: 1,
   },
   bookingHeader: {
@@ -432,7 +433,7 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 16,
     fontWeight: "600",
-    color: BRAND.TEXT_PRIMARY,
+    color: Tokens.text,
     marginBottom: 4,
   },
   timeRow: {
@@ -441,7 +442,7 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 14,
-    color: BRAND.TEXT_SECONDARY,
+    color: Tokens.textMuted,
     marginLeft: 4,
   },
   statusBadge: {
@@ -462,7 +463,7 @@ const styles = StyleSheet.create({
   serviceName: {
     fontSize: 16,
     fontWeight: "500",
-    color: BRAND.TEXT_PRIMARY,
+    color: Tokens.text,
     marginBottom: 6,
   },
   barberRow: {
@@ -472,12 +473,12 @@ const styles = StyleSheet.create({
   },
   barberName: {
     fontSize: 14,
-    color: BRAND.TEXT_SECONDARY,
+    color: Tokens.textMuted,
     marginLeft: 6,
   },
   noteText: {
     fontSize: 13,
-    color: BRAND.TEXT_SECONDARY,
+    color: Tokens.textMuted,
     fontStyle: "italic",
     marginTop: 4,
   },
@@ -518,7 +519,7 @@ const styles = StyleSheet.create({
   // Modal styles
   modalContainer: {
     flex: 1,
-    backgroundColor: BRAND.BG_DARK,
+    backgroundColor: Tokens.bg,
   },
   modalHeader: {
     flexDirection: "row",
@@ -526,12 +527,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: Tokens.border,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: BRAND.TEXT_PRIMARY,
+    color: Tokens.text,
   },
   closeButton: {
     padding: 8,
@@ -543,7 +544,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: BRAND.TEXT_PRIMARY,
+    color: Tokens.text,
     marginBottom: 12,
     marginTop: 16,
   },
@@ -561,7 +562,7 @@ const styles = StyleSheet.create({
     borderColor: "#e0e0e0",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: BRAND.SURFACE_DARK,
+    backgroundColor: Tokens.surface,
   },
   selectedDateOption: {
     backgroundColor: brandColors.primary,
@@ -575,7 +576,7 @@ const styles = StyleSheet.create({
   dateOptionDate: {
     fontSize: 16,
     fontWeight: "600",
-    color: BRAND.TEXT_PRIMARY,
+    color: Tokens.text,
   },
   selectedDateOptionText: {
     color: "#fff",
@@ -591,7 +592,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#e0e0e0",
-    backgroundColor: BRAND.SURFACE_DARK,
+    backgroundColor: Tokens.surface,
   },
   selectedSlotOption: {
     backgroundColor: brandColors.primary,
@@ -599,7 +600,7 @@ const styles = StyleSheet.create({
   },
   slotOptionText: {
     fontSize: 14,
-    color: BRAND.TEXT_PRIMARY,
+    color: Tokens.text,
   },
   selectedSlotOptionText: {
     color: "#fff",
@@ -607,7 +608,7 @@ const styles = StyleSheet.create({
   modalFooter: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
+    borderTopColor: Tokens.border,
   },
   rescheduleButton: {
     backgroundColor: brandColors.primary,

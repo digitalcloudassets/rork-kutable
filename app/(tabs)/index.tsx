@@ -15,6 +15,8 @@ import { Search, MapPin, Star, X, Wifi, WifiOff } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { BRAND, brandColors } from "@/config/brand";
+import { Tokens } from "@/theme/tokens";
+import { Screen } from "@/components/Screen";
 import { api } from "@/lib/api";
 import type { Barber, Service } from "@/types/models";
 import { seedData } from "@/lib/seedData";
@@ -69,7 +71,7 @@ export default function HomeScreen() {
   const hasActiveFilters = searchQuery.length > 0 || selectedServiceId;
 
   return (
-    <View style={styles.container}>
+    <Screen>
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
           <Search size={20} color={BRAND.TEXT_SECONDARY} />
@@ -202,26 +204,25 @@ export default function HomeScreen() {
           />
         </ScrollView>
       )}
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BRAND.BG_DARK,
   },
   searchContainer: {
-    backgroundColor: BRAND.SURFACE_DARK,
+    backgroundColor: Tokens.surface,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#202633",
+    borderBottomColor: Tokens.border,
   },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1F2937",
+    backgroundColor: Tokens.surface,
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 44,
@@ -230,7 +231,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 8,
     fontSize: 16,
-    color: BRAND.TEXT_PRIMARY,
+    color: Tokens.text,
   },
   clearButton: {
     padding: 4,
@@ -243,22 +244,22 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   filterChip: {
-    backgroundColor: "#1F2937",
+    backgroundColor: Tokens.surface,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     marginRight: 8,
   },
   filterChipActive: {
-    backgroundColor: BRAND.ACCENT,
+    backgroundColor: Tokens.accent,
   },
   filterChipText: {
     fontSize: 14,
-    color: BRAND.TEXT_SECONDARY,
+    color: Tokens.textMuted,
     fontWeight: "500",
   },
   filterChipTextActive: {
-    color: BRAND.TEXT_PRIMARY,
+    color: Tokens.text,
   },
   loadingContainer: {
     flex: 1,
@@ -272,7 +273,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 22,
     fontWeight: "700",
-    color: BRAND.TEXT_PRIMARY,
+    color: Tokens.text,
     marginHorizontal: 16,
     marginTop: 20,
     marginBottom: 16,
@@ -284,7 +285,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   barberCard: {
-    backgroundColor: BRAND.SURFACE_DARK,
+    backgroundColor: Tokens.surface,
     borderRadius: 16,
     marginBottom: 16,
     shadowColor: "#000",
@@ -294,12 +295,12 @@ const styles = StyleSheet.create({
     elevation: 8,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#202633",
+    borderColor: Tokens.border,
   },
   barberPhoto: {
     width: "100%",
     height: 200,
-    backgroundColor: "#1F2937",
+    backgroundColor: Tokens.surface,
   },
   barberInfo: {
     padding: 16,
@@ -307,12 +308,12 @@ const styles = StyleSheet.create({
   barberName: {
     fontSize: 18,
     fontWeight: "600",
-    color: BRAND.TEXT_PRIMARY,
+    color: Tokens.text,
     marginBottom: 4,
   },
   shopName: {
     fontSize: 14,
-    color: BRAND.TEXT_SECONDARY,
+    color: Tokens.textMuted,
     marginBottom: 8,
   },
   barberMeta: {
@@ -327,7 +328,7 @@ const styles = StyleSheet.create({
   },
   locationText: {
     fontSize: 13,
-    color: BRAND.TEXT_SECONDARY,
+    color: Tokens.textMuted,
     marginLeft: 4,
     flex: 1,
   },
@@ -337,7 +338,7 @@ const styles = StyleSheet.create({
   },
   ratingText: {
     fontSize: 13,
-    color: BRAND.TEXT_SECONDARY,
+    color: Tokens.textMuted,
     marginLeft: 4,
     fontWeight: "600",
   },

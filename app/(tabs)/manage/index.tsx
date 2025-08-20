@@ -17,6 +17,8 @@ import {
   ChevronRight,
 } from "lucide-react-native";
 import { BRAND } from "@/config/brand";
+import { Tokens } from "@/theme/tokens";
+import { ScrollScreen } from "@/components/Screen";
 
 interface ManageCardProps {
   title: string;
@@ -93,12 +95,7 @@ export default function ManageScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+    <ScrollScreen>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Manage Your Business</Text>
           <Text style={styles.headerSubtitle}>
@@ -118,15 +115,13 @@ export default function ManageScreen() {
             />
           ))}
         </View>
-      </ScrollView>
-    </SafeAreaView>
+    </ScrollScreen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BRAND.BG_DARK,
   },
   scrollView: {
     flex: 1,
@@ -142,12 +137,12 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontWeight: '700',
-    color: BRAND.TEXT_PRIMARY,
+    color: Tokens.text,
     marginBottom: 8,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: BRAND.TEXT_SECONDARY,
+    color: Tokens.textMuted,
     lineHeight: 22,
   },
   cardsContainer: {
@@ -155,11 +150,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   card: {
-    backgroundColor: BRAND.SURFACE_DARK,
+    backgroundColor: Tokens.surface,
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#202633',
+    borderColor: Tokens.border,
   },
   cardContent: {
     flexDirection: 'row',
@@ -169,7 +164,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: `${BRAND.ACCENT}15`,
+    backgroundColor: `${Tokens.accent}15`,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
@@ -180,12 +175,12 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: BRAND.TEXT_PRIMARY,
+    color: Tokens.text,
     marginBottom: 4,
   },
   cardDescription: {
     fontSize: 14,
-    color: BRAND.TEXT_SECONDARY,
+    color: Tokens.textMuted,
     lineHeight: 20,
   },
 });

@@ -12,6 +12,8 @@ import { Calendar, Clock, DollarSign, Settings, TrendingUp, Users, CreditCard, A
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { brandColors, BRAND } from "@/config/brand";
+import { Tokens } from "@/theme/tokens";
+import { ScrollScreen, Screen } from "@/components/Screen";
 import { api } from "@/lib/api";
 import { useAuth } from "@/providers/AuthProvider";
 import type { Booking } from "@/types/models";
@@ -77,7 +79,7 @@ export default function DashboardScreen() {
 
   if (!user || user.role !== "barber") {
     return (
-      <View style={styles.container}>
+      <Screen>
         <View style={styles.emptyState}>
           <Text style={styles.emptyTitle}>Barber Dashboard</Text>
           <Text style={styles.emptyText}>Sign up as a barber to access this dashboard</Text>
@@ -88,7 +90,7 @@ export default function DashboardScreen() {
             <Text style={styles.ctaButtonText}>Become a Barber</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </Screen>
     );
   }
 
@@ -97,7 +99,7 @@ export default function DashboardScreen() {
   // Show Stripe connection prompt if not connected
   if (!stripeLoading && !isStripeConnected) {
     return (
-      <View style={styles.container}>
+      <Screen>
         <View style={styles.emptyState}>
           <View style={[styles.iconContainer, { backgroundColor: brandColors.warning + "20" }]}>
             <AlertTriangle size={48} color={brandColors.warning} />
@@ -120,17 +122,15 @@ export default function DashboardScreen() {
             <Text style={styles.secondaryButtonText}>Skip for now</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </Screen>
     );
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.scrollContent}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-      }
+    <ScrollScreen
+      scrollViewProps={{
+        refreshControl: <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+      }}
     >
       {/* Stripe Status Header */}
       {!stripeLoading && (
@@ -252,14 +252,13 @@ export default function DashboardScreen() {
           </TouchableOpacity>
         </View>
       </View>
-    </ScrollView>
+    </ScrollScreen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BRAND.BG_DARK,
   },
   scrollContent: {
     paddingBottom: 20,
@@ -281,12 +280,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 24,
     fontWeight: "700",
-    color: BRAND.TEXT_PRIMARY,
+    color: Tokens.text,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 16,
-    color: BRAND.TEXT_SECONDARY,
+    color: Tokens.textMuted,
     textAlign: "center",
     marginBottom: 24,
     lineHeight: 24,
@@ -317,9 +316,9 @@ const styles = StyleSheet.create({
   },
   stripeHeader: {
     padding: 16,
-    backgroundColor: BRAND.SURFACE_DARK,
+    backgroundColor: Tokens.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#202633',
+    borderBottomColor: Tokens.border,
   },
   stripeStatus: {
     flexDirection: "row",
@@ -358,11 +357,11 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     minWidth: "47%",
-    backgroundColor: BRAND.SURFACE_DARK,
+    backgroundColor: Tokens.surface,
     padding: 16,
     borderRadius: 12,
     borderLeftWidth: 3,
-    borderColor: '#202633',
+    borderColor: Tokens.border,
     borderWidth: 1,
   },
   statIcon: {
@@ -376,12 +375,12 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: "700",
-    color: BRAND.TEXT_PRIMARY,
+    color: Tokens.text,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 13,
-    color: BRAND.TEXT_SECONDARY,
+    color: Tokens.textMuted,
   },
   section: {
     paddingHorizontal: 16,
@@ -396,7 +395,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: BRAND.TEXT_PRIMARY,
+    color: Tokens.text,
   },
   viewAllText: {
     fontSize: 14,
@@ -404,25 +403,25 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   emptySchedule: {
-    backgroundColor: BRAND.SURFACE_DARK,
+    backgroundColor: Tokens.surface,
     padding: 24,
     borderRadius: 12,
     alignItems: "center",
-    borderColor: '#202633',
+    borderColor: Tokens.border,
     borderWidth: 1,
   },
   emptyScheduleText: {
     fontSize: 14,
-    color: BRAND.TEXT_SECONDARY,
+    color: Tokens.textMuted,
   },
   bookingItem: {
-    backgroundColor: BRAND.SURFACE_DARK,
+    backgroundColor: Tokens.surface,
     padding: 16,
     borderRadius: 12,
     marginBottom: 8,
     flexDirection: "row",
     alignItems: "center",
-    borderColor: '#202633',
+    borderColor: Tokens.border,
     borderWidth: 1,
   },
   bookingTime: {
@@ -433,7 +432,7 @@ const styles = StyleSheet.create({
   timeText: {
     fontSize: 14,
     fontWeight: "600",
-    color: BRAND.TEXT_PRIMARY,
+    color: Tokens.text,
     marginLeft: 6,
   },
   bookingDetails: {
@@ -442,12 +441,12 @@ const styles = StyleSheet.create({
   clientName: {
     fontSize: 15,
     fontWeight: "500",
-    color: BRAND.TEXT_PRIMARY,
+    color: Tokens.text,
     marginBottom: 2,
   },
   serviceName: {
     fontSize: 13,
-    color: BRAND.TEXT_SECONDARY,
+    color: Tokens.textMuted,
   },
   statusButton: {
     backgroundColor: brandColors.primaryLight,
@@ -473,17 +472,17 @@ const styles = StyleSheet.create({
   actionCard: {
     flex: 1,
     minWidth: "47%",
-    backgroundColor: BRAND.SURFACE_DARK,
+    backgroundColor: Tokens.surface,
     padding: 20,
     borderRadius: 12,
     alignItems: "center",
-    borderColor: '#202633',
+    borderColor: Tokens.border,
     borderWidth: 1,
   },
   actionText: {
     fontSize: 13,
     fontWeight: "500",
-    color: BRAND.TEXT_PRIMARY,
+    color: Tokens.text,
     marginTop: 8,
     textAlign: "center",
   },

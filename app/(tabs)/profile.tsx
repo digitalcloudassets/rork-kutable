@@ -25,6 +25,8 @@ import {
 import { useRouter } from "expo-router";
 import { useAuth } from "@/providers/AuthProvider";
 import { brandColors, BRAND } from "@/config/brand";
+import { Tokens } from "@/theme/tokens";
+import { ScrollScreen } from "@/components/Screen";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -101,7 +103,7 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollScreen>
       <View style={styles.header}>
         <Image 
           source={{ uri: user?.photoUrl || "https://via.placeholder.com/100" }} 
@@ -149,38 +151,37 @@ export default function ProfileScreen() {
       <View style={styles.footer}>
         <Text style={styles.footerText}>Kutable v1.0.0</Text>
       </View>
-    </ScrollView>
+    </ScrollScreen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BRAND.BG_DARK,
   },
   header: {
-    backgroundColor: BRAND.SURFACE_DARK,
+    backgroundColor: Tokens.surface,
     alignItems: "center",
     paddingVertical: 32,
     borderBottomWidth: 1,
-    borderBottomColor: '#202633',
+    borderBottomColor: Tokens.border,
   },
   avatar: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#202633',
+    backgroundColor: Tokens.border,
     marginBottom: 12,
   },
   name: {
     fontSize: 20,
     fontWeight: "600",
-    color: BRAND.TEXT_PRIMARY,
+    color: Tokens.text,
     marginBottom: 4,
   },
   email: {
     fontSize: 14,
-    color: BRAND.TEXT_SECONDARY,
+    color: Tokens.textMuted,
   },
   barberBadge: {
     flexDirection: "row",
@@ -209,10 +210,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sectionContent: {
-    backgroundColor: BRAND.SURFACE_DARK,
+    backgroundColor: Tokens.surface,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#202633',
+    borderColor: Tokens.border,
   },
   menuItem: {
     flexDirection: "row",
@@ -221,7 +222,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: Tokens.border,
   },
   lastMenuItem: {
     borderBottomWidth: 0,
@@ -232,14 +233,14 @@ const styles = StyleSheet.create({
   },
   menuItemText: {
     fontSize: 16,
-    color: BRAND.TEXT_PRIMARY,
+    color: Tokens.text,
     marginLeft: 12,
   },
   signOutButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: BRAND.SURFACE_DARK,
+    backgroundColor: Tokens.surface,
     marginTop: 24,
     marginHorizontal: 16,
     paddingVertical: 16,
@@ -259,7 +260,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 12,
-    color: BRAND.TEXT_SECONDARY,
+    color: Tokens.textMuted,
   },
   guestState: {
     flex: 1,
@@ -271,14 +272,14 @@ const styles = StyleSheet.create({
   guestTitle: {
     fontSize: 24,
     fontWeight: "700",
-    color: BRAND.TEXT_PRIMARY,
+    color: Tokens.text,
     marginTop: 24,
     marginBottom: 12,
     textAlign: "center",
   },
   guestDescription: {
     fontSize: 16,
-    color: BRAND.TEXT_SECONDARY,
+    color: Tokens.textMuted,
     textAlign: "center",
     lineHeight: 24,
     marginBottom: 32,
