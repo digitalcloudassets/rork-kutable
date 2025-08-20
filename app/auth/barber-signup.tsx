@@ -70,17 +70,19 @@ export default function BarberSignUpScreen() {
           .insert({
             id: authData.user.id,
             name: name.trim(),
-            email: email.trim().toLowerCase(),
             phone: phone.trim(),
             shop_name: shopName.trim(),
             bio: '',
             shop_address: '',
             photo_url: '',
-            created_at: new Date().toISOString(),
+            rating: null,
+            review_count: 0,
+            connected_account_id: null,
           });
 
         if (barberError) {
           console.error('Error creating barber record:', barberError);
+          throw new Error(barberError.message || 'Failed to create barber profile');
         }
 
         // Create user object for local state
@@ -108,7 +110,19 @@ export default function BarberSignUpScreen() {
       }
     } catch (error: any) {
       console.error('Sign up error:', error);
-      Alert.alert('Error', error.message || 'Failed to create account');
+      let errorMessage = 'Failed to create account';
+      
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error?.error_description) {
+        errorMessage = error.error_description;
+      } else if (error?.details) {
+        errorMessage = error.details;
+      }
+      
+      Alert.alert('Error', errorMessage);
     } finally {
       setIsLoading(false);
     }

@@ -62,19 +62,21 @@ export default function ClientSignUpScreen() {
       }
 
       if (authData.user) {
-        // Create client record in database
+        // Create client record in database (using users table)
         const { error: clientError } = await supabase
-          .from('clients')
+          .from('users')
           .insert({
             id: authData.user.id,
+            role: 'client',
             name: name.trim(),
-            email: email.trim().toLowerCase(),
             phone: phone.trim(),
-            created_at: new Date().toISOString(),
+            email: email.trim().toLowerCase(),
+            photo_url: null,
           });
 
         if (clientError) {
           console.error('Error creating client record:', clientError);
+          throw new Error(clientError.message || 'Failed to create client profile');
         }
 
         // Create user object for local state
@@ -96,7 +98,19 @@ export default function ClientSignUpScreen() {
       }
     } catch (error: any) {
       console.error('Sign up error:', error);
-      Alert.alert('Error', error.message || 'Failed to create account');
+      let errorMessage = 'Failed to create account';
+      
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error?.error_description) {
+        errorMessage = error.error_description;
+      } else if (error?.details) {
+        errorMessage = error.details;
+      }
+      
+      Alert.alert('Error', errorMessage);
     } finally {
       setIsLoading(false);
     }
