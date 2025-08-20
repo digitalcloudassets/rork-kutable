@@ -1,7 +1,7 @@
 // import { getAdminClient } from '../../lib/supabase';
 import type { GalleryItem } from '../../types';
 
-export async function POST(request: Request) {
+export default async function handler(request: Request): Promise<Response> {
   try {
     // For demo purposes, we'll simulate a successful upload
     // In a real implementation, you would parse FormData and upload to Supabase storage
@@ -15,7 +15,10 @@ export async function POST(request: Request) {
       path: `gallery/mock/${Date.now()}.jpg`
     };
 
-    return Response.json({ item: mockItem });
+    return new Response(JSON.stringify({ item: mockItem }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
     
     // TODO: Implement real file upload when Supabase storage is configured
     // const formData = await request.formData();
@@ -59,6 +62,9 @@ export async function POST(request: Request) {
     // });
   } catch (error) {
     console.error('Gallery upload error:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }

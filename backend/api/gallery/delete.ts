@@ -1,11 +1,14 @@
 import { getAdminClient } from '../../lib/supabase';
 
-export async function POST(request: Request) {
+export default async function handler(request: Request): Promise<Response> {
   try {
     const { barberId, path } = await request.json();
     
     if (!barberId || !path) {
-      return Response.json({ error: 'barberId and path are required' }, { status: 400 });
+      return new Response(JSON.stringify({ error: 'barberId and path are required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     const supabase = getAdminClient();
@@ -19,7 +22,10 @@ export async function POST(request: Request) {
       .single();
 
     if (fetchError || !item) {
-      return Response.json({ error: 'Gallery item not found or unauthorized' }, { status: 404 });
+      return new Response(JSON.stringify({ error: 'Gallery item not found or unauthorized' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     // Delete from storage
@@ -29,7 +35,10 @@ export async function POST(request: Request) {
 
     if (storageError) {
       console.error('Error deleting from storage:', storageError);
-      return Response.json({ error: 'Failed to delete from storage' }, { status: 500 });
+      return new Response(JSON.stringify({ error: 'Failed to delete from storage' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     // Delete from database
@@ -41,12 +50,21 @@ export async function POST(request: Request) {
 
     if (dbError) {
       console.error('Error deleting from database:', dbError);
-      return Response.json({ error: 'Failed to delete from database' }, { status: 500 });
+      return new Response(JSON.stringify({ error: 'Failed to delete from database' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
-    return Response.json({ ok: true });
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
   } catch (error) {
     console.error('Gallery delete error:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }

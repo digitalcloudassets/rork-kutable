@@ -19,6 +19,9 @@ import bookingsCreate from './api/bookings/create';
 import bookingsList from './api/bookings/list';
 import paymentsCreateIntent from './api/payments/create-intent';
 import paymentsWebhook from './api/payments/webhook';
+import galleryList from './api/gallery/list';
+import galleryDelete from './api/gallery/delete';
+import galleryUpload from './api/gallery/upload';
 
 const app = new Hono();
 
@@ -222,6 +225,19 @@ app.post('/api/payments/create-intent', async (c) => {
 
 app.post('/api/payments/webhook', async (c) => {
   return await paymentsWebhook(c.req.raw, null);
+});
+
+// Gallery endpoints
+app.post('/api/gallery/list', async (c) => {
+  return galleryList(c.req.raw);
+});
+
+app.post('/api/gallery/delete', async (c) => {
+  return galleryDelete(c.req.raw);
+});
+
+app.post('/api/gallery/upload', async (c) => {
+  return galleryUpload(c.req.raw);
 });
 
 

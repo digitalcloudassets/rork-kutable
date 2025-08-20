@@ -39,12 +39,15 @@ const mockGalleryItems: Record<string, GalleryItem[]> = {
   ]
 };
 
-export async function POST(request: Request) {
+export default async function handler(request: Request): Promise<Response> {
   try {
     const { barberId } = await request.json();
     
     if (!barberId) {
-      return Response.json({ error: 'barberId is required' }, { status: 400 });
+      return new Response(JSON.stringify({ error: 'barberId is required' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
     }
 
     const supabase = getAdminClient();
@@ -61,7 +64,10 @@ export async function POST(request: Request) {
         console.error('Database error:', error);
         // Fall back to mock data if database fails
         const items = mockGalleryItems[barberId] || [];
-        return Response.json({ items });
+        return new Response(JSON.stringify({ items }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
       }
 
       // Transform database rows to API format
@@ -71,15 +77,24 @@ export async function POST(request: Request) {
         path: row.path
       }));
 
-      return Response.json({ items });
+      return new Response(JSON.stringify({ items }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
     } catch (dbError) {
       console.error('Database connection error:', dbError);
       // Fall back to mock data if database is unavailable
       const items = mockGalleryItems[barberId] || [];
-      return Response.json({ items });
+      return new Response(JSON.stringify({ items }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
     }
   } catch (error) {
     console.error('Gallery list error:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }
