@@ -1,16 +1,20 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const supabaseUrl = 'https://wktxbpmwbyddmwmfymlh.supabase.co'
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndrdHhicG13YnlkZG13bWZ5bWxoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU2NDE4NTUsImV4cCI6MjA3MTIxNzg1NX0.x8WslKawCcEoh9SzW8MnjHw63CLwH1CPoYyIAD4rJiI'
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn('Supabase env missing: set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY');
+}
+
+export const supabase = createClient(supabaseUrl!, supabaseAnonKey!, {
   auth: {
-    // For development: allow sign in without email confirmation
-    // In production, you should enable email confirmation
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: false,
+    detectSessionInUrl: false, // RN apps don't use URL callbacks by default
+    storage: AsyncStorage,     // Persist session across app restarts
   },
-})
+});
 
 export default supabase
