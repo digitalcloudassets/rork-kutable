@@ -1,12 +1,11 @@
-import { createClient } from '@supabase/supabase-js';
+import { getAdminClient } from '../lib/supabase';
 
-const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-
-export default async function handler(req: any, res: any) {
+export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return new Response(
+      JSON.stringify({ error: 'Method not allowed' }),
+      { status: 405, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 
   const snapshot = {
@@ -19,7 +18,7 @@ export default async function handler(req: any, res: any) {
       gallery: null as number | null
     },
     stripe: {
-      keysLoaded: !!stripeSecretKey,
+      keysLoaded: !!process.env.STRIPE_SECRET_KEY,
       connectedAccounts: 0,
       exampleConnected: null as string | null
     },
@@ -33,7 +32,7 @@ export default async function handler(req: any, res: any) {
 
   // Test Supabase connection
   try {
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = getAdminClient();
     const { error } = await supabase.from('barbers').select('id').limit(1);
     
     if (error && error.code === '42P01') {
@@ -86,7 +85,7 @@ export default async function handler(req: any, res: any) {
       }
 
       // Check Stripe connected accounts
-      if (stripeSecretKey) {
+      if (process.env.STRIPE_SECRET_KEY) {
         try {
           const { data: barbers } = await supabase
             .from('barbers')
@@ -132,9 +131,21 @@ export default async function handler(req: any, res: any) {
     }
   };
 
-  const baseUrl = process.env.VERCEL_URL 
-    ? `https://${process.env.VERCEL_URL}`
-    : 'http://localhost:3000';
+  // Helper to get base URL
+  const getBaseUrl = () => {
+    const fromEnv = process.env.APP_BASE_URL;
+    if (fromEnv) return fromEnv.replace(/\/$/, '');
+    try {
+      const u = new URL(req.url);
+      return `${u.protocol}//${u.host}`;
+    } catch {
+      return process.env.VERCEL_URL 
+        ? `https://${process.env.VERCEL_URL}`
+        : 'http://localhost:3000';
+    }
+  };
+  
+  const baseUrl = getBaseUrl();
 
   // Test key endpoints
   try {
@@ -157,5 +168,8 @@ export default async function handler(req: any, res: any) {
     // Endpoint tests failed, leave as undefined
   }
 
-  res.status(200).json(snapshot);
+  return new Response(
+    JSON.stringify(snapshot),
+    { status: 200, headers: { 'Content-Type': 'application/json' } }
+  );
 }
