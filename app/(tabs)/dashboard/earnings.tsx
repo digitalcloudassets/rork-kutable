@@ -13,6 +13,7 @@ import { Screen } from '@/components/Screen';
 import { Tokens } from '@/theme/tokens';
 import { apiClient } from '@/lib/api';
 import { getUserId } from '@/lib/session';
+import { validateEnv } from '@/config/env';
 
 interface EarningsSummary {
   gross: number;
@@ -92,27 +93,48 @@ export default function EarningsScreen() {
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchEarnings = useCallback(async (range: TimeRange) => {
     try {
+      setError(null);
       const uid = await getUserId();
-      if (!uid) throw new Error('Not signed in');
+      if (!uid) {
+        console.warn('User not signed in, using empty earnings');
+        setEarnings({ gross: 0, fees: 0, net: 0 });
+        return;
+      }
+      
+      console.log(`Fetching earnings for range: ${range}`);
+      validateEnv(); // Check environment variables
       const data = await apiClient.earnings.summary({ barberId: uid, range });
+      console.log('Earnings data received:', data);
       setEarnings(data);
-    } catch (error) {
-      console.error('Failed to load earnings:', error);
+    } catch (error: any) {
+      console.error('Error fetching earnings summary:', error);
+      setError(`Failed to load earnings: ${error.message}`);
       setEarnings({ gross: 0, fees: 0, net: 0 });
     }
   }, []);
 
   const fetchPayouts = useCallback(async () => {
     try {
+      setError(null);
       const uid = await getUserId();
-      if (!uid) throw new Error('Not signed in');
+      if (!uid) {
+        console.warn('User not signed in, using empty payouts');
+        setPayouts([]);
+        return;
+      }
+      
+      console.log('Fetching payouts list');
+      validateEnv(); // Check environment variables
       const data = await apiClient.payouts.list({ barberId: uid });
-      setPayouts(data);
-    } catch (error) {
-      console.error('Failed to load payouts:', error);
+      console.log('Payouts data received:', data?.length || 0, 'payouts');
+      setPayouts(data || []);
+    } catch (error: any) {
+      console.error('Error fetching payouts list:', error);
+      setError(`Failed to load payouts: ${error.message}`);
       setPayouts([]);
     }
   }, []);
@@ -165,6 +187,14 @@ export default function EarningsScreen() {
 
   return (
     <Screen>
+      {error && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={handleRefresh}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      )}
       
       <ScrollView
         style={styles.scrollView}
@@ -203,7 +233,7 @@ export default function EarningsScreen() {
               <Text style={styles.summaryTitle}>Gross Revenue</Text>
             </View>
             <Text style={styles.summaryAmount}>
-              {formatCurrency(earnings.gross)}
+              ${formatCurrency(earnings.gross)}
             </Text>
           </View>
 
@@ -213,7 +243,7 @@ export default function EarningsScreen() {
               <Text style={styles.summaryTitle}>Platform Fees</Text>
             </View>
             <Text style={styles.summaryAmount}>
-              -{formatCurrency(earnings.fees)}
+              -${formatCurrency(earnings.fees)}
             </Text>
           </View>
 
@@ -225,7 +255,7 @@ export default function EarningsScreen() {
               </Text>
             </View>
             <Text style={[styles.summaryAmount, styles.netEarningsAmount]}>
-              {formatCurrency(earnings.net)}
+              ${formatCurrency(earnings.net)}
             </Text>
           </View>
         </View>
@@ -263,7 +293,7 @@ export default function EarningsScreen() {
                       </Text>
                     </View>
                     <Text style={styles.payoutAmount}>
-                      {formatCurrency(payout.amount)}
+                      ${formatCurrency(payout.amount)}
                     </Text>
                   </View>
                   
@@ -455,5 +485,31 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
     color: Tokens.textMuted,
+  },
+  errorContainer: {
+    backgroundColor: Tokens.error + '20',
+    borderColor: Tokens.error,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    margin: 16,
+    alignItems: 'center',
+  },
+  errorText: {
+    color: Tokens.error,
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  retryButton: {
+    backgroundColor: Tokens.error,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
