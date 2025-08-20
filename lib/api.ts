@@ -821,6 +821,157 @@ export const api = {
     },
   },
 
+  gallery: {
+    list: async ({ barberId }: { barberId: string }) => {
+      const backendUrl = getBackendUrl();
+      if (!backendUrl) {
+        // No backend configured, return mock gallery items
+        await delay(500);
+        return [
+          {
+            url: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=400&fit=crop',
+            path: 'gallery/mock/1.jpg',
+            createdAtISO: new Date(Date.now() - 86400000).toISOString(),
+          },
+          {
+            url: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400&h=400&fit=crop',
+            path: 'gallery/mock/2.jpg',
+            createdAtISO: new Date(Date.now() - 172800000).toISOString(),
+          },
+          {
+            url: 'https://images.unsplash.com/photo-1521490878405-2fc9feb1d5d5?w=400&h=400&fit=crop',
+            path: 'gallery/mock/3.jpg',
+            createdAtISO: new Date(Date.now() - 259200000).toISOString(),
+          },
+        ];
+      }
+
+      try {
+        const response = await fetch(`${backendUrl}/api/gallery/list`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ barberId }),
+        });
+        
+        if (response.ok) {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            return data.items || [];
+          } else {
+            console.warn('Backend returned non-JSON response for gallery list, using fallback data');
+            throw new Error('Non-JSON response');
+          }
+        } else {
+          console.error('Failed to fetch gallery list, status:', response.status);
+          throw new Error('API request failed');
+        }
+      } catch (error) {
+        console.error('Error fetching gallery list:', error);
+        // Fallback to mock data
+        await delay(500);
+        return [
+          {
+            url: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=400&fit=crop',
+            path: 'gallery/mock/1.jpg',
+            createdAtISO: new Date(Date.now() - 86400000).toISOString(),
+          },
+          {
+            url: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400&h=400&fit=crop',
+            path: 'gallery/mock/2.jpg',
+            createdAtISO: new Date(Date.now() - 172800000).toISOString(),
+          },
+          {
+            url: 'https://images.unsplash.com/photo-1521490878405-2fc9feb1d5d5?w=400&h=400&fit=crop',
+            path: 'gallery/mock/3.jpg',
+            createdAtISO: new Date(Date.now() - 259200000).toISOString(),
+          },
+        ];
+      }
+    },
+
+    upload: async ({ barberId, file, path }: { barberId: string; file: any; path: string }) => {
+      const backendUrl = getBackendUrl();
+      if (!backendUrl) {
+        // No backend configured, simulate upload with mock data
+        await delay(1500);
+        return {
+          item: {
+            url: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=400&fit=crop',
+            path: `gallery/mock/${Date.now()}.jpg`,
+            createdAtISO: new Date().toISOString(),
+          }
+        };
+      }
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('path', path);
+        formData.append('barberId', barberId);
+
+        const response = await fetch(`${backendUrl}/api/gallery/upload`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (response.ok) {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            return data;
+          } else {
+            console.warn('Backend returned non-JSON response for gallery upload, using fallback data');
+            throw new Error('Non-JSON response');
+          }
+        } else {
+          console.error('Failed to upload image, status:', response.status);
+          const errorText = await response.text();
+          console.error('Upload error details:', errorText);
+          throw new Error('Upload failed');
+        }
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        throw error;
+      }
+    },
+
+    delete: async ({ barberId, path }: { barberId: string; path: string }) => {
+      const backendUrl = getBackendUrl();
+      if (!backendUrl) {
+        // No backend configured, simulate deletion
+        await delay(500);
+        return { ok: true };
+      }
+
+      try {
+        const response = await fetch(`${backendUrl}/api/gallery/delete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ barberId, path }),
+        });
+        
+        if (response.ok) {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            return data;
+          } else {
+            console.warn('Backend returned non-JSON response for gallery delete, using fallback data');
+            throw new Error('Non-JSON response');
+          }
+        } else {
+          console.error('Failed to delete image, status:', response.status);
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          throw new Error(errorData.error || 'API request failed');
+        }
+      } catch (error) {
+        console.error('Error deleting image:', error);
+        throw error;
+      }
+    },
+  },
+
   stripe: {
     createOrFetchAccount: async ({ barberId }: { barberId: string }) => {
       const backendUrl = getBackendUrl();

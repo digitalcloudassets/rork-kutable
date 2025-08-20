@@ -16,6 +16,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { brandColors } from '@/config/brand';
 import { useAuth } from '@/providers/AuthProvider';
+import { api } from '@/lib/api';
 import type { GalleryItem } from '@/types/models';
 
 const { width } = Dimensions.get('window');
@@ -28,64 +29,12 @@ export default function GalleryScreen() {
 
   const { data: galleryItems = [], isLoading } = useQuery({
     queryKey: ['gallery', user?.id],
-    queryFn: async () => {
-      const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
-      if (!backendUrl) {
-        console.warn('Backend URL not configured, returning empty gallery');
-        return [];
-      }
-
-      try {
-        const response = await fetch(`${backendUrl}/api/gallery/list`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ barberId: user?.id }),
-        });
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Gallery API error:', response.status, errorText);
-          throw new Error(`Failed to fetch gallery: ${response.status}`);
-        }
-        
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          const text = await response.text();
-          console.error('Non-JSON response from gallery API:', text.substring(0, 200));
-          throw new Error('Server returned invalid response format');
-        }
-        
-        const data = await response.json();
-        return data.items || [];
-      } catch (error) {
-        console.error('Error fetching gallery:', error);
-        return [];
-      }
-    },
+    queryFn: () => api.gallery.list({ barberId: user?.id || '' }),
     enabled: !!user?.id,
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (path: string) => {
-      const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
-      if (!backendUrl) {
-        throw new Error('Backend URL not configured');
-      }
-
-      const response = await fetch(`${backendUrl}/api/gallery/delete`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ barberId: user?.id, path }),
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Delete API error:', response.status, errorText);
-        throw new Error('Failed to delete image');
-      }
-      
-      return response.json();
-    },
+    mutationFn: (path: string) => api.gallery.delete({ barberId: user?.id || '', path }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gallery', user?.id] });
     },
@@ -125,41 +74,19 @@ export default function GalleryScreen() {
       const filename = `${timestamp}.${extension}`;
       const path = `gallery/${user?.id}/${filename}`;
 
-      // Create form data
-      const formData = new FormData();
-      formData.append('file', {
+      // Create file object for upload
+      const file = {
         uri: asset.uri,
         name: filename,
         type: `image/${extension}`,
-      } as any);
-      formData.append('path', path);
-      formData.append('barberId', user?.id || '');
+      } as any;
 
-      // Upload to backend
-      const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
-      if (!backendUrl) {
-        throw new Error('Backend URL not configured');
-      }
-
-      const response = await fetch(`${backendUrl}/api/gallery/upload`, {
-        method: 'POST',
-        body: formData,
+      // Upload using API
+      const data = await api.gallery.upload({ 
+        barberId: user?.id || '', 
+        file, 
+        path 
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Upload API error:', response.status, errorText);
-        throw new Error('Upload failed');
-      }
-
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        console.error('Non-JSON response from upload API:', text.substring(0, 200));
-        throw new Error('Server returned invalid response format');
-      }
-
-      const data = await response.json();
       
       // Update local cache
       queryClient.setQueryData(['gallery', user?.id], (old: GalleryItem[] = []) => [
