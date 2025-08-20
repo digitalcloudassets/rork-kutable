@@ -16,7 +16,7 @@ import {
   Settings,
   ChevronRight,
 } from "lucide-react-native";
-import { BRAND } from "@/config/brand";
+
 import { Tokens } from "@/theme/tokens";
 import { ScrollScreen } from "@/components/Screen";
 
@@ -44,7 +44,7 @@ function ManageCard({ title, description, icon, onPress, testId }: ManageCardPro
           <Text style={styles.cardTitle}>{title}</Text>
           <Text style={styles.cardDescription}>{description}</Text>
         </View>
-        <ChevronRight size={20} color={BRAND.TEXT_SECONDARY} />
+        <ChevronRight size={20} color={Tokens.textMuted} />
       </View>
     </TouchableOpacity>
   );
@@ -55,35 +55,35 @@ export default function ManageScreen() {
     {
       title: "Calendar & Availability",
       description: "Manage your schedule and availability",
-      icon: <Calendar size={24} color={BRAND.ACCENT} />,
+      icon: <Calendar size={24} color={Tokens.accent} />,
       route: "/(tabs)/dashboard/calendar",
       testId: "manage-calendar-button",
     },
     {
       title: "Services",
       description: "Edit your services and pricing",
-      icon: <Scissors size={24} color={BRAND.ACCENT} />,
+      icon: <Scissors size={24} color={Tokens.accent} />,
       route: "/(tabs)/dashboard/services",
       testId: "manage-services-button",
     },
     {
       title: "Earnings",
       description: "View your earnings and payouts",
-      icon: <DollarSign size={24} color={BRAND.ACCENT} />,
+      icon: <DollarSign size={24} color={Tokens.accent} />,
       route: "/(tabs)/dashboard/earnings",
       testId: "manage-earnings-button",
     },
     {
       title: "Analytics",
       description: "Track your business performance",
-      icon: <BarChart3 size={24} color={BRAND.ACCENT} />,
+      icon: <BarChart3 size={24} color={Tokens.accent} />,
       route: "/(tabs)/dashboard/analytics",
       testId: "manage-analytics-button",
     },
     {
       title: "Settings",
       description: "Account and app preferences",
-      icon: <Settings size={24} color={BRAND.ACCENT} />,
+      icon: <Settings size={24} color={Tokens.accent} />,
       route: "/(tabs)/profile",
       testId: "manage-settings-button",
     },
