@@ -188,15 +188,15 @@ app.get('/api/stripe/account-status', async (c) => {
 
 // Services endpoints
 app.post('/api/services/list', async (c) => {
-  return await servicesList(c.req.raw, null);
+  return await servicesList(c.req.raw);
 });
 
 app.post('/api/services/upsert', async (c) => {
-  return await servicesUpsert(c.req.raw, null);
+  return await servicesUpsert(c.req.raw);
 });
 
 app.post('/api/services/delete', async (c) => {
-  return await servicesDelete(c.req.raw, null);
+  return await servicesDelete(c.req.raw);
 });
 
 // Availability endpoints

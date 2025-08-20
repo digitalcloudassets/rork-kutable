@@ -130,12 +130,14 @@ export const apiClient = {
       const backendUrl = getBackendUrl();
       if (!backendUrl) {
         // No backend configured, use seed data
+        console.log('No backend URL configured, using seed data for services');
         await delay(300);
         const barber = seedData.barbers.find(b => b.id === barberId);
         return barber?.services || [];
       }
 
       try {
+        console.log(`Fetching services from: ${backendUrl}/api/services/list`);
         const response = await fetch(`${backendUrl}/api/services/list`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -146,17 +148,19 @@ export const apiClient = {
           const contentType = response.headers.get('content-type');
           if (contentType && contentType.includes('application/json')) {
             const data = await response.json();
-            return data.services;
+            console.log('Successfully fetched services:', data.services?.length || 0, 'services');
+            return data.services || [];
           } else {
             console.warn('Backend returned non-JSON response for services list, using fallback data');
             throw new Error('Non-JSON response');
           }
         } else {
-          console.error('Failed to fetch services list, status:', response.status);
-          throw new Error('API request failed');
+          console.error(`Failed to fetch services list, status: ${response.status}, URL: ${backendUrl}/api/services/list`);
+          throw new Error(`API request failed with status ${response.status}`);
         }
       } catch (error) {
         console.error('Error fetching services list:', error);
+        console.log('Falling back to seed data for services');
         // Fallback to seed data
         await delay(300);
         const barber = seedData.barbers.find(b => b.id === barberId);

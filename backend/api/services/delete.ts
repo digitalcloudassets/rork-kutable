@@ -1,15 +1,22 @@
 import { getAdminClient } from '../../lib/supabase';
 
-export default async function handler(req: any, res: any) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+export default async function handler(request: Request): Promise<Response> {
+  if (request.method !== 'POST') {
+    return new Response(
+      JSON.stringify({ error: 'Method not allowed' }),
+      { status: 405, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 
   try {
-    const { barberId, serviceId } = req.body;
+    const body = await request.json();
+    const { barberId, serviceId } = body;
 
     if (!barberId || !serviceId) {
-      return res.status(400).json({ error: 'barberId and serviceId are required' });
+      return new Response(
+        JSON.stringify({ error: 'barberId and serviceId are required' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
     const supabase = getAdminClient();
@@ -24,13 +31,17 @@ export default async function handler(req: any, res: any) {
 
     if (bookingsError) {
       console.error('Error checking bookings:', bookingsError);
-      return res.status(500).json({ error: 'Failed to check service bookings' });
+      return new Response(
+        JSON.stringify({ error: 'Failed to check service bookings' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
     if (bookings && bookings.length > 0) {
-      return res.status(400).json({ 
-        error: 'Cannot delete service with confirmed bookings. Deactivate it instead.' 
-      });
+      return new Response(
+        JSON.stringify({ error: 'Cannot delete service with confirmed bookings. Deactivate it instead.' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
     // Delete the service
@@ -42,12 +53,21 @@ export default async function handler(req: any, res: any) {
 
     if (error) {
       console.error('Error deleting service:', error);
-      return res.status(500).json({ error: 'Failed to delete service' });
+      return new Response(
+        JSON.stringify({ error: 'Failed to delete service' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
-    return res.status(200).json({ ok: true });
+    return new Response(
+      JSON.stringify({ ok: true }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
   } catch (error) {
     console.error('Services delete error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return new Response(
+      JSON.stringify({ error: 'Internal server error' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 }

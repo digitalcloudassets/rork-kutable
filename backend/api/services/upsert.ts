@@ -2,23 +2,31 @@ import { getAdminClient } from '../../lib/supabase';
 import { mapServiceRowToService } from '../../adapters';
 import type { Service } from '../../types';
 
-export default async function handler(req: any, res: any) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+export default async function handler(request: Request): Promise<Response> {
+  if (request.method !== 'POST') {
+    return new Response(
+      JSON.stringify({ error: 'Method not allowed' }),
+      { status: 405, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 
   try {
-    const { barberId, service } = req.body;
+    const body = await request.json();
+    const { barberId, service } = body;
 
     if (!barberId || !service) {
-      return res.status(400).json({ error: 'barberId and service are required' });
+      return new Response(
+        JSON.stringify({ error: 'barberId and service are required' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
     // Validate required service fields
     if (!service.name || !service.durationMinutes || service.priceCents === undefined) {
-      return res.status(400).json({ 
-        error: 'Service name, durationMinutes, and priceCents are required' 
-      });
+      return new Response(
+        JSON.stringify({ error: 'Service name, durationMinutes, and priceCents are required' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
     const supabase = getAdminClient();
@@ -47,7 +55,10 @@ export default async function handler(req: any, res: any) {
       
       if (error) {
         console.error('Error updating service:', error);
-        return res.status(500).json({ error: 'Failed to update service' });
+        return new Response(
+          JSON.stringify({ error: 'Failed to update service' }),
+          { status: 500, headers: { 'Content-Type': 'application/json' } }
+        );
       }
       
       result = data;
@@ -65,7 +76,10 @@ export default async function handler(req: any, res: any) {
       
       if (error) {
         console.error('Error creating service:', error);
-        return res.status(500).json({ error: 'Failed to create service' });
+        return new Response(
+          JSON.stringify({ error: 'Failed to create service' }),
+          { status: 500, headers: { 'Content-Type': 'application/json' } }
+        );
       }
       
       result = data;
@@ -73,9 +87,15 @@ export default async function handler(req: any, res: any) {
 
     const serviceResponse: Service = mapServiceRowToService(result);
 
-    return res.status(200).json({ service: serviceResponse });
+    return new Response(
+      JSON.stringify({ service: serviceResponse }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
   } catch (error) {
     console.error('Services upsert error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return new Response(
+      JSON.stringify({ error: 'Internal server error' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 }

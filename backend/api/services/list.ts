@@ -2,16 +2,23 @@ import { getAdminClient } from '../../lib/supabase';
 import { mapServiceRowToService } from '../../adapters';
 import type { Service } from '../../types';
 
-export default async function handler(req: any, res: any) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+export default async function handler(request: Request): Promise<Response> {
+  if (request.method !== 'POST') {
+    return new Response(
+      JSON.stringify({ error: 'Method not allowed' }),
+      { status: 405, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 
   try {
-    const { barberId } = req.body;
+    const body = await request.json();
+    const { barberId } = body;
 
     if (!barberId) {
-      return res.status(400).json({ error: 'barberId is required' });
+      return new Response(
+        JSON.stringify({ error: 'barberId is required' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
     const supabase = getAdminClient();
@@ -24,14 +31,23 @@ export default async function handler(req: any, res: any) {
 
     if (error) {
       console.error('Error fetching services:', error);
-      return res.status(500).json({ error: 'Failed to fetch services' });
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch services' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
-    const services: Service[] = serviceRows.map(mapServiceRowToService);
+    const services: Service[] = (serviceRows || []).map(mapServiceRowToService);
 
-    return res.status(200).json({ services });
+    return new Response(
+      JSON.stringify({ services }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
   } catch (error) {
     console.error('Services list error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return new Response(
+      JSON.stringify({ error: 'Internal server error' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 }
