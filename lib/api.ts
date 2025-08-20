@@ -242,7 +242,7 @@ export const api = {
   },
 
   bookings: {
-    create: async (data: { barberId?: string; serviceId?: string; startISO?: string; clientName?: string; clientPhone?: string; note?: string; }) => {
+    create: async (data: { barberId?: string; serviceId?: string; startISO?: string; clientName?: string; clientPhone?: string; clientUserId?: string; note?: string; }) => {
       const backendUrl = getBackendUrl();
       if (!backendUrl) {
         // No backend configured, use mock implementation
@@ -255,6 +255,7 @@ export const api = {
           endISO: new Date(new Date(data.startISO || new Date()).getTime() + 30 * 60000).toISOString(),
           clientName: data.clientName || '',
           clientPhone: data.clientPhone || '',
+          clientUserId: data.clientUserId,
           note: data.note,
           status: "pending",
           createdAtISO: new Date().toISOString(),

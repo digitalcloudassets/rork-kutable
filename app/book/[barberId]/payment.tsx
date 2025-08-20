@@ -12,6 +12,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { CreditCard, Lock, Check } from "lucide-react-native";
 import { useMutation } from "@tanstack/react-query";
 import { useBooking } from "@/providers/BookingProvider";
+import { useAuth } from "@/providers/AuthProvider";
 import { brandColors } from "@/config/brand";
 import { api } from "@/lib/api";
 
@@ -19,6 +20,7 @@ export default function PaymentScreen() {
   const router = useRouter();
   const { barberId } = useLocalSearchParams<{ barberId: string }>();
   const { selectedBarber, selectedService, selectedTime, clientDetails, clearBooking } = useBooking();
+  const { user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
 
   const createBookingMutation = useMutation({
@@ -56,6 +58,7 @@ export default function PaymentScreen() {
       startISO: selectedTime?.startISO,
       clientName: clientDetails?.name,
       clientPhone: clientDetails?.phone,
+      clientUserId: user?.id,
       note: clientDetails?.note,
     });
   };

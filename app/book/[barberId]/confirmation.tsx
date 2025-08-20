@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Animated,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { CheckCircle, Calendar, Clock, MapPin, User, Share2 } from "lucide-react-native";
@@ -20,11 +21,35 @@ export default function ConfirmationScreen() {
   const { registerForPushNotifications } = usePushNotifications();
   const [isAddingToCalendar, setIsAddingToCalendar] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  
+  // Animation values
+  const scaleAnim = useState(new Animated.Value(0))[0];
+  const fadeAnim = useState(new Animated.Value(0))[0];
 
-  // Register for push notifications when confirmation loads
+  // Register for push notifications and animate success when confirmation loads
   useEffect(() => {
     registerForPushNotifications();
-  }, [registerForPushNotifications]);
+    
+    // Success animation sequence
+    Animated.sequence([
+      Animated.timing(scaleAnim, {
+        toValue: 1.2,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+  }, [registerForPushNotifications, scaleAnim, fadeAnim]);
 
   const handleDone = () => {
     clearBooking();
@@ -91,11 +116,23 @@ export default function ConfirmationScreen() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.successContainer}>
-        <CheckCircle size={64} color="#10B981" />
-        <Text style={styles.successTitle}>Booking Confirmed!</Text>
-        <Text style={styles.successSubtitle}>
-          Your appointment has been successfully booked
-        </Text>
+        <Animated.View 
+          style={[
+            styles.successIconContainer,
+            {
+              transform: [{ scale: scaleAnim }],
+              opacity: fadeAnim,
+            }
+          ]}
+        >
+          <CheckCircle size={64} color="#10B981" />
+        </Animated.View>
+        <Animated.View style={{ opacity: fadeAnim }}>
+          <Text style={styles.successTitle}>Booking Confirmed!</Text>
+          <Text style={styles.successSubtitle}>
+            Your appointment has been successfully booked
+          </Text>
+        </Animated.View>
       </View>
 
       <View style={styles.bookingCard}>
@@ -213,6 +250,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 40,
     backgroundColor: "#fff",
+  },
+  successIconContainer: {
+    marginBottom: 16,
   },
   successTitle: {
     fontSize: 24,
