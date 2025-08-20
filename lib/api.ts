@@ -3,11 +3,41 @@ import { seedData } from "@/lib/seedData";
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Get backend URL with fallback
+const getBackendUrl = () => {
+  const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
+  if (!backendUrl) {
+    console.warn('EXPO_PUBLIC_BACKEND_URL not configured, using fallback data');
+    return null;
+  }
+  return backendUrl;
+};
+
 export const api = {
   barbers: {
     search: async ({ q, serviceId }: { q?: string; serviceId?: string }) => {
+      const backendUrl = getBackendUrl();
+      if (!backendUrl) {
+        // No backend configured, use seed data
+        await delay(500);
+        let barbers = seedData.barbers;
+        if (q) {
+          barbers = barbers.filter(b => 
+            b.name.toLowerCase().includes(q.toLowerCase()) ||
+            b.shopName?.toLowerCase().includes(q.toLowerCase()) ||
+            b.services.some(s => s.name.toLowerCase().includes(q.toLowerCase()))
+          );
+        }
+        if (serviceId) {
+          barbers = barbers.filter(b => 
+            b.services.some(s => s.id === serviceId)
+          );
+        }
+        return barbers;
+      }
+
       try {
-        const response = await fetch('/api/barbers/search', {
+        const response = await fetch(`${backendUrl}/api/barbers/search`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ q, serviceId }),
@@ -62,8 +92,15 @@ export const api = {
     },
     
     profile: async ({ barberId }: { barberId: string }) => {
+      const backendUrl = getBackendUrl();
+      if (!backendUrl) {
+        // No backend configured, use seed data
+        await delay(300);
+        return seedData.barbers.find(b => b.id === barberId) || null;
+      }
+
       try {
-        const response = await fetch(`/api/barbers/profile?barberId=${barberId}`, {
+        const response = await fetch(`${backendUrl}/api/barbers/profile?barberId=${barberId}`, {
           method: 'GET',
         });
         
@@ -170,7 +207,7 @@ export const api = {
   availability: {
     list: async ({ barberId, startISO, endISO }: { barberId: string; startISO: string; endISO: string }) => {
       try {
-        const response = await fetch('/api/availability/list', {
+        const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/availability/list`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ barberId, startISO, endISO }),
@@ -195,6 +232,26 @@ export const api = {
       date: string; 
       tz?: string; 
     }) => {
+      const backendUrl = getBackendUrl();
+      if (!backendUrl) {
+        // No backend configured, generate mock slots
+        await delay(500);
+        const mockSlots = [];
+        const startHour = 9; // 9 AM
+        const endHour = 18; // 6 PM
+        const stepMinutes = 15;
+        
+        for (let hour = startHour; hour < endHour; hour++) {
+          for (let minute = 0; minute < 60; minute += stepMinutes) {
+            const slotDate = new Date(date + 'T00:00:00');
+            slotDate.setHours(hour, minute, 0, 0);
+            mockSlots.push(slotDate.toISOString());
+          }
+        }
+        
+        return { slots: mockSlots };
+      }
+
       try {
         const params = new URLSearchParams({
           barberId,
@@ -203,7 +260,7 @@ export const api = {
           ...(tz && { tz }),
         });
         
-        const response = await fetch(`/api/availability/open-slots?${params}`, {
+        const response = await fetch(`${backendUrl}/api/availability/open-slots?${params}`, {
           method: 'GET',
         });
         
@@ -223,7 +280,7 @@ export const api = {
 
     block: async ({ barberId, startISO, endISO, reason }: { barberId: string; startISO: string; endISO: string; reason?: string }) => {
       try {
-        const response = await fetch('/api/availability/block', {
+        const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/availability/block`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ barberId, startISO, endISO, reason }),
@@ -244,7 +301,7 @@ export const api = {
 
     unblock: async ({ barberId, blockId }: { barberId: string; blockId: string }) => {
       try {
-        const response = await fetch('/api/availability/unblock', {
+        const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/availability/unblock`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ barberId, blockId }),

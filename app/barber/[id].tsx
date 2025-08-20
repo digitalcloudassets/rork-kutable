@@ -29,13 +29,30 @@ export default function BarberProfileScreen() {
   const { data: galleryItems = [] } = useQuery({
     queryKey: ['gallery', id],
     queryFn: async () => {
-      const response = await fetch('https://toolkit.rork.com/api/gallery/list', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ barberId: id }),
-      });
-      const data = await response.json();
-      return (data.items || []).slice(0, 6); // Show top 6 images
+      const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
+      if (!backendUrl) {
+        console.warn('EXPO_PUBLIC_BACKEND_URL not configured, no gallery items');
+        return [];
+      }
+      
+      try {
+        const response = await fetch(`${backendUrl}/api/gallery/list`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ barberId: id }),
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          return (data.items || []).slice(0, 6); // Show top 6 images
+        } else {
+          console.error('Failed to fetch gallery items');
+          return [];
+        }
+      } catch (error) {
+        console.error('Error fetching gallery items:', error);
+        return [];
+      }
     },
     enabled: !!id,
   });
