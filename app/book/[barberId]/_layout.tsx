@@ -1,14 +1,14 @@
 import React from 'react';
 import { Stack } from 'expo-router';
-import { BRAND } from '@/config/brand';
+import { Tokens } from '@/theme/tokens';
 
 export default function BookingLayout() {
   return (
     <Stack screenOptions={{
       headerStyle: {
-        backgroundColor: BRAND.BG_DARK,
+        backgroundColor: Tokens.bg,
       },
-      headerTintColor: BRAND.TEXT_PRIMARY,
+      headerTintColor: Tokens.text,
       headerTitleStyle: {
         fontWeight: '700',
       },

@@ -12,12 +12,17 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: true,
+        headerStyle: { backgroundColor: Tokens.bg },
+        headerTintColor: Tokens.text,
         headerTitleStyle: {
           fontWeight: '700',
         },
         tabBarStyle: {
-          borderTopWidth: 1,
+          backgroundColor: Tokens.surface,
+          borderTopColor: Tokens.border,
         },
+        tabBarActiveTintColor: Tokens.text,
+        tabBarInactiveTintColor: Tokens.textMuted,
       }}
     >
       <Tabs.Screen
