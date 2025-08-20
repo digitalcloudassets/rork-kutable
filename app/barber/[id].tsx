@@ -29,7 +29,7 @@ export default function BarberProfileScreen() {
   const handleBookService = (service: Service) => {
     setSelectedBarber(barber);
     setSelectedService(service);
-    router.push("/booking/time");
+    router.push(`/booking/service?barberId=${barber.id}&serviceId=${service.id}`);
   };
 
   if (isLoading) {
@@ -63,7 +63,9 @@ export default function BarberProfileScreen() {
           <View style={styles.infoRow}>
             <View style={styles.infoItem}>
               <Star size={16} color="#FFB800" fill="#FFB800" />
-              <Text style={styles.infoText}>4.8 (127 reviews)</Text>
+              <Text style={styles.infoText}>
+                {barber.rating ? `${barber.rating.toFixed(1)} (${barber.reviewCount || 0} reviews)` : 'No reviews yet'}
+              </Text>
             </View>
           </View>
 

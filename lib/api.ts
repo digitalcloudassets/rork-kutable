@@ -62,8 +62,30 @@ export const api = {
     },
     
     profile: async ({ barberId }: { barberId: string }) => {
-      await delay(300);
-      return seedData.barbers.find(b => b.id === barberId) || null;
+      try {
+        const response = await fetch(`/api/barbers/profile?barberId=${barberId}`, {
+          method: 'GET',
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          // Combine barber and services into the expected format
+          return {
+            ...data.barber,
+            services: data.services
+          };
+        } else {
+          console.error('Failed to fetch barber profile');
+          // Fallback to seed data
+          await delay(300);
+          return seedData.barbers.find(b => b.id === barberId) || null;
+        }
+      } catch (error) {
+        console.error('Error fetching barber profile:', error);
+        // Fallback to seed data
+        await delay(300);
+        return seedData.barbers.find(b => b.id === barberId) || null;
+      }
     },
   },
 

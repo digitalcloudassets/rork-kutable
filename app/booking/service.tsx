@@ -1,30 +1,70 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   StyleSheet,
   Text,
   View,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Clock, DollarSign } from "lucide-react-native";
+import { useQuery } from "@tanstack/react-query";
 import { useBooking } from "@/providers/BookingProvider";
 import { brandColors } from "@/config/brand";
+import { api } from "@/lib/api";
 import type { Service } from "@/types/models";
 
 export default function SelectServiceScreen() {
   const router = useRouter();
-  const { selectedBarber, setSelectedService } = useBooking();
+  const { barberId, serviceId } = useLocalSearchParams();
+  const { selectedBarber, setSelectedBarber, setSelectedService } = useBooking();
+
+  // Fetch barber data if not already selected or if different barber
+  const { data: barber, isLoading } = useQuery({
+    queryKey: ["barber", barberId],
+    queryFn: () => api.barbers.profile({ barberId: barberId as string }),
+    enabled: !!barberId && (!selectedBarber || selectedBarber.id !== barberId),
+  });
+
+  // Set barber data when loaded
+  useEffect(() => {
+    if (barber && (!selectedBarber || selectedBarber.id !== barberId)) {
+      setSelectedBarber(barber);
+    }
+  }, [barber, selectedBarber, barberId, setSelectedBarber]);
+
+  // Auto-select service and navigate if serviceId is provided
+  useEffect(() => {
+    if (serviceId && (selectedBarber || barber)) {
+      const currentBarber = selectedBarber || barber;
+      const service = currentBarber?.services.find((s: Service) => s.id === serviceId);
+      if (service) {
+        setSelectedService(service);
+        router.replace("/booking/time");
+      }
+    }
+  }, [serviceId, selectedBarber, barber, setSelectedService, router]);
 
   const handleSelectService = (service: Service) => {
     setSelectedService(service);
     router.push("/booking/time");
   };
 
-  if (!selectedBarber) {
+  if (isLoading) {
     return (
-      <View style={styles.container}>
-        <Text>Please select a barber first</Text>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={brandColors.primary} />
+      </View>
+    );
+  }
+
+  const currentBarber = selectedBarber || barber;
+  
+  if (!currentBarber) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text>Barber not found</Text>
       </View>
     );
   }
@@ -33,11 +73,11 @@ export default function SelectServiceScreen() {
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Select a Service</Text>
-        <Text style={styles.headerSubtitle}>with {selectedBarber.name}</Text>
+        <Text style={styles.headerSubtitle}>with {currentBarber.name}</Text>
       </View>
 
       <View style={styles.servicesList}>
-        {selectedBarber.services.map((service: Service) => (
+        {currentBarber.services.map((service: Service) => (
           <TouchableOpacity
             key={service.id}
             style={styles.serviceCard}
@@ -71,6 +111,12 @@ export default function SelectServiceScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#f8f9fa",
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: "#f8f9fa",
   },
   header: {
