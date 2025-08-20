@@ -31,9 +31,16 @@ export default async function handler(req: Request): Promise<Response> {
     }
 
     // Get base URL from environment or request
-    const baseUrl = process.env.APP_BASE_URL || 'exp://localhost:8081';
-    const finalRefreshUrl = refreshUrl || `${baseUrl}/(tabs)/dashboard/onboarding`;
-    const finalReturnUrl = returnUrl || `${baseUrl}/(tabs)/dashboard`;
+    function getBaseUrl(req: Request) {
+      const b = process.env.APP_BASE_URL;
+      if (b) return b.replace(/\/$/, '');
+      const u = new URL(req.url);
+      return `${u.protocol}//${u.host}`;
+    }
+    
+    const baseUrl = getBaseUrl(req);
+    const finalRefreshUrl = refreshUrl || `${baseUrl}/api/stripe/onboarding/refresh?barberId=${barberId}`;
+    const finalReturnUrl = returnUrl || `${baseUrl}/api/stripe/onboarding/return?barberId=${barberId}`;
 
     const supabase = getAdminClient();
     

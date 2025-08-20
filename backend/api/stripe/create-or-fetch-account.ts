@@ -56,12 +56,12 @@ export default async function handler(req: Request): Promise<Response> {
     const stripe = getStripe();
     const account = await stripe.accounts.create({
       type: 'express',
-      country: 'US', // You may want to make this configurable
-      // email: barberRow.email, // Remove if email field doesn't exist
+      business_type: 'individual',
       capabilities: {
         card_payments: { requested: true },
         transfers: { requested: true },
       },
+      metadata: { barberId },
     });
     
     console.log(`Created Stripe account for barber ${barberId}:`, account.id);

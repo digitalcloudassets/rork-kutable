@@ -12,7 +12,7 @@ import availabilityList from './api/availability/list';
 import availabilityBlock from './api/availability/block';
 import availabilityUnblock from './api/availability/unblock';
 import availabilityOpenSlots from './api/availability/open-slots';
-import barbersSearch from './api/barbers/search';
+import { POST as barbersSearch } from './api/barbers/search';
 import earningsSummary from './api/earnings/summary';
 import payoutsList from './api/payouts/list';
 import bookingsCreate from './api/bookings/create';
@@ -250,6 +250,13 @@ app.post('/api/gallery/upload', async (c) => {
   return galleryUpload(c.req.raw);
 });
 
+// Stripe onboarding landing pages
+app.get('/api/stripe/onboarding/return', (c) => {
+  return c.text('Onboarding complete. You can close this window and return to the app.');
+});
 
+app.get('/api/stripe/onboarding/refresh', (c) => {
+  return c.text('Please retry onboarding from the app.');
+});
 
 export default app;

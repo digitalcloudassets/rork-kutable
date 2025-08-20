@@ -11,9 +11,9 @@ import { Stack, useRouter } from "expo-router";
 import { CreditCard, ExternalLink, CheckCircle, AlertCircle } from "lucide-react-native";
 import * as WebBrowser from "expo-web-browser";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { brandColors } from "@/config/brand";
-import { api } from "@/lib/api";
 import { useAuth } from "@/providers/AuthProvider";
+import { Tokens } from "@/theme/tokens";
+import { api } from "@/lib/api";
 
 export default function OnboardingScreen() {
   const router = useRouter();
