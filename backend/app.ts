@@ -176,24 +176,39 @@ app.get('/api/health/snapshot', async (c) => {
 
 // Stripe endpoints
 app.post('/api/stripe/create-or-fetch-account', async (c) => {
-  const response = await stripeCreateOrFetchAccount(c.req.raw);
-  const data = await response.json();
-  c.status(response.status as any);
-  return c.json(data);
+  try {
+    const response = await stripeCreateOrFetchAccount(c.req.raw);
+    const data = await response.json();
+    c.status(response.status as any);
+    return c.json(data);
+  } catch (error: any) {
+    console.error('Error in stripe create-or-fetch-account:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
 });
 
 app.post('/api/stripe/account-link', async (c) => {
-  const response = await stripeAccountLink(c.req.raw);
-  const data = await response.json();
-  c.status(response.status as any);
-  return c.json(data);
+  try {
+    const response = await stripeAccountLink(c.req.raw);
+    const data = await response.json();
+    c.status(response.status as any);
+    return c.json(data);
+  } catch (error: any) {
+    console.error('Error in stripe account-link:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
 });
 
 app.get('/api/stripe/account-status', async (c) => {
-  const response = await stripeAccountStatus(c.req.raw);
-  const data = await response.json();
-  c.status(response.status as any);
-  return c.json(data);
+  try {
+    const response = await stripeAccountStatus(c.req.raw);
+    const data = await response.json();
+    c.status(response.status as any);
+    return c.json(data);
+  } catch (error: any) {
+    console.error('Error in stripe account-status:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
 });
 
 // Services endpoints
