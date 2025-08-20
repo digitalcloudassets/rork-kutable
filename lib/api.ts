@@ -1,7 +1,25 @@
 import type { Service, Booking } from "@/types/models";
 import { seedData } from "@/lib/seedData";
+import { DATA_MODE, logFallback } from "@/config/dataMode";
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Generic API function for live mode
+export async function apiRequest(path: string, init?: RequestInit) {
+  const base = process.env.EXPO_PUBLIC_API_URL || process.env.EXPO_PUBLIC_BACKEND_URL;
+  if (!base) {
+    throw new Error('API URL not configured');
+  }
+  const res = await fetch(`${base}${path}`, { 
+    ...init, 
+    headers: { 
+      'Content-Type': 'application/json', 
+      ...(init?.headers || {}) 
+    } 
+  });
+  if (!res.ok) throw new Error(`API ${path} ${res.status}`);
+  return res.json();
+}
 
 // Get backend URL with fallback
 const getBackendUrl = () => {
@@ -16,65 +34,38 @@ const getBackendUrl = () => {
 export const api = {
   barbers: {
     search: async ({ q, serviceId }: { q?: string; serviceId?: string }) => {
-      const backendUrl = getBackendUrl();
-      if (!backendUrl) {
-        // No backend configured, use seed data
-        await delay(500);
-        let barbers = seedData.barbers;
-        if (q) {
-          barbers = barbers.filter(b => 
-            b.name.toLowerCase().includes(q.toLowerCase()) ||
-            b.shopName?.toLowerCase().includes(q.toLowerCase()) ||
-            b.services.some(s => s.name.toLowerCase().includes(q.toLowerCase()))
-          );
-        }
-        if (serviceId) {
-          barbers = barbers.filter(b => 
-            b.services.some(s => s.id === serviceId)
-          );
-        }
-        return barbers;
+      let data;
+      let mockBarbers = seedData.barbers;
+      if (q) {
+        mockBarbers = mockBarbers.filter(b => 
+          b.name.toLowerCase().includes(q.toLowerCase()) ||
+          b.shopName?.toLowerCase().includes(q.toLowerCase()) ||
+          b.services.some(s => s.name.toLowerCase().includes(q.toLowerCase()))
+        );
+      }
+      if (serviceId) {
+        mockBarbers = mockBarbers.filter(b => 
+          b.services.some(s => s.id === serviceId)
+        );
       }
 
-      try {
-        const response = await fetch(`${backendUrl}/api/barbers/search`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ q, serviceId }),
-        });
-        
-        if (response.ok) {
-          const contentType = response.headers.get('content-type');
-          if (contentType && contentType.includes('application/json')) {
-            const data = await response.json();
-            return data.barbers;
-          } else {
-            console.warn('Backend returned non-JSON response, using fallback data');
-            throw new Error('Non-JSON response');
-          }
-        } else {
-          console.error('Failed to search barbers, status:', response.status);
-          throw new Error('API request failed');
+      if (DATA_MODE === 'live') {
+        try {
+          data = await apiRequest('/api/barbers/search', {
+            method: 'POST',
+            body: JSON.stringify({ q, serviceId })
+          });
+          return data.barbers;
+        } catch (error) {
+          logFallback('/api/barbers/search', error);
+          data = mockBarbers;
         }
-      } catch (error) {
-        console.error('Error searching barbers:', error);
-        // Fallback to seed data
+      } else {
         await delay(500);
-        let barbers = seedData.barbers;
-        if (q) {
-          barbers = barbers.filter(b => 
-            b.name.toLowerCase().includes(q.toLowerCase()) ||
-            b.shopName?.toLowerCase().includes(q.toLowerCase()) ||
-            b.services.some(s => s.name.toLowerCase().includes(q.toLowerCase()))
-          );
-        }
-        if (serviceId) {
-          barbers = barbers.filter(b => 
-            b.services.some(s => s.id === serviceId)
-          );
-        }
-        return barbers;
+        data = mockBarbers;
       }
+      
+      return data;
     },
 
     list: async ({ search }: { search?: string }) => {
@@ -340,44 +331,29 @@ export const api = {
     },
 
     list: async ({ userId, barberId, range }: { userId?: string; barberId?: string; range?: string; }) => {
-      const backendUrl = getBackendUrl();
-      if (!backendUrl) {
-        // No backend configured, use seed data
-        await delay(500);
-        return seedData.bookings.filter(b => {
-          if (barberId && b.barberId !== barberId) return false;
-          return true;
-        });
-      }
+      let data;
+      const mockBookings = seedData.bookings.filter(b => {
+        if (barberId && b.barberId !== barberId) return false;
+        return true;
+      });
 
-      try {
-        const response = await fetch(`${backendUrl}/api/bookings/list`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, barberId, range }),
-        });
-        
-        if (response.ok) {
-          const result = await response.json();
-          return result.bookings;
-        } else {
-          console.error('Failed to fetch bookings');
-          // Fallback to seed data
-          await delay(500);
-          return seedData.bookings.filter(b => {
-            if (barberId && b.barberId !== barberId) return false;
-            return true;
+      if (DATA_MODE === 'live') {
+        try {
+          data = await apiRequest('/api/bookings/list', {
+            method: 'POST',
+            body: JSON.stringify({ userId, barberId, range })
           });
+          return data.bookings;
+        } catch (error) {
+          logFallback('/api/bookings/list', error);
+          data = mockBookings;
         }
-      } catch (error) {
-        console.error('Error fetching bookings:', error);
-        // Fallback to seed data
+      } else {
         await delay(500);
-        return seedData.bookings.filter(b => {
-          if (barberId && b.barberId !== barberId) return false;
-          return true;
-        });
+        data = mockBookings;
       }
+      
+      return data;
     },
   },
 
@@ -424,70 +400,41 @@ export const api = {
       date: string; 
       tz?: string; 
     }) => {
-      const backendUrl = getBackendUrl();
-      if (!backendUrl) {
-        // No backend configured, generate mock slots
-        await delay(500);
-        const mockSlots = [];
-        const startHour = 9; // 9 AM
-        const endHour = 18; // 6 PM
-        const stepMinutes = 15;
-        
-        for (let hour = startHour; hour < endHour; hour++) {
-          for (let minute = 0; minute < 60; minute += stepMinutes) {
-            const slotDate = new Date(date + 'T00:00:00');
-            slotDate.setHours(hour, minute, 0, 0);
-            mockSlots.push(slotDate.toISOString());
-          }
+      let data;
+      const mockSlots = [];
+      const startHour = 9; // 9 AM
+      const endHour = 18; // 6 PM
+      const stepMinutes = 15;
+      
+      for (let hour = startHour; hour < endHour; hour++) {
+        for (let minute = 0; minute < 60; minute += stepMinutes) {
+          const slotDate = new Date(date + 'T00:00:00');
+          slotDate.setHours(hour, minute, 0, 0);
+          mockSlots.push(slotDate.toISOString());
         }
-        
-        return { slots: mockSlots };
       }
+      const mockData = { slots: mockSlots };
 
-      try {
-        const params = new URLSearchParams({
-          barberId,
-          serviceId,
-          date,
-          ...(tz && { tz }),
-        });
-        
-        const response = await fetch(`${backendUrl}/api/availability/open-slots?${params}`, {
-          method: 'GET',
-        });
-        
-        if (response.ok) {
-          const contentType = response.headers.get('content-type');
-          if (contentType && contentType.includes('application/json')) {
-            const data = await response.json();
-            return data;
-          } else {
-            console.warn('Backend returned non-JSON response for open slots, using fallback data');
-            throw new Error('Non-JSON response');
-          }
-        } else {
-          console.error('Failed to fetch open slots, status:', response.status);
-          throw new Error('API request failed');
+      if (DATA_MODE === 'live') {
+        try {
+          const params = new URLSearchParams({
+            barberId,
+            serviceId,
+            date,
+            ...(tz && { tz }),
+          });
+          data = await apiRequest(`/api/availability/open-slots?${params}`);
+          return data;
+        } catch (error) {
+          logFallback('/api/availability/open-slots', error);
+          data = mockData;
         }
-      } catch (error) {
-        console.error('Error fetching open slots:', error);
-        // Fallback to mock slots
+      } else {
         await delay(500);
-        const mockSlots = [];
-        const startHour = 9; // 9 AM
-        const endHour = 18; // 6 PM
-        const stepMinutes = 15;
-        
-        for (let hour = startHour; hour < endHour; hour++) {
-          for (let minute = 0; minute < 60; minute += stepMinutes) {
-            const slotDate = new Date(date + 'T00:00:00');
-            slotDate.setHours(hour, minute, 0, 0);
-            mockSlots.push(slotDate.toISOString());
-          }
-        }
-        
-        return { slots: mockSlots };
+        data = mockData;
       }
+      
+      return data;
     },
 
     block: async ({ barberId, startISO, endISO, reason }: { barberId: string; startISO: string; endISO: string; reason?: string }) => {
