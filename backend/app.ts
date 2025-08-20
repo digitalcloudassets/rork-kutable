@@ -1,6 +1,25 @@
 import { Hono } from 'hono';
 import { getAdminClient } from './lib/supabase';
 
+// Import API handlers (only those with default exports)
+import stripeCreateOrFetchAccount from './api/stripe/create-or-fetch-account';
+import stripeAccountLink from './api/stripe/account-link';
+import stripeAccountStatus from './api/stripe/account-status';
+import servicesList from './api/services/list';
+import servicesUpsert from './api/services/upsert';
+import servicesDelete from './api/services/delete';
+import availabilityList from './api/availability/list';
+import availabilityBlock from './api/availability/block';
+import availabilityUnblock from './api/availability/unblock';
+import availabilityOpenSlots from './api/availability/open-slots';
+import barbersSearch from './api/barbers/search';
+import earningsSummary from './api/earnings/summary';
+import payoutsList from './api/payouts/list';
+import bookingsCreate from './api/bookings/create';
+import bookingsList from './api/bookings/list';
+import paymentsCreateIntent from './api/payments/create-intent';
+import paymentsWebhook from './api/payments/webhook';
+
 const app = new Hono();
 
 // helper: base URL
@@ -126,5 +145,85 @@ app.get('/api/health/snapshot', async (c) => {
 
   return c.json(snapshot);
 });
+
+// Stripe endpoints
+app.post('/api/stripe/create-or-fetch-account', async (c) => {
+  return await stripeCreateOrFetchAccount(c.req.raw);
+});
+
+app.post('/api/stripe/account-link', async (c) => {
+  return await stripeAccountLink(c.req.raw);
+});
+
+app.get('/api/stripe/account-status', async (c) => {
+  return await stripeAccountStatus(c.req.raw);
+});
+
+// Services endpoints
+app.post('/api/services/list', async (c) => {
+  return await servicesList(c.req.raw, null);
+});
+
+app.post('/api/services/upsert', async (c) => {
+  return await servicesUpsert(c.req.raw, null);
+});
+
+app.post('/api/services/delete', async (c) => {
+  return await servicesDelete(c.req.raw, null);
+});
+
+// Availability endpoints
+app.post('/api/availability/list', async (c) => {
+  return await availabilityList(c.req.raw);
+});
+
+app.post('/api/availability/block', async (c) => {
+  return await availabilityBlock(c.req.raw);
+});
+
+app.post('/api/availability/unblock', async (c) => {
+  return await availabilityUnblock(c.req.raw);
+});
+
+app.get('/api/availability/open-slots', async (c) => {
+  return await availabilityOpenSlots(c.req.raw);
+});
+
+// Barbers endpoints
+app.post('/api/barbers/search', async (c) => {
+  return await barbersSearch(c.req.raw);
+});
+
+// Earnings endpoints
+app.get('/api/earnings/summary', async (c) => {
+  return await earningsSummary(c.req.raw);
+});
+
+// Payouts endpoints
+app.get('/api/payouts/list', async (c) => {
+  return await payoutsList(c.req.raw);
+});
+
+
+
+// Bookings endpoints
+app.post('/api/bookings/create', async (c) => {
+  return await bookingsCreate(c.req.raw, null);
+});
+
+app.post('/api/bookings/list', async (c) => {
+  return await bookingsList(c.req.raw, null);
+});
+
+// Payments endpoints
+app.post('/api/payments/create-intent', async (c) => {
+  return await paymentsCreateIntent(c.req.raw, null);
+});
+
+app.post('/api/payments/webhook', async (c) => {
+  return await paymentsWebhook(c.req.raw, null);
+});
+
+
 
 export default app;

@@ -100,14 +100,23 @@ export default function EarningsScreen() {
       );
       
       if (!response.ok) {
-        throw new Error('Failed to fetch earnings');
+        const errorText = await response.text();
+        console.error('Earnings API error:', response.status, errorText);
+        throw new Error(`Failed to fetch earnings: ${response.status}`);
+      }
+      
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Non-JSON response from earnings API:', text.substring(0, 200));
+        throw new Error('Server returned invalid response format');
       }
       
       const data = await response.json();
       setEarnings(data);
     } catch (error) {
-      console.error('Error fetching earnings:', error);
-      Alert.alert('Error', 'Failed to load earnings data');
+      console.error('Error fetching earnings summary:', error);
+      Alert.alert('Error', 'Failed to load earnings data. Please check your connection and try again.');
     }
   };
 
@@ -120,14 +129,23 @@ export default function EarningsScreen() {
       );
       
       if (!response.ok) {
-        throw new Error('Failed to fetch payouts');
+        const errorText = await response.text();
+        console.error('Payouts API error:', response.status, errorText);
+        throw new Error(`Failed to fetch payouts: ${response.status}`);
+      }
+      
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Non-JSON response from payouts API:', text.substring(0, 200));
+        throw new Error('Server returned invalid response format');
       }
       
       const data = await response.json();
       setPayouts(data.payouts || []);
     } catch (error) {
       console.error('Error fetching payouts:', error);
-      Alert.alert('Error', 'Failed to load payouts data');
+      Alert.alert('Error', 'Failed to load payouts data. Please check your connection and try again.');
     }
   };
 
