@@ -231,7 +231,7 @@ export default function DashboardScreen() {
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.actionCard}
-            onPress={() => router.push("/earnings-details")}
+            onPress={() => router.push("/dashboard/earnings")}
           >
             <DollarSign size={24} color={brandColors.primary} />
             <Text style={styles.actionText}>View Earnings</Text>

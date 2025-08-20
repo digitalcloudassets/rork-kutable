@@ -1,0 +1,442 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  RefreshControl,
+  Alert,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Stack } from 'expo-router';
+import { DollarSign, TrendingUp, Clock, CheckCircle, AlertCircle } from 'lucide-react-native';
+import { useAuth } from '@/providers/AuthProvider';
+
+interface EarningsSummary {
+  grossCents: number;
+  feesCents: number;
+  netCents: number;
+}
+
+interface Payout {
+  id: string;
+  amountCents: number;
+  status: 'pending' | 'in_transit' | 'paid' | 'failed' | 'canceled';
+  arrivalDateISO: string;
+  createdAtISO: string;
+}
+
+type TimeRange = 'today' | 'week' | 'month';
+
+const formatCurrency = (cents: number): string => {
+  return `$${(cents / 100).toFixed(2)}`;
+};
+
+const formatDate = (isoString: string): string => {
+  const date = new Date(isoString);
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+};
+
+const getStatusColor = (status: Payout['status']): string => {
+  switch (status) {
+    case 'paid':
+      return '#10B981';
+    case 'in_transit':
+      return '#F59E0B';
+    case 'pending':
+      return '#6B7280';
+    case 'failed':
+      return '#EF4444';
+    case 'canceled':
+      return '#6B7280';
+    default:
+      return '#6B7280';
+  }
+};
+
+const getStatusIcon = (status: Payout['status']) => {
+  const color = getStatusColor(status);
+  const size = 16;
+  
+  switch (status) {
+    case 'paid':
+      return <CheckCircle size={size} color={color} />;
+    case 'in_transit':
+      return <Clock size={size} color={color} />;
+    case 'pending':
+      return <Clock size={size} color={color} />;
+    case 'failed':
+    case 'canceled':
+      return <AlertCircle size={size} color={color} />;
+    default:
+      return <Clock size={size} color={color} />;
+  }
+};
+
+export default function EarningsScreen() {
+  const { user } = useAuth();
+  const [selectedRange, setSelectedRange] = useState<TimeRange>('week');
+  const [earnings, setEarnings] = useState<EarningsSummary>({
+    grossCents: 0,
+    feesCents: 0,
+    netCents: 0,
+  });
+  const [payouts, setPayouts] = useState<Payout[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchEarnings = async (range: TimeRange) => {
+    if (!user?.id) return;
+
+    try {
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/earnings/summary?barberId=${user.id}&range=${range}`
+      );
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch earnings');
+      }
+      
+      const data = await response.json();
+      setEarnings(data);
+    } catch (error) {
+      console.error('Error fetching earnings:', error);
+      Alert.alert('Error', 'Failed to load earnings data');
+    }
+  };
+
+  const fetchPayouts = async () => {
+    if (!user?.id) return;
+
+    try {
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/payouts/list?barberId=${user.id}`
+      );
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch payouts');
+      }
+      
+      const data = await response.json();
+      setPayouts(data.payouts || []);
+    } catch (error) {
+      console.error('Error fetching payouts:', error);
+      Alert.alert('Error', 'Failed to load payouts data');
+    }
+  };
+
+  const loadData = async (range: TimeRange = selectedRange) => {
+    setLoading(true);
+    await Promise.all([
+      fetchEarnings(range),
+      fetchPayouts(),
+    ]);
+    setLoading(false);
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  };
+
+  const handleRangeChange = (range: TimeRange) => {
+    setSelectedRange(range);
+    fetchEarnings(range);
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [user?.id]);
+
+  const getRangeLabel = (range: TimeRange): string => {
+    switch (range) {
+      case 'today':
+        return 'Today';
+      case 'week':
+        return 'This Week';
+      case 'month':
+        return 'This Month';
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <Stack.Screen options={{ title: 'Earnings' }} />
+      
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      >
+        {/* Time Range Selector */}
+        <View style={styles.rangeSelector}>
+          {(['today', 'week', 'month'] as TimeRange[]).map((range) => (
+            <TouchableOpacity
+              key={range}
+              style={[
+                styles.rangeButton,
+                selectedRange === range && styles.rangeButtonActive,
+              ]}
+              onPress={() => handleRangeChange(range)}
+            >
+              <Text
+                style={[
+                  styles.rangeButtonText,
+                  selectedRange === range && styles.rangeButtonTextActive,
+                ]}
+              >
+                {getRangeLabel(range)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Earnings Summary Cards */}
+        <View style={styles.summaryContainer}>
+          <View style={styles.summaryCard}>
+            <View style={styles.summaryHeader}>
+              <DollarSign size={24} color="#10B981" />
+              <Text style={styles.summaryTitle}>Gross Revenue</Text>
+            </View>
+            <Text style={styles.summaryAmount}>
+              {formatCurrency(earnings.grossCents)}
+            </Text>
+          </View>
+
+          <View style={styles.summaryCard}>
+            <View style={styles.summaryHeader}>
+              <TrendingUp size={24} color="#F59E0B" />
+              <Text style={styles.summaryTitle}>Platform Fees</Text>
+            </View>
+            <Text style={styles.summaryAmount}>
+              -{formatCurrency(earnings.feesCents)}
+            </Text>
+          </View>
+
+          <View style={[styles.summaryCard, styles.netEarningsCard]}>
+            <View style={styles.summaryHeader}>
+              <CheckCircle size={24} color="#FFFFFF" />
+              <Text style={[styles.summaryTitle, styles.netEarningsTitle]}>
+                Net Earnings
+              </Text>
+            </View>
+            <Text style={[styles.summaryAmount, styles.netEarningsAmount]}>
+              {formatCurrency(earnings.netCents)}
+            </Text>
+          </View>
+        </View>
+
+        {/* Payouts Section */}
+        <View style={styles.payoutsSection}>
+          <Text style={styles.sectionTitle}>Recent Payouts</Text>
+          
+          {payouts.length === 0 ? (
+            <View style={styles.emptyState}>
+              <DollarSign size={48} color="#9CA3AF" />
+              <Text style={styles.emptyStateTitle}>No payouts yet</Text>
+              <Text style={styles.emptyStateText}>
+                Complete bookings to start earning payouts
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.payoutsList}>
+              {payouts.map((payout) => (
+                <View key={payout.id} style={styles.payoutCard}>
+                  <View style={styles.payoutHeader}>
+                    <View style={styles.payoutStatus}>
+                      {getStatusIcon(payout.status)}
+                      <Text style={styles.payoutStatusText}>
+                        {payout.status.charAt(0).toUpperCase() + payout.status.slice(1)}
+                      </Text>
+                    </View>
+                    <Text style={styles.payoutAmount}>
+                      {formatCurrency(payout.amountCents)}
+                    </Text>
+                  </View>
+                  
+                  <View style={styles.payoutDetails}>
+                    <Text style={styles.payoutDate}>
+                      Created: {formatDate(payout.createdAtISO)}
+                    </Text>
+                    {payout.status !== 'paid' && (
+                      <Text style={styles.payoutArrival}>
+                        Expected: {formatDate(payout.arrivalDateISO)}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  rangeSelector: {
+    flexDirection: 'row',
+    margin: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 4,
+  },
+  rangeButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  rangeButtonActive: {
+    backgroundColor: '#3B82F6',
+  },
+  rangeButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  rangeButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  summaryContainer: {
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  summaryCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  netEarningsCard: {
+    backgroundColor: '#3B82F6',
+  },
+  summaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  summaryTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+    marginLeft: 8,
+  },
+  netEarningsTitle: {
+    color: '#FFFFFF',
+  },
+  summaryAmount: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#111827',
+  },
+  netEarningsAmount: {
+    color: '#FFFFFF',
+  },
+  payoutsSection: {
+    margin: 16,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 16,
+  },
+  emptyState: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 40,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#374151',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  payoutsList: {
+    gap: 12,
+  },
+  payoutCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  payoutHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  payoutStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  payoutStatusText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginLeft: 6,
+  },
+  payoutAmount: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111827',
+  },
+  payoutDetails: {
+    gap: 4,
+  },
+  payoutDate: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  payoutArrival: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+});

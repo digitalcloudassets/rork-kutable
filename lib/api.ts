@@ -1,4 +1,4 @@
-import type { Barber, Service, Booking, EarningsSummary } from "@/types/models";
+import type { Service, Booking } from "@/types/models";
 import { seedData } from "@/lib/seedData";
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -275,24 +275,78 @@ export const api = {
   },
 
   earnings: {
-    summary: async ({ barberId, range }: any) => {
-      await delay(500);
-      const amounts = {
-        week: { gross: 125000, fees: 7500, net: 117500 },
-        month: { gross: 542000, fees: 32500, net: 509500 },
-        year: { gross: 6504000, fees: 390200, net: 6113800 },
-      };
-      return amounts[range as keyof typeof amounts] || amounts.month;
+    summary: async ({ barberId, range }: { barberId: string; range: 'today' | 'week' | 'month' }) => {
+      try {
+        const response = await fetch(
+          `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/earnings/summary?barberId=${barberId}&range=${range}`
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          return {
+            gross: data.grossCents,
+            fees: data.feesCents,
+            net: data.netCents,
+          };
+        } else {
+          console.error('Failed to fetch earnings summary');
+          // Fallback to mock data
+          await delay(500);
+          const amounts = {
+            today: { gross: 8500, fees: 500, net: 8000 },
+            week: { gross: 125000, fees: 7500, net: 117500 },
+            month: { gross: 542000, fees: 32500, net: 509500 },
+          };
+          return amounts[range] || amounts.month;
+        }
+      } catch (error) {
+        console.error('Error fetching earnings summary:', error);
+        // Fallback to mock data
+        await delay(500);
+        const amounts = {
+          today: { gross: 8500, fees: 500, net: 8000 },
+          week: { gross: 125000, fees: 7500, net: 117500 },
+          month: { gross: 542000, fees: 32500, net: 509500 },
+        };
+        return amounts[range] || amounts.month;
+      }
     },
   },
 
   payouts: {
     list: async ({ barberId }: { barberId: string }) => {
-      await delay(500);
-      return [
-        { id: "1", amount: 117500, date: "2024-03-10", status: "completed" },
-        { id: "2", amount: 98000, date: "2024-03-03", status: "completed" },
-      ];
+      try {
+        const response = await fetch(
+          `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/payouts/list?barberId=${barberId}`
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          return data.payouts.map((payout: any) => ({
+            id: payout.id,
+            amount: payout.amountCents,
+            date: payout.createdAtISO.split('T')[0],
+            status: payout.status === 'paid' ? 'completed' : payout.status,
+            arrivalDate: payout.arrivalDateISO,
+          }));
+        } else {
+          console.error('Failed to fetch payouts');
+          // Fallback to mock data
+          await delay(500);
+          return [
+            { id: "1", amount: 117500, date: "2024-03-10", status: "completed" },
+            { id: "2", amount: 98000, date: "2024-03-03", status: "completed" },
+          ];
+        }
+      } catch (error) {
+        console.error('Error fetching payouts:', error);
+        // Fallback to mock data
+        await delay(500);
+        return [
+          { id: "1", amount: 117500, date: "2024-03-10", status: "completed" },
+          { id: "2", amount: 98000, date: "2024-03-03", status: "completed" },
+        ];
+      }
     },
   },
 
