@@ -34,11 +34,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const role = authUser.user_metadata?.role || 'client';
       
       if (role === 'barber') {
-        const { data: barberData } = await supabase
+        const { data: barberData, error: barberError } = await supabase
           .from('barbers')
           .select('*')
           .eq('id', authUser.id)
           .single();
+
+        if (barberError) {
+          console.error('Error fetching barber record in AuthProvider:', {
+            message: barberError.message,
+            code: barberError.code,
+            details: barberError.details,
+            hint: barberError.hint,
+            userId: authUser.id
+          });
+          return;
+        }
 
         if (barberData) {
           const user: User = {
@@ -51,11 +62,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await saveUser(user);
         }
       } else {
-        const { data: clientData } = await supabase
+        const { data: clientData, error: clientError } = await supabase
           .from('clients')
           .select('*')
           .eq('id', authUser.id)
           .single();
+
+        if (clientError) {
+          console.error('Error fetching client record in AuthProvider:', {
+            message: clientError.message,
+            code: clientError.code,
+            details: clientError.details,
+            hint: clientError.hint,
+            userId: authUser.id
+          });
+          return;
+        }
 
         if (clientData) {
           const user: User = {

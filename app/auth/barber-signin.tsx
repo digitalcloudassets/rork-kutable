@@ -62,8 +62,20 @@ export default function BarberSignInScreen() {
           .single();
 
         if (barberError) {
-          console.error('Error fetching barber record:', barberError);
-          Alert.alert('Error', 'Barber account not found. Please contact support.');
+          console.error('Error fetching barber record:', {
+            message: barberError.message,
+            code: barberError.code,
+            details: barberError.details,
+            hint: barberError.hint,
+            full: barberError
+          });
+          
+          let errorMessage = 'Barber account not found. Please contact support.';
+          if (barberError.message) {
+            errorMessage = `Database error: ${barberError.message}`;
+          }
+          
+          Alert.alert('Error', errorMessage);
           return;
         }
 
