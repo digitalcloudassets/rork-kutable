@@ -173,7 +173,7 @@ export default function DashboardScreen() {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Today's Schedule</Text>
-          <TouchableOpacity onPress={() => router.push("/dashboard/calendar")}>
+          <TouchableOpacity onPress={() => router.push("/(tabs)/dashboard/calendar")}>
             <Text style={styles.viewAllText}>View Calendar</Text>
           </TouchableOpacity>
         </View>
@@ -210,42 +210,42 @@ export default function DashboardScreen() {
         <View style={styles.actionsGrid}>
           <TouchableOpacity 
             style={styles.actionCard}
-            onPress={() => router.push("/dashboard/services")}
+            onPress={() => router.push("/(tabs)/dashboard/services")}
           >
             <Settings size={24} color={brandColors.primary} />
             <Text style={styles.actionText}>Manage Services</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.actionCard}
-            onPress={() => router.push("/dashboard/calendar")}
+            onPress={() => router.push("/(tabs)/dashboard/calendar")}
           >
             <Calendar size={24} color={brandColors.primary} />
             <Text style={styles.actionText}>Block Time</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.actionCard}
-            onPress={() => router.push("/dashboard/gallery")}
+            onPress={() => router.push("/(tabs)/dashboard/gallery")}
           >
             <Camera size={24} color={brandColors.primary} />
             <Text style={styles.actionText}>Gallery</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.actionCard}
-            onPress={() => router.push("/dashboard/earnings")}
+            onPress={() => router.push("/(tabs)/dashboard/earnings")}
           >
             <DollarSign size={24} color={brandColors.primary} />
             <Text style={styles.actionText}>View Earnings</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.actionCard}
-            onPress={() => router.push("/dashboard/analytics")}
+            onPress={() => router.push("/(tabs)/dashboard/analytics")}
           >
             <TrendingUp size={24} color={brandColors.primary} />
             <Text style={styles.actionText}>Analytics</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.actionCard}
-            onPress={() => router.push("/dashboard/system")}
+            onPress={() => router.push("/(tabs)/dashboard/system")}
           >
             <Activity size={24} color={brandColors.primary} />
             <Text style={styles.actionText}>System Status</Text>
