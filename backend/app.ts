@@ -17,6 +17,8 @@ import earningsSummary from './api/earnings/summary';
 import payoutsList from './api/payouts/list';
 import bookingsCreate from './api/bookings/create';
 import bookingsList from './api/bookings/list';
+import bookingsCancel from './api/bookings/cancel';
+import bookingsReschedule from './api/bookings/reschedule';
 import paymentsCreateIntent from './api/payments/create-intent';
 import paymentsWebhook from './api/payments/webhook';
 import galleryList from './api/gallery/list';
@@ -216,6 +218,14 @@ app.post('/api/bookings/create', async (c) => {
 
 app.post('/api/bookings/list', async (c) => {
   return await bookingsList(c.req.raw, null);
+});
+
+app.post('/api/bookings/cancel', async (c) => {
+  return await bookingsCancel(c.req.raw, null);
+});
+
+app.post('/api/bookings/reschedule', async (c) => {
+  return await bookingsReschedule(c.req.raw, null);
 });
 
 // Payments endpoints

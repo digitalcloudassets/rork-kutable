@@ -117,6 +117,7 @@ export interface BookingRow {
   note?: string;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
   payment_intent_id?: string;
+  cancellation_reason?: string;
   created_at: string;
   updated_at: string;
 }
