@@ -18,7 +18,9 @@ import {
   ChevronRight,
   Scissors,
   Star,
-  Calendar
+  Calendar,
+  Shield,
+  FileText
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/providers/AuthProvider";
@@ -72,11 +74,31 @@ export default function ProfileScreen() {
     {
       title: "Legal",
       items: [
-        { icon: Settings, label: "Privacy Policy", onPress: () => router.push("/privacy-policy") },
-        { icon: Settings, label: "Terms of Service", onPress: () => router.push("/terms-of-service") },
+        { icon: Shield, label: "Privacy Policy", onPress: () => router.push("/privacy-policy") },
+        { icon: FileText, label: "Terms of Service", onPress: () => router.push("/terms-of-service") },
       ],
     },
   ];
+
+  if (!user) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.guestState}>
+          <User size={64} color="#ccc" />
+          <Text style={styles.guestTitle}>Welcome to Kutable</Text>
+          <Text style={styles.guestDescription}>
+            Sign in to access your profile, bookings, and personalized features.
+          </Text>
+          <TouchableOpacity 
+            style={styles.signInButton}
+            onPress={() => router.push("/auth/welcome")}
+          >
+            <Text style={styles.signInButtonText}>Sign In</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container}>
@@ -85,8 +107,8 @@ export default function ProfileScreen() {
           source={{ uri: user?.photoUrl || "https://via.placeholder.com/100" }} 
           style={styles.avatar}
         />
-        <Text style={styles.name}>{user?.name || "Guest User"}</Text>
-        <Text style={styles.email}>{user?.email || "Sign in to continue"}</Text>
+        <Text style={styles.name}>{user.name}</Text>
+        <Text style={styles.email}>{user.email}</Text>
         {user?.role === "barber" && (
           <View style={styles.barberBadge}>
             <Scissors size={14} color="#fff" />
@@ -119,12 +141,10 @@ export default function ProfileScreen() {
         </View>
       ))}
 
-      {user && (
-        <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-          <LogOut size={20} color="#EF4444" />
-          <Text style={styles.signOutText}>Sign Out</Text>
-        </TouchableOpacity>
-      )}
+      <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+        <LogOut size={20} color="#EF4444" />
+        <Text style={styles.signOutText}>Sign Out</Text>
+      </TouchableOpacity>
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>Kutable v1.0.0</Text>
@@ -240,5 +260,38 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 12,
     color: "#999",
+  },
+  guestState: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 32,
+    paddingVertical: 64,
+  },
+  guestTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#1a1a1a",
+    marginTop: 24,
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  guestDescription: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    lineHeight: 24,
+    marginBottom: 32,
+  },
+  signInButton: {
+    backgroundColor: brandColors.primary,
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 12,
+  },
+  signInButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

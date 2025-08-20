@@ -4,16 +4,27 @@
  */
 
 export type AppRoutes = {
-  // Tab routes
+  // Root routes
   '/': undefined;
-  '/bookings': undefined;
-  '/dashboard': undefined;
-  '/profile': undefined;
+  
+  // Tab routes
+  '/(tabs)': undefined;
+  '/(tabs)/bookings': undefined;
+  '/(tabs)/dashboard': undefined;
+  '/(tabs)/profile': undefined;
+
+  // Auth routes
+  '/auth/welcome': undefined;
+  '/auth/client-signup': undefined;
+  '/auth/client-signin': undefined;
+  '/auth/barber-signup': undefined;
+  '/auth/barber-signin': undefined;
 
   // Barber routes
   '/barber/[id]': { id: string };
 
   // Booking flow
+  '/book/[barberId]': { barberId: string };
   '/booking/service': { barberId: string; serviceId?: string };
   '/booking/time': { barberId: string; serviceId: string };
   '/booking/details': { barberId: string; serviceId: string; timeSlot: string };
@@ -30,12 +41,13 @@ export type AppRoutes = {
   '/terms-of-service': undefined;
 
   // Dashboard routes
-  '/dashboard/onboarding': undefined;
-  '/dashboard/services': undefined;
-  '/dashboard/calendar': undefined;
-  '/dashboard/gallery': undefined;
-  '/dashboard/earnings': undefined;
-  '/dashboard/analytics': undefined;
+  '/(tabs)/dashboard/onboarding': undefined;
+  '/(tabs)/dashboard/services': undefined;
+  '/(tabs)/dashboard/calendar': undefined;
+  '/(tabs)/dashboard/gallery': undefined;
+  '/(tabs)/dashboard/earnings': undefined;
+  '/(tabs)/dashboard/analytics': undefined;
+  '/(tabs)/dashboard/system': undefined;
 };
 
 /**
@@ -64,10 +76,17 @@ export function createTypedRoute<T extends keyof AppRoutes>(
 export function isValidRoute(route: string): route is keyof AppRoutes {
   const validRoutes: (keyof AppRoutes)[] = [
     '/',
-    '/bookings',
-    '/dashboard',
-    '/profile',
+    '/(tabs)',
+    '/(tabs)/bookings',
+    '/(tabs)/dashboard',
+    '/(tabs)/profile',
+    '/auth/welcome',
+    '/auth/client-signup',
+    '/auth/client-signin',
+    '/auth/barber-signup',
+    '/auth/barber-signin',
     '/barber/[id]',
+    '/book/[barberId]',
     '/booking/service',
     '/booking/time',
     '/booking/details',
@@ -78,12 +97,13 @@ export function isValidRoute(route: string): route is keyof AppRoutes {
     '/earnings-details',
     '/privacy-policy',
     '/terms-of-service',
-    '/dashboard/onboarding',
-    '/dashboard/services',
-    '/dashboard/calendar',
-    '/dashboard/gallery',
-    '/dashboard/earnings',
-    '/dashboard/analytics',
+    '/(tabs)/dashboard/onboarding',
+    '/(tabs)/dashboard/services',
+    '/(tabs)/dashboard/calendar',
+    '/(tabs)/dashboard/gallery',
+    '/(tabs)/dashboard/earnings',
+    '/(tabs)/dashboard/analytics',
+    '/(tabs)/dashboard/system',
   ];
   
   return validRoutes.includes(route as keyof AppRoutes);

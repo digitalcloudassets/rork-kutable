@@ -11,13 +11,15 @@ import {
   RefreshControl,
   FlatList,
 } from "react-native";
-import { Search, MapPin, Star, X } from "lucide-react-native";
+import { Search, MapPin, Star, X, Wifi, WifiOff } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { brandColors } from "@/config/brand";
 import { api } from "@/lib/api";
 import type { Barber, Service } from "@/types/models";
 import { seedData } from "@/lib/seedData";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -25,9 +27,11 @@ export default function HomeScreen() {
   const [selectedServiceId, setSelectedServiceId] = useState<string | undefined>();
   const [refreshing, setRefreshing] = useState(false);
 
-  const { data: barbers, isLoading, refetch } = useQuery({
+  const { data: barbers, isLoading, error, refetch } = useQuery({
     queryKey: ["barbers", searchQuery, selectedServiceId],
     queryFn: () => api.barbers.search({ q: searchQuery || undefined, serviceId: selectedServiceId }),
+    retry: 2,
+    retryDelay: 1000,
   });
 
   // Get all unique services for filter chips
@@ -110,7 +114,15 @@ export default function HomeScreen() {
         </ScrollView>
       </View>
 
-      {isLoading ? (
+      {error ? (
+        <ErrorState
+          title="Unable to load barbers"
+          message="Please check your internet connection and try again."
+          onRetry={refetch}
+          isRetrying={isLoading}
+          testID="explore-error-state"
+        />
+      ) : isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={brandColors.primary} style={styles.loader} />
         </View>
@@ -176,20 +188,18 @@ export default function HomeScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }
         >
-          <View style={styles.emptyState}>
-            <Search size={48} color="#ccc" />
-            <Text style={styles.emptyStateTitle}>No barbers found</Text>
-            <Text style={styles.emptyStateText}>
-              {hasActiveFilters 
-                ? "Try adjusting your search or filters" 
-                : "No barbers available at the moment"}
-            </Text>
-            {hasActiveFilters && (
-              <TouchableOpacity onPress={clearFilters} style={styles.clearFiltersButton}>
-                <Text style={styles.clearFiltersButtonText}>Clear Filters</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          <EmptyState
+            icon={Search}
+            title="No barbers found"
+            description={
+              hasActiveFilters 
+                ? "Try adjusting your search or filters to find more barbers in your area." 
+                : "No barbers are available at the moment. Pull down to refresh or try again later."
+            }
+            actionLabel={hasActiveFilters ? "Clear Filters" : undefined}
+            onAction={hasActiveFilters ? clearFilters : undefined}
+            testID="explore-empty-state"
+          />
         </ScrollView>
       )}
     </View>
@@ -256,7 +266,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   emptyStateContainer: {
-    flex: 1,
+    flexGrow: 1,
     paddingBottom: 20,
   },
   sectionTitle: {
@@ -345,36 +355,5 @@ const styles = StyleSheet.create({
     color: brandColors.primary,
     fontWeight: "500",
   },
-  emptyState: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 32,
-    paddingTop: 60,
-  },
-  emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#666",
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyStateText: {
-    fontSize: 14,
-    color: "#999",
-    textAlign: "center",
-    lineHeight: 20,
-  },
-  clearFiltersButton: {
-    backgroundColor: brandColors.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginTop: 16,
-  },
-  clearFiltersButtonText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
-  },
+
 });

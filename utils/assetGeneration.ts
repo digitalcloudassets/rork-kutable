@@ -293,6 +293,23 @@ export const APP_STORE_KEYWORDS = [
 ].join(',');
 
 /**
+ * Brand colors for consistent design
+ */
+export const BRAND_COLORS = {
+  primary: '#007AFF',
+  primaryLight: '#E3F2FD',
+  secondary: '#34C759',
+  accent: '#FF9500',
+  error: '#FF3B30',
+  warning: '#FF9500',
+  success: '#34C759',
+  text: '#1D1D1F',
+  textSecondary: '#8E8E93',
+  background: '#F2F2F7',
+  surface: '#FFFFFF',
+} as const;
+
+/**
  * Current device info helper
  */
 export function getCurrentDeviceInfo() {
@@ -305,5 +322,165 @@ export function getCurrentDeviceInfo() {
     platform,
     isTablet: width >= 768,
     aspectRatio: width / height,
+  };
+}
+
+/**
+ * Generate icon template instructions
+ */
+export function generateIconTemplate(): string {
+  return `# App Icon Design Template
+
+## Design Guidelines
+- Use the Kutable brand colors: Primary #007AFF, Secondary #34C759
+- Include scissors or barber pole iconography
+- Ensure readability at small sizes (48px)
+- Use rounded corners (iOS will apply automatically)
+- Avoid text in the icon
+- Use high contrast for visibility
+
+## Required Sizes
+### iOS
+- 1024x1024px (App Store)
+- 180x180px (iPhone @3x)
+- 120x120px (iPhone @2x)
+
+### Android
+- 512x512px (Play Store)
+- 192x192px (xxxhdpi)
+- 144x144px (xxhdpi)
+- 96x96px (xhdpi)
+- 72x72px (hdpi)
+- 48x48px (mdpi)
+
+## Export Settings
+- Format: PNG with transparency
+- Color space: sRGB
+- No compression for store assets
+- Optimize for web for smaller sizes`;
+}
+
+/**
+ * Generate feature graphic template
+ */
+export function generateFeatureGraphicTemplate(): string {
+  return `# Feature Graphic Template (Android)
+
+## Specifications
+- Size: 1024 x 500 pixels
+- Format: PNG or JPEG
+- No transparency
+- Safe area: Keep important content within 924 x 400 pixels (50px margin)
+
+## Content Guidelines
+- App name: "Kutable"
+- Tagline: "Professional Barber Services On-Demand"
+- Include app icon
+- Use brand colors and fonts
+- Show key app features visually
+- Avoid cluttered design
+
+## Design Elements
+- Background: Gradient using brand colors
+- Typography: Clean, modern sans-serif
+- Icons: Barber tools, calendar, mobile phone
+- Layout: Left-aligned text, right-aligned visuals`;
+}
+
+/**
+ * Screenshot naming convention
+ */
+export function generateScreenshotNames(platform: 'ios' | 'android'): string[] {
+  const screens = [
+    'explore',
+    'barber_profile',
+    'booking_flow',
+    'my_bookings',
+    'barber_dashboard'
+  ];
+  
+  return screens.map((screen, index) => 
+    `${platform}_screenshot_${String(index + 1).padStart(2, '0')}_${screen}.png`
+  );
+}
+
+/**
+ * Generate app store optimization tips
+ */
+export function generateASOTips(): string {
+  return `# App Store Optimization (ASO) Tips
+
+## Keywords Strategy
+### Primary Keywords
+- barber
+- haircut
+- grooming
+- appointment
+- booking
+
+### Long-tail Keywords
+- "barber near me"
+- "book haircut appointment"
+- "professional grooming services"
+- "mobile barber booking"
+
+## Screenshot Optimization
+1. **First Screenshot**: Most important - shows main value proposition
+2. **Sequence**: Tell a story from discovery to booking completion
+3. **Text Overlays**: Add benefit-focused captions
+4. **Localization**: Consider different languages for global markets
+
+## Description Optimization
+- Front-load important keywords in first 2-3 lines
+- Use bullet points for easy scanning
+- Include social proof (ratings, downloads)
+- End with clear call-to-action
+
+## Conversion Rate Optimization
+- A/B test different icon designs
+- Monitor keyword rankings weekly
+- Respond to reviews within 24 hours
+- Update screenshots with new features
+- Seasonal promotions in description`;
+}
+
+/**
+ * Generate store listing checklist
+ */
+export function generateStoreListingChecklist(): { ios: string[]; android: string[] } {
+  const commonItems = [
+    'App name optimized for search',
+    'Description includes primary keywords',
+    'Screenshots tell compelling story',
+    'App icon is distinctive and memorable',
+    'Privacy policy URL is accessible',
+    'Support contact information provided',
+    'App category accurately selected',
+    'Age rating appropriate for content',
+    'Pricing strategy determined',
+    'Release notes prepared'
+  ];
+
+  const iosSpecific = [
+    'Subtitle under 30 characters',
+    'Keywords under 100 characters',
+    'Promotional text updated',
+    'App Store Connect screenshots uploaded',
+    'TestFlight testing completed',
+    'In-app purchases configured (if applicable)'
+  ];
+
+  const androidSpecific = [
+    'Short description under 80 characters',
+    'Feature graphic uploaded',
+    'Content rating questionnaire completed',
+    'Target API level requirements met',
+    'App signing key secured',
+    'Google Play Console screenshots uploaded'
+  ];
+
+  return {
+    ios: [...commonItems, ...iosSpecific],
+    android: [...commonItems, ...androidSpecific]
   };
 }

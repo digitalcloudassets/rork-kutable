@@ -8,23 +8,27 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from "react-native";
-import { Calendar, Clock, User, ChevronRight } from "lucide-react-native";
+import { Calendar, Clock, User, ChevronRight, CalendarX } from "lucide-react-native";
 import { useQuery } from "@tanstack/react-query";
 import { brandColors } from "@/config/brand";
 import { api } from "@/lib/api";
 import { useAuth } from "@/providers/AuthProvider";
 import type { Booking } from "@/types/models";
 import { formatDate, formatTime } from "@/utils/dateHelpers";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 
 export default function BookingsScreen() {
   const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
 
-  const { data: bookings, isLoading, refetch } = useQuery({
+  const { data: bookings, isLoading, error, refetch } = useQuery({
     queryKey: ["bookings", user?.id],
     queryFn: () => api.bookings.list({ userId: user?.id }),
     enabled: !!user,
+    retry: 2,
+    retryDelay: 1000,
   });
 
   const handleRefresh = async () => {
@@ -77,18 +81,38 @@ export default function BookingsScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       >
-        {isLoading ? (
+        {!user ? (
+          <EmptyState
+            icon={User}
+            title="Sign in required"
+            description="Please sign in to view your bookings and manage appointments."
+            actionLabel="Sign In"
+            onAction={() => {}}
+            testID="bookings-signin-required"
+          />
+        ) : error ? (
+          <ErrorState
+            title="Unable to load bookings"
+            message="Please check your internet connection and try again."
+            onRetry={refetch}
+            isRetrying={isLoading}
+            testID="bookings-error-state"
+          />
+        ) : isLoading ? (
           <ActivityIndicator size="large" color={brandColors.primary} style={styles.loader} />
         ) : displayBookings.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Calendar size={48} color="#ccc" />
-            <Text style={styles.emptyTitle}>No {activeTab} bookings</Text>
-            <Text style={styles.emptyText}>
-              {activeTab === "upcoming" 
-                ? "Book a service to see it here"
-                : "Your completed bookings will appear here"}
-            </Text>
-          </View>
+          <EmptyState
+            icon={activeTab === "upcoming" ? Calendar : CalendarX}
+            title={`No ${activeTab} bookings`}
+            description={
+              activeTab === "upcoming" 
+                ? "Book a service to see your upcoming appointments here."
+                : "Your completed bookings will appear here once you've had some appointments."
+            }
+            actionLabel={activeTab === "upcoming" ? "Find Barbers" : undefined}
+            onAction={activeTab === "upcoming" ? () => {} : undefined}
+            testID={`bookings-empty-${activeTab}`}
+          />
         ) : (
           displayBookings.map((booking: Booking) => (
             <TouchableOpacity key={booking.id} style={styles.bookingCard}>
@@ -175,23 +199,7 @@ const styles = StyleSheet.create({
   loader: {
     marginTop: 50,
   },
-  emptyState: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 60,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
-    marginTop: 16,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: "#999",
-    marginTop: 8,
-    textAlign: "center",
-  },
+
   bookingCard: {
     backgroundColor: "#fff",
     borderRadius: 12,

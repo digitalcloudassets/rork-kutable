@@ -99,7 +99,13 @@ export class ErrorBoundary extends Component<Props, State> {
                 <TouchableOpacity
                   style={[styles.button, styles.secondaryButton]}
                   onPress={() => {
-                    console.log('Navigate to home');
+                    try {
+                      if (typeof window !== 'undefined' && window.location) {
+                        window.location.href = '/';
+                      }
+                    } catch (e) {
+                      console.log('Navigation failed:', e);
+                    }
                   }}
                   testID="error-boundary-home"
                 >
