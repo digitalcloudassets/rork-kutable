@@ -48,6 +48,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             hint: barberError.hint,
             userId: authUser.id
           });
+          
+          // If barber record doesn't exist, create a basic user profile
+          if (barberError.code === 'PGRST116') {
+            console.log('Barber record not found, creating basic profile for user:', authUser.id);
+            const user: User = {
+              id: authUser.id,
+              role: 'barber',
+              name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'Barber',
+              phone: authUser.user_metadata?.phone || '',
+              email: authUser.email || '',
+            };
+            await saveUser(user);
+          }
           return;
         }
 
@@ -76,6 +89,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             hint: clientError.hint,
             userId: authUser.id
           });
+          
+          // If client record doesn't exist, create a basic user profile
+          if (clientError.code === 'PGRST116') {
+            console.log('Client record not found, creating basic profile for user:', authUser.id);
+            const user: User = {
+              id: authUser.id,
+              role: 'client',
+              name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'Client',
+              phone: authUser.user_metadata?.phone || '',
+              email: authUser.email || '',
+            };
+            await saveUser(user);
+          }
           return;
         }
 
