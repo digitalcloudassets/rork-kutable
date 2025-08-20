@@ -94,7 +94,8 @@ export default function OnboardingScreen() {
         if (status.chargesEnabled && status.payoutsEnabled) {
           clearInterval(pollInterval);
           setIsPolling(false);
-          // Optionally navigate to dashboard or show success message
+          // Navigate to dashboard on successful connection
+          router.replace("/(tabs)/dashboard");
         }
       } catch (error) {
         console.error('Error polling account status:', error);
