@@ -31,6 +31,7 @@ export default function BarberSignInScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isResendingEmail, setIsResendingEmail] = useState(false);
   const { setUser } = useAuth();
 
   const handleSignIn = async () => {
@@ -93,9 +94,63 @@ export default function BarberSignInScreen() {
       }
     } catch (error: any) {
       console.error('Sign in error:', error);
-      Alert.alert('Error', error.message || 'Failed to sign in');
+      
+      let errorMessage = 'Failed to sign in';
+      
+      if (error?.message) {
+        if (error.message.includes('Email not confirmed')) {
+          Alert.alert(
+            'Email Not Confirmed',
+            'Please check your email and click the confirmation link before signing in. Check your spam folder if you don\'t see the email.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { 
+                text: 'Resend Email', 
+                onPress: () => handleResendConfirmation()
+              }
+            ]
+          );
+          return;
+        } else if (error.message.includes('Invalid login credentials')) {
+          errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      Alert.alert('Sign In Error', errorMessage);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!email.trim()) {
+      Alert.alert('Error', 'Please enter your email address first');
+      return;
+    }
+
+    setIsResendingEmail(true);
+
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email.trim().toLowerCase(),
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      Alert.alert(
+        'Email Sent',
+        'A new confirmation email has been sent to your email address. Please check your inbox and spam folder.'
+      );
+    } catch (error: any) {
+      console.error('Resend confirmation error:', error);
+      Alert.alert('Error', error.message || 'Failed to resend confirmation email');
+    } finally {
+      setIsResendingEmail(false);
     }
   };
 
