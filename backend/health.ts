@@ -1,8 +1,8 @@
 import { getAdminClient } from './lib/supabase';
 
 /**
- * Health check endpoint to verify Supabase connection
- * Performs a simple SELECT 1 query to test database connectivity
+ * Simple health check endpoint to verify Supabase connection
+ * For comprehensive health check, use /backend/health/full.ts
  */
 export async function healthCheck(): Promise<{ ok: boolean; error?: string }> {
   try {
@@ -30,4 +30,17 @@ export async function healthCheck(): Promise<{ ok: boolean; error?: string }> {
   }
 }
 
-export default healthCheck;
+/**
+ * HTTP handler for the simple health check
+ */
+export default async function handler(req: Request): Promise<Response> {
+  const result = await healthCheck();
+  
+  return new Response(
+    JSON.stringify(result),
+    { 
+      status: result.ok ? 200 : 503, 
+      headers: { 'Content-Type': 'application/json' } 
+    }
+  );
+}
