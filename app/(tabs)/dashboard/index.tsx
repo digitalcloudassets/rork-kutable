@@ -173,7 +173,7 @@ export default function DashboardScreen() {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Today's Schedule</Text>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push("/dashboard/calendar")}>
             <Text style={styles.viewAllText}>View Calendar</Text>
           </TouchableOpacity>
         </View>
@@ -215,7 +215,10 @@ export default function DashboardScreen() {
             <Settings size={24} color={brandColors.primary} />
             <Text style={styles.actionText}>Manage Services</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionCard}>
+          <TouchableOpacity 
+            style={styles.actionCard}
+            onPress={() => router.push("/dashboard/calendar")}
+          >
             <Calendar size={24} color={brandColors.primary} />
             <Text style={styles.actionText}>Block Time</Text>
           </TouchableOpacity>

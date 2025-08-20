@@ -23,6 +23,12 @@ export default function DashboardLayout() {
           title: "Manage Services",
         }} 
       />
+      <Stack.Screen 
+        name="calendar" 
+        options={{ 
+          title: "Calendar",
+        }} 
+      />
     </Stack>
   );
 }

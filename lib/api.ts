@@ -102,19 +102,67 @@ export const api = {
   },
 
   availability: {
-    list: async ({ barberId, date }: any) => {
-      await delay(300);
-      return {
-        blocks: seedData.availabilityBlocks.filter(b => 
-          b.barberId === barberId && b.startISO.startsWith(date)
-        ),
-        openSlots: [],
-      };
+    list: async ({ barberId, startISO, endISO }: { barberId: string; startISO: string; endISO: string }) => {
+      try {
+        const response = await fetch('/api/availability/list', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ barberId, startISO, endISO }),
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          return data;
+        } else {
+          console.error('Failed to fetch availability blocks');
+          return { blocks: [] };
+        }
+      } catch (error) {
+        console.error('Error fetching availability blocks:', error);
+        return { blocks: [] };
+      }
     },
 
-    block: async (data: any) => {
-      await delay(500);
-      return { success: true };
+    block: async ({ barberId, startISO, endISO, reason }: { barberId: string; startISO: string; endISO: string; reason?: string }) => {
+      try {
+        const response = await fetch('/api/availability/block', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ barberId, startISO, endISO, reason }),
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          return data;
+        } else {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to block time');
+        }
+      } catch (error) {
+        console.error('Error blocking time:', error);
+        throw error;
+      }
+    },
+
+    unblock: async ({ barberId, blockId }: { barberId: string; blockId: string }) => {
+      try {
+        const response = await fetch('/api/availability/unblock', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ barberId, blockId }),
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          return data;
+        } else {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to unblock time');
+        }
+      } catch (error) {
+        console.error('Error unblocking time:', error);
+        throw error;
+      }
     },
   },
 
