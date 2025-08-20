@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   StyleSheet,
   Text,
@@ -9,23 +9,39 @@ import {
   Image,
   ActivityIndicator,
   RefreshControl,
+  FlatList,
 } from "react-native";
-import { Search, MapPin, Star } from "lucide-react-native";
+import { Search, MapPin, Star, X } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { brandColors } from "@/config/brand";
 import { api } from "@/lib/api";
-import type { Barber } from "@/types/models";
+import type { Barber, Service } from "@/types/models";
+import { seedData } from "@/lib/seedData";
 
 export default function ExploreScreen() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedServiceId, setSelectedServiceId] = useState<string | undefined>();
   const [refreshing, setRefreshing] = useState(false);
 
   const { data: barbers, isLoading, refetch } = useQuery({
-    queryKey: ["barbers", searchQuery],
-    queryFn: () => api.barbers.list({ search: searchQuery }),
+    queryKey: ["barbers", searchQuery, selectedServiceId],
+    queryFn: () => api.barbers.search({ q: searchQuery || undefined, serviceId: selectedServiceId }),
   });
+
+  // Get all unique services for filter chips
+  const allServices = useMemo(() => {
+    const serviceMap = new Map<string, Service>();
+    seedData.barbers.forEach(barber => {
+      barber.services.forEach(service => {
+        if (service.active && !serviceMap.has(service.id)) {
+          serviceMap.set(service.id, service);
+        }
+      });
+    });
+    return Array.from(serviceMap.values());
+  }, []);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -37,15 +53,16 @@ export default function ExploreScreen() {
     router.push(`/barber/${barberId}`);
   };
 
-  const filteredBarbers = barbers?.filter((barber: Barber) => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      barber.name.toLowerCase().includes(query) ||
-      barber.shopName?.toLowerCase().includes(query) ||
-      barber.services.some(s => s.name.toLowerCase().includes(query))
-    );
-  });
+  const handleServiceFilter = (serviceId: string) => {
+    setSelectedServiceId(selectedServiceId === serviceId ? undefined : serviceId);
+  };
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setSelectedServiceId(undefined);
+  };
+
+  const hasActiveFilters = searchQuery.length > 0 || selectedServiceId;
 
   return (
     <View style={styles.container}>
@@ -59,65 +76,120 @@ export default function ExploreScreen() {
             onChangeText={setSearchQuery}
             placeholderTextColor="#999"
           />
+          {hasActiveFilters && (
+            <TouchableOpacity onPress={clearFilters} style={styles.clearButton}>
+              <X size={18} color="#666" />
+            </TouchableOpacity>
+          )}
         </View>
+        
+        {/* Service Filter Chips */}
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          style={styles.filtersContainer}
+          contentContainerStyle={styles.filtersContent}
+        >
+          {allServices.map((service) => (
+            <TouchableOpacity
+              key={service.id}
+              style={[
+                styles.filterChip,
+                selectedServiceId === service.id && styles.filterChipActive
+              ]}
+              onPress={() => handleServiceFilter(service.id)}
+            >
+              <Text style={[
+                styles.filterChipText,
+                selectedServiceId === service.id && styles.filterChipTextActive
+              ]}>
+                {service.name}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
-      >
-        <Text style={styles.sectionTitle}>Featured Barbers</Text>
-
-        {isLoading ? (
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={brandColors.primary} style={styles.loader} />
-        ) : (
-          <View style={styles.barbersGrid}>
-            {filteredBarbers?.map((barber: Barber) => (
-              <TouchableOpacity
-                key={barber.id}
-                style={styles.barberCard}
-                onPress={() => handleBarberPress(barber.id)}
-                activeOpacity={0.9}
-              >
-                <Image source={{ uri: barber.photoUrl }} style={styles.barberPhoto} />
-                <View style={styles.barberInfo}>
-                  <Text style={styles.barberName}>{barber.name}</Text>
-                  {barber.shopName && (
-                    <Text style={styles.shopName}>{barber.shopName}</Text>
-                  )}
-                  <View style={styles.barberMeta}>
-                    <View style={styles.locationRow}>
-                      <MapPin size={14} color="#666" />
-                      <Text style={styles.locationText}>
-                        {barber.shopAddress || "Mobile Service"}
-                      </Text>
-                    </View>
-                    <View style={styles.ratingRow}>
-                      <Star size={14} color="#FFB800" fill="#FFB800" />
-                      <Text style={styles.ratingText}>4.8</Text>
-                    </View>
+        </View>
+      ) : barbers && barbers.length > 0 ? (
+        <FlatList
+          data={barbers}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item: barber }) => (
+            <TouchableOpacity
+              style={styles.barberCard}
+              onPress={() => handleBarberPress(barber.id)}
+              activeOpacity={0.9}
+              testID={`barber-card-${barber.id}`}
+            >
+              <Image source={{ uri: barber.photoUrl }} style={styles.barberPhoto} />
+              <View style={styles.barberInfo}>
+                <Text style={styles.barberName}>{barber.name}</Text>
+                {barber.shopName && (
+                  <Text style={styles.shopName}>{barber.shopName}</Text>
+                )}
+                <View style={styles.barberMeta}>
+                  <View style={styles.locationRow}>
+                    <MapPin size={14} color="#666" />
+                    <Text style={styles.locationText}>
+                      {barber.shopAddress || "Mobile Service"}
+                    </Text>
                   </View>
-                  <View style={styles.servicesPreview}>
-                    {barber.services.slice(0, 2).map((service, idx) => (
-                      <View key={idx} style={styles.serviceChip}>
-                        <Text style={styles.serviceChipText}>{service.name}</Text>
-                      </View>
-                    ))}
-                    {barber.services.length > 2 && (
-                      <View style={styles.serviceChip}>
-                        <Text style={styles.serviceChipText}>+{barber.services.length - 2}</Text>
-                      </View>
-                    )}
+                  <View style={styles.ratingRow}>
+                    <Star size={14} color="#FFB800" fill="#FFB800" />
+                    <Text style={styles.ratingText}>{barber.rating || 4.8}</Text>
                   </View>
                 </View>
+                <View style={styles.servicesPreview}>
+                  {barber.services.slice(0, 2).map((service: Service, idx: number) => (
+                    <View key={idx} style={styles.serviceChip}>
+                      <Text style={styles.serviceChipText}>{service.name}</Text>
+                    </View>
+                  ))}
+                  {barber.services.length > 2 && (
+                    <View style={styles.serviceChip}>
+                      <Text style={styles.serviceChipText}>+{barber.services.length - 2}</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            </TouchableOpacity>
+          )}
+          ListHeaderComponent={() => (
+            <Text style={styles.sectionTitle}>Featured Barbers</Text>
+          )}
+          contentContainerStyle={styles.barbersGrid}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+        />
+      ) : (
+        <ScrollView
+          contentContainerStyle={styles.emptyStateContainer}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+        >
+          <View style={styles.emptyState}>
+            <Search size={48} color="#ccc" />
+            <Text style={styles.emptyStateTitle}>No barbers found</Text>
+            <Text style={styles.emptyStateText}>
+              {hasActiveFilters 
+                ? "Try adjusting your search or filters" 
+                : "No barbers available at the moment"}
+            </Text>
+            {hasActiveFilters && (
+              <TouchableOpacity onPress={clearFilters} style={styles.clearFiltersButton}>
+                <Text style={styles.clearFiltersButtonText}>Clear Filters</Text>
               </TouchableOpacity>
-            ))}
+            )}
           </View>
-        )}
-      </ScrollView>
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -148,10 +220,41 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#333",
   },
-  scrollView: {
-    flex: 1,
+  clearButton: {
+    padding: 4,
   },
-  scrollContent: {
+  filtersContainer: {
+    marginTop: 12,
+  },
+  filtersContent: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  filterChip: {
+    backgroundColor: "#f5f5f5",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 8,
+  },
+  filterChipActive: {
+    backgroundColor: brandColors.primary,
+  },
+  filterChipText: {
+    fontSize: 14,
+    color: "#666",
+    fontWeight: "500",
+  },
+  filterChipTextActive: {
+    color: "#fff",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emptyStateContainer: {
+    flex: 1,
     paddingBottom: 20,
   },
   sectionTitle: {
@@ -163,7 +266,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   loader: {
-    marginTop: 50,
+    marginTop: 20,
   },
   barbersGrid: {
     paddingHorizontal: 16,
@@ -239,5 +342,37 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: brandColors.primary,
     fontWeight: "500",
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 32,
+    paddingTop: 60,
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#666",
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: "#999",
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  clearFiltersButton: {
+    backgroundColor: brandColors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  clearFiltersButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
   },
 });

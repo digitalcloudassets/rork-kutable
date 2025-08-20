@@ -5,16 +5,60 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const api = {
   barbers: {
-    list: async ({ search }: { search?: string }) => {
-      await delay(500);
-      let barbers = seedData.barbers;
-      if (search) {
-        barbers = barbers.filter(b => 
-          b.name.toLowerCase().includes(search.toLowerCase()) ||
-          b.shopName?.toLowerCase().includes(search.toLowerCase())
-        );
+    search: async ({ q, serviceId }: { q?: string; serviceId?: string }) => {
+      try {
+        const response = await fetch('/api/barbers/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ q, serviceId }),
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          return data.barbers;
+        } else {
+          console.error('Failed to search barbers');
+          // Fallback to seed data
+          await delay(500);
+          let barbers = seedData.barbers;
+          if (q) {
+            barbers = barbers.filter(b => 
+              b.name.toLowerCase().includes(q.toLowerCase()) ||
+              b.shopName?.toLowerCase().includes(q.toLowerCase()) ||
+              b.services.some(s => s.name.toLowerCase().includes(q.toLowerCase()))
+            );
+          }
+          if (serviceId) {
+            barbers = barbers.filter(b => 
+              b.services.some(s => s.id === serviceId)
+            );
+          }
+          return barbers;
+        }
+      } catch (error) {
+        console.error('Error searching barbers:', error);
+        // Fallback to seed data
+        await delay(500);
+        let barbers = seedData.barbers;
+        if (q) {
+          barbers = barbers.filter(b => 
+            b.name.toLowerCase().includes(q.toLowerCase()) ||
+            b.shopName?.toLowerCase().includes(q.toLowerCase()) ||
+            b.services.some(s => s.name.toLowerCase().includes(q.toLowerCase()))
+          );
+        }
+        if (serviceId) {
+          barbers = barbers.filter(b => 
+            b.services.some(s => s.id === serviceId)
+          );
+        }
+        return barbers;
       }
-      return barbers;
+    },
+
+    list: async ({ search }: { search?: string }) => {
+      // Deprecated: use search instead
+      return api.barbers.search({ q: search });
     },
     
     profile: async ({ barberId }: { barberId: string }) => {
