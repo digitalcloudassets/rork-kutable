@@ -569,8 +569,10 @@ export const apiClient = {
   earnings: {
     summary: async ({ barberId, range }: { barberId: string; range: 'today' | 'week' | 'month' }) => {
       const backendUrl = getBackendUrl();
-      if (!backendUrl) {
-        // No backend configured, use mock data
+      
+      // Always use mock data if no backend URL or in mock mode
+      if (!backendUrl || DATA_MODE === 'mock') {
+        console.log('Using mock earnings data (no backend or mock mode)');
         await delay(500);
         const amounts = {
           today: { gross: 8500, fees: 500, net: 8000 },
@@ -581,14 +583,30 @@ export const apiClient = {
       }
 
       try {
+        console.log(`Fetching earnings summary from: ${backendUrl}/api/earnings/summary`);
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+        
         const response = await fetch(
-          `${backendUrl}/api/earnings/summary?barberId=${barberId}&range=${range}`
+          `${backendUrl}/api/earnings/summary?barberId=${barberId}&range=${range}`,
+          {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            signal: controller.signal
+          }
         );
+        
+        clearTimeout(timeoutId);
         
         if (response.ok) {
           const contentType = response.headers.get('content-type');
           if (contentType && contentType.includes('application/json')) {
             const data = await response.json();
+            console.log('Successfully fetched earnings summary:', data);
             return {
               gross: data.grossCents,
               fees: data.feesCents,
@@ -599,13 +617,25 @@ export const apiClient = {
             throw new Error('Non-JSON response');
           }
         } else {
-          console.error('Failed to fetch earnings summary, status:', response.status);
-          throw new Error('API request failed');
+          console.error(`Failed to fetch earnings summary, status: ${response.status}`);
+          const errorText = await response.text().catch(() => 'Unknown error');
+          console.error('Error details:', errorText);
+          throw new Error(`API request failed with status ${response.status}`);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching earnings summary:', error);
-        // Fallback to mock data
-        await delay(500);
+        
+        // Provide specific error messages for common issues
+        if (error.name === 'AbortError') {
+          console.warn('Earnings request timed out, using fallback data');
+        } else if (error.message === 'Failed to fetch' || error.message.includes('Network request failed')) {
+          console.warn('Network error fetching earnings, using fallback data');
+        } else {
+          console.warn('Unknown error fetching earnings, using fallback data:', error.message);
+        }
+        
+        // Always fallback to mock data on any error
+        await delay(300);
         const amounts = {
           today: { gross: 8500, fees: 500, net: 8000 },
           week: { gross: 125000, fees: 7500, net: 117500 },
@@ -619,24 +649,43 @@ export const apiClient = {
   payouts: {
     list: async ({ barberId }: { barberId: string }) => {
       const backendUrl = getBackendUrl();
-      if (!backendUrl) {
-        // No backend configured, use mock data
+      
+      // Always use mock data if no backend URL or in mock mode
+      if (!backendUrl || DATA_MODE === 'mock') {
+        console.log('Using mock payouts data (no backend or mock mode)');
         await delay(500);
         return [
           { id: "1", amount: 117500, date: "2024-03-10", status: "completed" },
           { id: "2", amount: 98000, date: "2024-03-03", status: "completed" },
+          { id: "3", amount: 85000, date: "2024-02-24", status: "completed" },
         ];
       }
 
       try {
+        console.log(`Fetching payouts from: ${backendUrl}/api/payouts/list`);
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+        
         const response = await fetch(
-          `${backendUrl}/api/payouts/list?barberId=${barberId}`
+          `${backendUrl}/api/payouts/list?barberId=${barberId}`,
+          {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            signal: controller.signal
+          }
         );
+        
+        clearTimeout(timeoutId);
         
         if (response.ok) {
           const contentType = response.headers.get('content-type');
           if (contentType && contentType.includes('application/json')) {
             const data = await response.json();
+            console.log('Successfully fetched payouts:', data.payouts?.length || 0, 'payouts');
             return data.payouts.map((payout: any) => ({
               id: payout.id,
               amount: payout.amountCents,
@@ -649,16 +698,29 @@ export const apiClient = {
             throw new Error('Non-JSON response');
           }
         } else {
-          console.error('Failed to fetch payouts, status:', response.status);
-          throw new Error('API request failed');
+          console.error(`Failed to fetch payouts, status: ${response.status}`);
+          const errorText = await response.text().catch(() => 'Unknown error');
+          console.error('Error details:', errorText);
+          throw new Error(`API request failed with status ${response.status}`);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching payouts:', error);
-        // Fallback to mock data
-        await delay(500);
+        
+        // Provide specific error messages for common issues
+        if (error.name === 'AbortError') {
+          console.warn('Payouts request timed out, using fallback data');
+        } else if (error.message === 'Failed to fetch' || error.message.includes('Network request failed')) {
+          console.warn('Network error fetching payouts, using fallback data');
+        } else {
+          console.warn('Unknown error fetching payouts, using fallback data:', error.message);
+        }
+        
+        // Always fallback to mock data on any error
+        await delay(300);
         return [
           { id: "1", amount: 117500, date: "2024-03-10", status: "completed" },
           { id: "2", amount: 98000, date: "2024-03-03", status: "completed" },
+          { id: "3", amount: 85000, date: "2024-02-24", status: "completed" },
         ];
       }
     },
