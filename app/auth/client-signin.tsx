@@ -61,7 +61,7 @@ export default function ClientSignInScreen() {
               id: authData.user.id,
               name: authData.user.user_metadata?.name || 'User',
               email: authData.user.email || '',
-              phone: authData.user.user_metadata?.phone || '',
+              phone_e164: authData.user.user_metadata?.phone || null,
               created_at: new Date().toISOString(),
             });
 
@@ -75,7 +75,7 @@ export default function ClientSignInScreen() {
           id: authData.user.id,
           role: 'client',
           name: clientData?.name || authData.user.user_metadata?.name || 'User',
-          phone: clientData?.phone || authData.user.user_metadata?.phone || '',
+          phone: clientData?.phone_e164 || authData.user.user_metadata?.phone || '',
           email: authData.user.email || '',
         };
 

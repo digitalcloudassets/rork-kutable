@@ -41,13 +41,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .single();
 
         if (barberError) {
-          console.error('Error fetching barber record in AuthProvider:', barberError.message);
-          console.error('Full error details:', {
+          console.error('Error fetching barber record in AuthProvider:', {
             message: barberError.message,
             code: barberError.code,
             details: barberError.details,
             hint: barberError.hint,
-            userId: authUser.id
+            userId: authUser.id,
+            fullError: barberError
           });
           
           // Handle missing table error (42P01)
@@ -96,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             id: authUser.id,
             role: 'barber',
             name: barberData.name,
-            phone: barberData.phone,
+            phone: barberData.phone_e164 || barberData.phone || '',
             email: authUser.email || '',
           };
           await saveUser(user);
@@ -109,13 +109,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .single();
 
         if (clientError) {
-          console.error('Error fetching client record in AuthProvider:', clientError.message);
-          console.error('Full error details:', {
+          console.error('Error fetching client record in AuthProvider:', {
             message: clientError.message,
             code: clientError.code,
             details: clientError.details,
             hint: clientError.hint,
-            userId: authUser.id
+            userId: authUser.id,
+            fullError: clientError
           });
           
           // Handle missing table error (42P01)
@@ -164,14 +164,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             id: authUser.id,
             role: 'client',
             name: clientData.name,
-            phone: clientData.phone,
+            phone: clientData.phone_e164 || clientData.phone || '',
             email: authUser.email || '',
           };
           await saveUser(user);
         }
       }
     } catch (error) {
-      console.error('Failed to load user from session:', error);
+      console.error('Failed to load user from session:', {
+        error,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        userId: authUser.id,
+        userRole: authUser.user_metadata?.role
+      });
       // Create a fallback user profile to prevent app crashes
       const fallbackUser: User = {
         id: authUser.id,
@@ -238,7 +243,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           subscription.unsubscribe();
         };
       } catch (error) {
-        console.error('Failed to initialize auth:', error);
+        console.error('Failed to initialize auth:', {
+          error,
+          message: error instanceof Error ? error.message : 'Unknown error'
+        });
       } finally {
         if (mounted) {
           setIsLoading(false);
