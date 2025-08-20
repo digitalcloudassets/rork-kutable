@@ -1,32 +1,44 @@
 import { getStripe } from '../../lib/stripe';
 import { getAdminClient } from '../../lib/supabase';
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   try {
     const stripe = getStripe();
     if (!stripe) {
-      return res.status(500).json({ error: 'Stripe not configured' });
+      return new Response(JSON.stringify({ error: 'Stripe not configured' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
-    const sig = req.headers['stripe-signature'];
+    const sig = req.headers.get('stripe-signature');
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
     if (!sig || !webhookSecret) {
-      return res.status(400).json({ error: 'Missing signature or webhook secret' });
+      return new Response(JSON.stringify({ error: 'Missing signature or webhook secret' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
-    const body = req.body;
+    const body = await req.text();
     let event;
 
     try {
       event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
     } catch (err: any) {
       console.error('Webhook signature verification failed:', err.message);
-      return res.status(400).json({ error: 'Invalid signature' });
+      return new Response(JSON.stringify({ error: 'Invalid signature' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     const supabase = getAdminClient();
@@ -66,13 +78,38 @@ export default async function handler(req: any, res: any) {
         }
         break;
 
+      case 'account.updated':
+        const account = event.data.object;
+        const barberId = account.metadata?.barberId;
+        
+        if (barberId) {
+          const chargesEnabled = account.charges_enabled || false;
+          const payoutsEnabled = account.payouts_enabled || false;
+          const stripeStatus = chargesEnabled && payoutsEnabled ? 'enabled' : 'pending';
+          
+          // Update barber's Stripe status in database
+          await supabase
+            .from('barbers')
+            .update({ stripe_status: stripeStatus })
+            .eq('id', barberId);
+            
+          console.log(`Account updated for barber ${barberId}: ${stripeStatus}`);
+        }
+        break;
+
       default:
         console.log(`Unhandled event type ${event.type}`);
     }
 
-    return res.status(200).json({ received: true });
+    return new Response(JSON.stringify({ received: true }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
   } catch (error) {
     console.error('Error processing webhook:', error);
-    return res.status(500).json({ error: 'Webhook processing failed' });
+    return new Response(JSON.stringify({ error: 'Webhook processing failed' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }

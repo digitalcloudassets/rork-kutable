@@ -344,7 +344,15 @@ app.post('/api/payments/create-intent', async (c) => {
 });
 
 app.post('/api/payments/webhook', async (c) => {
-  return await paymentsWebhook(c.req.raw, null);
+  try {
+    const response = await paymentsWebhook(c.req.raw);
+    const data = await response.json();
+    c.status(response.status as any);
+    return c.json(data);
+  } catch (error: any) {
+    console.error('Error in payments webhook:', error);
+    return c.json({ error: 'Internal server error' }, 500);
+  }
 });
 
 // Gallery endpoints

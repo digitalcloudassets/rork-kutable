@@ -15,10 +15,15 @@ import {
   BarChart3,
   Settings,
   ChevronRight,
+  CreditCard,
+  AlertCircle,
 } from "lucide-react-native";
+import { useQuery } from "@tanstack/react-query";
 
 import { Tokens } from "@/theme/tokens";
 import { ScrollScreen } from "@/components/Screen";
+import { useAuth } from "@/providers/AuthProvider";
+import { apiClient } from "@/lib/api";
 
 interface ManageCardProps {
   title: string;
@@ -43,6 +48,48 @@ function ManageCard({ title, description, icon, onPress, testId }: ManageCardPro
         <View style={styles.textContainer}>
           <Text style={styles.cardTitle}>{title}</Text>
           <Text style={styles.cardDescription}>{description}</Text>
+        </View>
+        <ChevronRight size={20} color={Tokens.textMuted} />
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+function StripeBanner() {
+  const { user } = useAuth();
+  
+  const { data: accountStatus, isLoading } = useQuery({
+    queryKey: ["stripe-status", user?.id],
+    queryFn: () => apiClient.stripe.getAccountStatus({ barberId: user?.id || "" }),
+    enabled: !!user,
+  });
+
+  const isConnected = accountStatus?.chargesEnabled && accountStatus?.payoutsEnabled;
+  
+  // Don't show banner if loading or already connected
+  if (isLoading || isConnected) {
+    return null;
+  }
+
+  const handleConnectStripe = () => {
+    router.push("/(tabs)/dashboard/onboarding");
+  };
+
+  return (
+    <TouchableOpacity
+      style={styles.stripeBanner}
+      onPress={handleConnectStripe}
+      activeOpacity={0.8}
+    >
+      <View style={styles.stripeBannerContent}>
+        <View style={styles.stripeBannerIcon}>
+          <AlertCircle size={20} color={Tokens.warning} />
+        </View>
+        <View style={styles.stripeBannerText}>
+          <Text style={styles.stripeBannerTitle}>Connect Stripe to Accept Payments</Text>
+          <Text style={styles.stripeBannerSubtitle}>
+            Set up your Stripe account to start receiving payments from clients
+          </Text>
         </View>
         <ChevronRight size={20} color={Tokens.textMuted} />
       </View>
@@ -102,6 +149,8 @@ export default function ManageScreen() {
             Quick access to all your business tools
           </Text>
         </View>
+
+        <StripeBanner />
 
         <View style={styles.cardsContainer}>
           {manageOptions.map((option, index) => (
@@ -182,5 +231,41 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Tokens.textMuted,
     lineHeight: 20,
+  },
+  stripeBanner: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+    backgroundColor: `${Tokens.warning}10`,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: `${Tokens.warning}30`,
+    padding: 16,
+  },
+  stripeBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  stripeBannerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: `${Tokens.warning}20`,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  stripeBannerText: {
+    flex: 1,
+  },
+  stripeBannerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Tokens.text,
+    marginBottom: 2,
+  },
+  stripeBannerSubtitle: {
+    fontSize: 13,
+    color: Tokens.textMuted,
+    lineHeight: 18,
   },
 });

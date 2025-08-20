@@ -61,10 +61,18 @@ export default async function handler(req: Request): Promise<Response> {
     const chargesEnabled = account.charges_enabled || false;
     const payoutsEnabled = account.payouts_enabled || false;
     
+    // Cache the status in the database
+    const stripeStatus = chargesEnabled && payoutsEnabled ? 'enabled' : 'pending';
+    await supabase
+      .from('barbers')
+      .update({ stripe_status: stripeStatus })
+      .eq('id', barberId);
+    
     console.log(`Checking account status for barber ${barberId}:`, {
       accountId: barberRow.connected_account_id,
       chargesEnabled,
       payoutsEnabled,
+      stripeStatus,
     });
 
     const response: ResponseBody = {

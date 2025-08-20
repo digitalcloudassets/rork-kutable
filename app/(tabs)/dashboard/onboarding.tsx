@@ -90,30 +90,47 @@ export default function OnboardingScreen() {
   // Polling function to check account status
   const startPolling = () => {
     setIsPolling(true);
+    let pollCount = 0;
+    const maxPolls = 40; // 2 minutes at 3-second intervals
+    
     const pollInterval = setInterval(async () => {
       try {
+        pollCount++;
+        console.log(`Polling Stripe status (${pollCount}/${maxPolls})...`);
+        
         await refetch();
         const status = await apiClient.stripe.getAccountStatus({ barberId: user?.id || "" });
+        
         if (status.chargesEnabled && status.payoutsEnabled) {
+          console.log('Stripe account fully connected!');
           clearInterval(pollInterval);
           setIsPolling(false);
           // Navigate to dashboard on successful connection
           router.replace("/(tabs)/dashboard");
+        } else if (pollCount >= maxPolls) {
+          console.log('Polling timeout reached');
+          clearInterval(pollInterval);
+          setIsPolling(false);
+          Alert.alert(
+            "Setup In Progress", 
+            "Your Stripe setup is still in progress. You can check back later or contact support if you need help.",
+            [{ text: "OK" }]
+          );
         }
       } catch (error: any) {
         console.error('Error polling account status:', error);
         // Don't show alerts during polling, just log the error
+        if (pollCount >= maxPolls) {
+          clearInterval(pollInterval);
+          setIsPolling(false);
+        }
       }
     }, 3000); // Poll every 3 seconds
-
-    // Stop polling after 2 minutes
-    setTimeout(() => {
-      clearInterval(pollInterval);
-      setIsPolling(false);
-    }, 120000);
   };
 
   const isConnected = accountStatus?.chargesEnabled && accountStatus?.payoutsEnabled;
+  const hasAccount = !!accountStatus && (accountStatus.chargesEnabled || accountStatus.payoutsEnabled);
+  const needsSetup = hasAccount && !isConnected;
 
   if (statusLoading) {
     return (
@@ -144,12 +161,14 @@ export default function OnboardingScreen() {
           </View>
           
           <Text style={styles.title}>
-            {isConnected ? "Stripe Connected!" : "Connect Your Stripe Account"}
+            {isConnected ? "Stripe Connected!" : needsSetup ? "Complete Stripe Setup" : "Connect Your Stripe Account"}
           </Text>
           
           <Text style={styles.subtitle}>
             {isConnected 
               ? "Your account is ready to accept payments and receive payouts."
+              : needsSetup
+              ? "Your Stripe account needs additional information to start accepting payments."
               : "Connect your Stripe account to start accepting payments from clients."
             }
           </Text>
@@ -208,7 +227,9 @@ export default function OnboardingScreen() {
                 ) : (
                   <>
                     <ExternalLink size={20} color="#fff" />
-                    <Text style={styles.primaryButtonText}>Connect with Stripe</Text>
+                    <Text style={styles.primaryButtonText}>
+                      {needsSetup ? "Resume Stripe Setup" : "Connect with Stripe"}
+                    </Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -227,7 +248,10 @@ export default function OnboardingScreen() {
           <View style={styles.disclaimer}>
             <AlertCircle size={16} color={Tokens.textMuted} />
             <Text style={styles.disclaimerText}>
-              You'll be redirected to Stripe to complete the setup process. This is secure and takes just a few minutes.
+              {needsSetup 
+                ? "You'll be redirected to Stripe to complete any remaining setup steps."
+                : "You'll be redirected to Stripe to complete the setup process. This is secure and takes just a few minutes."
+              }
             </Text>
           </View>
         )}
