@@ -13,6 +13,7 @@ import availabilityList from './api/availability/list';
 import availabilityBlock from './api/availability/block';
 import availabilityUnblock from './api/availability/unblock';
 import availabilityOpenSlots from './api/availability/open-slots';
+import { blockAvailability, unblockAvailability, getOpenSlots, deleteAvailabilityBlock } from './availability';
 import { POST as barbersSearch } from './api/barbers/search';
 import { GET as barbersProfile } from './api/barbers/profile';
 import earningsSummary from './api/earnings/summary';
@@ -175,45 +176,83 @@ app.get('/api/health/snapshot', async (c) => {
 
 // Stripe endpoints
 app.post('/api/stripe/create-or-fetch-account', async (c) => {
-  return await stripeCreateOrFetchAccount(c.req.raw);
+  const response = await stripeCreateOrFetchAccount(c.req.raw);
+  const data = await response.json();
+  c.status(response.status as any);
+  return c.json(data);
 });
 
 app.post('/api/stripe/account-link', async (c) => {
-  return await stripeAccountLink(c.req.raw);
+  const response = await stripeAccountLink(c.req.raw);
+  const data = await response.json();
+  c.status(response.status as any);
+  return c.json(data);
 });
 
 app.get('/api/stripe/account-status', async (c) => {
-  return await stripeAccountStatus(c.req.raw);
+  const response = await stripeAccountStatus(c.req.raw);
+  const data = await response.json();
+  c.status(response.status as any);
+  return c.json(data);
 });
 
 // Services endpoints
 app.post('/api/services/list', async (c) => {
-  return await servicesList(c.req.raw);
+  const response = await servicesList(c.req.raw);
+  const data = await response.json();
+  c.status(response.status as any);
+  return c.json(data);
 });
 
 app.post('/api/services/upsert', async (c) => {
-  return await servicesUpsert(c.req.raw);
+  const response = await servicesUpsert(c.req.raw);
+  const data = await response.json();
+  c.status(response.status as any);
+  return c.json(data);
 });
 
 app.post('/api/services/delete', async (c) => {
-  return await servicesDelete(c.req.raw);
+  const response = await servicesDelete(c.req.raw);
+  const data = await response.json();
+  c.status(response.status as any);
+  return c.json(data);
 });
 
 // Availability endpoints
 app.post('/api/availability/list', async (c) => {
-  return await availabilityList(c.req.raw);
+  const response = await availabilityList(c.req.raw);
+  const data = await response.json();
+  c.status(response.status as any);
+  return c.json(data);
 });
 
 app.post('/api/availability/block', async (c) => {
-  return await availabilityBlock(c.req.raw);
+  const response = await availabilityBlock(c.req.raw);
+  const data = await response.json();
+  c.status(response.status as any);
+  return c.json(data);
 });
 
 app.post('/api/availability/unblock', async (c) => {
-  return await availabilityUnblock(c.req.raw);
+  const response = await availabilityUnblock(c.req.raw);
+  const data = await response.json();
+  c.status(response.status as any);
+  return c.json(data);
 });
 
 app.get('/api/availability/open-slots', async (c) => {
-  return await availabilityOpenSlots(c.req.raw);
+  const response = await availabilityOpenSlots(c.req.raw);
+  const data = await response.json();
+  c.status(response.status as any);
+  return c.json(data);
+});
+
+app.delete('/api/availability/block/:id', async (c) => {
+  const blockId = c.req.param('id');
+  const response = await deleteAvailabilityBlock(c.req.raw, blockId);
+  const data = await response.json();
+  c.status(response.status as any);
+  return c.json(data);
 });
 
 // Barbers endpoints
@@ -227,12 +266,18 @@ app.get('/api/barbers/profile', async (c) => {
 
 // Earnings endpoints
 app.get('/api/earnings/summary', async (c) => {
-  return await earningsSummary(c.req.raw);
+  const response = await earningsSummary(c.req.raw);
+  const data = await response.json();
+  c.status(response.status as any);
+  return c.json(data);
 });
 
 // Payouts endpoints
 app.get('/api/payouts/list', async (c) => {
-  return await payoutsList(c.req.raw);
+  const response = await payoutsList(c.req.raw);
+  const data = await response.json();
+  c.status(response.status as any);
+  return c.json(data);
 });
 
 
