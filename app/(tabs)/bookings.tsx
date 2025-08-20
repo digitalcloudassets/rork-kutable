@@ -7,9 +7,13 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Alert,
+  Modal,
+  Dimensions,
 } from "react-native";
-import { Calendar, Clock, User, ChevronRight, CalendarX } from "lucide-react-native";
-import { useQuery } from "@tanstack/react-query";
+import { Calendar, Clock, User, ChevronRight, CalendarX, X } from "lucide-react-native";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { router } from "expo-router";
 import { brandColors } from "@/config/brand";
 import { api } from "@/lib/api";
 import { useAuth } from "@/providers/AuthProvider";
@@ -18,10 +22,142 @@ import { formatDate, formatTime } from "@/utils/dateHelpers";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 
+interface RescheduleModalProps {
+  visible: boolean;
+  booking: Booking | null;
+  onClose: () => void;
+  onReschedule: (bookingId: string, newStartISO: string) => void;
+}
+
+function RescheduleModal({ visible, booking, onClose, onReschedule }: RescheduleModalProps) {
+  const [selectedDate, setSelectedDate] = useState<string>("");
+  const [selectedSlot, setSelectedSlot] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const { data: slots } = useQuery({
+    queryKey: ["openSlots", booking?.barberId, booking?.serviceId, selectedDate],
+    queryFn: () => {
+      if (!booking || !selectedDate) return { slots: [] };
+      return api.availability.openSlots({
+        barberId: booking.barberId,
+        serviceId: booking.serviceId,
+        date: selectedDate,
+      });
+    },
+    enabled: !!booking && !!selectedDate,
+  });
+
+  const handleReschedule = async () => {
+    if (!booking || !selectedSlot) return;
+    
+    setIsLoading(true);
+    try {
+      await onReschedule(booking.id, selectedSlot);
+      onClose();
+    } catch (error) {
+      console.error('Error rescheduling:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const generateDateOptions = () => {
+    const dates = [];
+    const today = new Date();
+    for (let i = 1; i <= 14; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      dates.push(date.toISOString().split('T')[0]);
+    }
+    return dates;
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
+      <View style={styles.modalContainer}>
+        <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle}>Reschedule Appointment</Text>
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <X size={24} color="#666" />
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView style={styles.modalContent}>
+          <Text style={styles.sectionTitle}>Select New Date</Text>
+          <View style={styles.dateGrid}>
+            {generateDateOptions().map((date) => {
+              const dateObj = new Date(date);
+              const isSelected = selectedDate === date;
+              return (
+                <TouchableOpacity
+                  key={date}
+                  style={[styles.dateOption, isSelected && styles.selectedDateOption]}
+                  onPress={() => {
+                    setSelectedDate(date);
+                    setSelectedSlot("");
+                  }}
+                >
+                  <Text style={[styles.dateOptionText, isSelected && styles.selectedDateOptionText]}>
+                    {dateObj.toLocaleDateString('en-US', { weekday: 'short' })}
+                  </Text>
+                  <Text style={[styles.dateOptionDate, isSelected && styles.selectedDateOptionText]}>
+                    {dateObj.getDate()}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {selectedDate && (
+            <>
+              <Text style={styles.sectionTitle}>Available Times</Text>
+              <View style={styles.slotsGrid}>
+                {slots?.slots?.map((slot: string) => {
+                  const slotTime = new Date(slot);
+                  const isSelected = selectedSlot === slot;
+                  return (
+                    <TouchableOpacity
+                      key={slot}
+                      style={[styles.slotOption, isSelected && styles.selectedSlotOption]}
+                      onPress={() => setSelectedSlot(slot)}
+                    >
+                      <Text style={[styles.slotOptionText, isSelected && styles.selectedSlotOptionText]}>
+                        {slotTime.toLocaleTimeString('en-US', {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true,
+                        })}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </>
+          )}
+        </ScrollView>
+
+        <View style={styles.modalFooter}>
+          <TouchableOpacity
+            style={[styles.rescheduleButton, (!selectedSlot || isLoading) && styles.disabledButton]}
+            onPress={handleReschedule}
+            disabled={!selectedSlot || isLoading}
+          >
+            <Text style={styles.rescheduleButtonText}>
+              {isLoading ? "Rescheduling..." : "Confirm Reschedule"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 export default function BookingsScreen() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
+  const [rescheduleModal, setRescheduleModal] = useState<{ visible: boolean; booking: Booking | null }>({ visible: false, booking: null });
 
   const { data: bookings, isLoading, error, refetch } = useQuery({
     queryKey: ["bookings", user?.id],
@@ -29,6 +165,30 @@ export default function BookingsScreen() {
     enabled: !!user,
     retry: 2,
     retryDelay: 1000,
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: ({ bookingId, reason }: { bookingId: string; reason?: string }) => 
+      api.bookings.cancel({ bookingId, reason, userId: user?.id || "" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookings", user?.id] });
+      Alert.alert("Success", "Booking cancelled successfully");
+    },
+    onError: (error: Error) => {
+      Alert.alert("Error", error.message || "Failed to cancel booking");
+    },
+  });
+
+  const rescheduleMutation = useMutation({
+    mutationFn: ({ bookingId, newStartISO }: { bookingId: string; newStartISO: string }) => 
+      api.bookings.reschedule({ bookingId, newStartISO, userId: user?.id || "" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookings", user?.id] });
+      Alert.alert("Success", "Booking rescheduled successfully");
+    },
+    onError: (error: Error) => {
+      Alert.alert("Error", error.message || "Failed to reschedule booking");
+    },
   });
 
   const handleRefresh = async () => {
@@ -51,6 +211,33 @@ export default function BookingsScreen() {
       case "completed": return "#6B7280";
       default: return "#6B7280";
     }
+  };
+
+  const handleBookingPress = (booking: Booking) => {
+    router.push(`/account/booking/${booking.id}`);
+  };
+
+  const handleCancel = (booking: Booking) => {
+    Alert.alert(
+      "Cancel Booking",
+      "Are you sure you want to cancel this appointment?",
+      [
+        { text: "No", style: "cancel" },
+        {
+          text: "Yes, Cancel",
+          style: "destructive",
+          onPress: () => cancelMutation.mutate({ bookingId: booking.id }),
+        },
+      ]
+    );
+  };
+
+  const handleReschedule = (booking: Booking) => {
+    setRescheduleModal({ visible: true, booking });
+  };
+
+  const onReschedule = async (bookingId: string, newStartISO: string) => {
+    await rescheduleMutation.mutateAsync({ bookingId, newStartISO });
   };
 
   return (
@@ -115,7 +302,12 @@ export default function BookingsScreen() {
           />
         ) : (
           displayBookings.map((booking: Booking) => (
-            <TouchableOpacity key={booking.id} style={styles.bookingCard}>
+            <TouchableOpacity 
+              key={booking.id} 
+              style={styles.bookingCard}
+              onPress={() => handleBookingPress(booking)}
+              testID={`booking-card-${booking.id}`}
+            >
               <View style={styles.bookingHeader}>
                 <View style={styles.dateTimeContainer}>
                   <Text style={styles.dateText}>{formatDate(booking.startISO)}</Text>
@@ -140,12 +332,26 @@ export default function BookingsScreen() {
                 )}
               </View>
 
-              {activeTab === "upcoming" && booking.status === "confirmed" && (
+              {activeTab === "upcoming" && (booking.status === "confirmed" || booking.status === "pending") && (
                 <View style={styles.bookingActions}>
-                  <TouchableOpacity style={styles.actionButton}>
+                  <TouchableOpacity 
+                    style={styles.actionButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleReschedule(booking);
+                    }}
+                    testID={`reschedule-button-${booking.id}`}
+                  >
                     <Text style={styles.actionButtonText}>Reschedule</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.actionButton, styles.cancelButton]}>
+                  <TouchableOpacity 
+                    style={[styles.actionButton, styles.cancelButton]}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleCancel(booking);
+                    }}
+                    testID={`cancel-button-${booking.id}`}
+                  >
                     <Text style={styles.cancelButtonText}>Cancel</Text>
                   </TouchableOpacity>
                 </View>
@@ -156,6 +362,13 @@ export default function BookingsScreen() {
           ))
         )}
       </ScrollView>
+      
+      <RescheduleModal
+        visible={rescheduleModal.visible}
+        booking={rescheduleModal.booking}
+        onClose={() => setRescheduleModal({ visible: false, booking: null })}
+        onReschedule={onReschedule}
+      />
     </View>
   );
 }
@@ -303,5 +516,114 @@ const styles = StyleSheet.create({
     right: 16,
     top: "50%",
     marginTop: -10,
+  },
+
+  // Modal styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#1a1a1a",
+  },
+  closeButton: {
+    padding: 8,
+  },
+  modalContent: {
+    flex: 1,
+    padding: 16,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1a1a1a",
+    marginBottom: 12,
+    marginTop: 16,
+  },
+  dateGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 16,
+  },
+  dateOption: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+  },
+  selectedDateOption: {
+    backgroundColor: brandColors.primary,
+    borderColor: brandColors.primary,
+  },
+  dateOptionText: {
+    fontSize: 12,
+    color: "#666",
+    marginBottom: 2,
+  },
+  dateOptionDate: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1a1a1a",
+  },
+  selectedDateOptionText: {
+    color: "#fff",
+  },
+  slotsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  slotOption: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    backgroundColor: "#fff",
+  },
+  selectedSlotOption: {
+    backgroundColor: brandColors.primary,
+    borderColor: brandColors.primary,
+  },
+  slotOptionText: {
+    fontSize: 14,
+    color: "#1a1a1a",
+  },
+  selectedSlotOptionText: {
+    color: "#fff",
+  },
+  modalFooter: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#f0f0f0",
+  },
+  rescheduleButton: {
+    backgroundColor: brandColors.primary,
+    paddingVertical: 16,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  disabledButton: {
+    backgroundColor: "#ccc",
+  },
+  rescheduleButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#fff",
   },
 });

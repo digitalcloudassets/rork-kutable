@@ -242,6 +242,62 @@ export const api = {
   },
 
   bookings: {
+    cancel: async ({ bookingId, reason, userId }: { bookingId: string; reason?: string; userId: string }) => {
+      const backendUrl = getBackendUrl();
+      if (!backendUrl) {
+        // No backend configured, use mock implementation
+        await delay(500);
+        return { booking: { id: bookingId, status: 'cancelled' } };
+      }
+
+      try {
+        const response = await fetch(`${backendUrl}/api/bookings/cancel`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bookingId, reason, userId }),
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          return result;
+        } else {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to cancel booking');
+        }
+      } catch (error) {
+        console.error('Error cancelling booking:', error);
+        throw error;
+      }
+    },
+
+    reschedule: async ({ bookingId, newStartISO, userId }: { bookingId: string; newStartISO: string; userId: string }) => {
+      const backendUrl = getBackendUrl();
+      if (!backendUrl) {
+        // No backend configured, use mock implementation
+        await delay(800);
+        return { booking: { id: bookingId, startISO: newStartISO, status: 'confirmed' } };
+      }
+
+      try {
+        const response = await fetch(`${backendUrl}/api/bookings/reschedule`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bookingId, newStartISO, userId }),
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          return result;
+        } else {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to reschedule booking');
+        }
+      } catch (error) {
+        console.error('Error rescheduling booking:', error);
+        throw error;
+      }
+    },
+
     create: async (data: { barberId?: string; serviceId?: string; startISO?: string; clientName?: string; clientPhone?: string; clientUserId?: string; note?: string; }) => {
       const backendUrl = getBackendUrl();
       if (!backendUrl) {
