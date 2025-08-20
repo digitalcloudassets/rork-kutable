@@ -10,9 +10,10 @@ import {
 } from 'react-native';
 import { BarChart3, TrendingUp, DollarSign, Users, Calendar, XCircle } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
-import { brandColors } from '../../../config/brand';
 import { api } from '@/lib/api';
 import { useAuth } from '@/providers/AuthProvider';
+import { Screen } from '@/components/Screen';
+import { Tokens } from '@/theme/tokens';
 import type { AnalyticsSummary, TimeSeriesPoint, TopService } from '@/backend/types';
 
 type RangeType = 'week' | 'month';
@@ -89,13 +90,14 @@ export default function AnalyticsScreen() {
   const isLoading = summaryLoading || timeseriesLoading || servicesLoading;
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.scrollContent}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-      }
-    >
+    <Screen>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      >
       {/* Range Selector */}
       <View style={styles.rangeSelector}>
         <TouchableOpacity
@@ -135,22 +137,22 @@ export default function AnalyticsScreen() {
       {/* Summary Cards */}
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={brandColors.primary} />
+          <ActivityIndicator size="large" color={Tokens.accent} />
         </View>
       ) : (
         <>
           <View style={styles.summaryGrid}>
-            <View style={[styles.summaryCard, { borderLeftColor: '#3B82F6' }]}>
-              <View style={[styles.summaryIcon, { backgroundColor: '#3B82F615' }]}>
-                <Calendar size={20} color="#3B82F6" />
+            <View style={[styles.summaryCard, { borderLeftColor: Tokens.accent }]}>
+              <View style={[styles.summaryIcon, { backgroundColor: `${Tokens.accent}15` }]}>
+                <Calendar size={20} color={Tokens.accent} />
               </View>
               <Text style={styles.summaryValue}>{summary?.bookingsCount || 0}</Text>
               <Text style={styles.summaryLabel}>Bookings</Text>
             </View>
 
-            <View style={[styles.summaryCard, { borderLeftColor: '#10B981' }]}>
-              <View style={[styles.summaryIcon, { backgroundColor: '#10B98115' }]}>
-                <DollarSign size={20} color="#10B981" />
+            <View style={[styles.summaryCard, { borderLeftColor: Tokens.success }]}>
+              <View style={[styles.summaryIcon, { backgroundColor: `${Tokens.success}15` }]}>
+                <DollarSign size={20} color={Tokens.success} />
               </View>
               <Text style={styles.summaryValue}>
                 ${((summary?.grossCents || 0) / 100).toFixed(0)}
@@ -158,9 +160,9 @@ export default function AnalyticsScreen() {
               <Text style={styles.summaryLabel}>Gross</Text>
             </View>
 
-            <View style={[styles.summaryCard, { borderLeftColor: '#8B5CF6' }]}>
-              <View style={[styles.summaryIcon, { backgroundColor: '#8B5CF615' }]}>
-                <TrendingUp size={20} color="#8B5CF6" />
+            <View style={[styles.summaryCard, { borderLeftColor: Tokens.accent }]}>
+              <View style={[styles.summaryIcon, { backgroundColor: `${Tokens.accent}15` }]}>
+                <TrendingUp size={20} color={Tokens.accent} />
               </View>
               <Text style={styles.summaryValue}>
                 ${((summary?.netCents || 0) / 100).toFixed(0)}
@@ -168,9 +170,9 @@ export default function AnalyticsScreen() {
               <Text style={styles.summaryLabel}>Net</Text>
             </View>
 
-            <View style={[styles.summaryCard, { borderLeftColor: '#F59E0B' }]}>
-              <View style={[styles.summaryIcon, { backgroundColor: '#F59E0B15' }]}>
-                <Users size={20} color="#F59E0B" />
+            <View style={[styles.summaryCard, { borderLeftColor: Tokens.warning }]}>
+              <View style={[styles.summaryIcon, { backgroundColor: `${Tokens.warning}15` }]}>
+                <Users size={20} color={Tokens.warning} />
               </View>
               <Text style={styles.summaryValue}>
                 ${((summary?.avgTicketCents || 0) / 100).toFixed(0)}
@@ -178,9 +180,9 @@ export default function AnalyticsScreen() {
               <Text style={styles.summaryLabel}>Avg Ticket</Text>
             </View>
 
-            <View style={[styles.summaryCard, { borderLeftColor: '#EF4444' }]}>
-              <View style={[styles.summaryIcon, { backgroundColor: '#EF444415' }]}>
-                <XCircle size={20} color="#EF4444" />
+            <View style={[styles.summaryCard, { borderLeftColor: Tokens.error }]}>
+              <View style={[styles.summaryIcon, { backgroundColor: `${Tokens.error}15` }]}>
+                <XCircle size={20} color={Tokens.error} />
               </View>
               <Text style={styles.summaryValue}>{summary?.cancellationsCount || 0}</Text>
               <Text style={styles.summaryLabel}>Cancellations</Text>
@@ -193,11 +195,11 @@ export default function AnalyticsScreen() {
               <Text style={styles.sectionTitle}>Trends</Text>
               <View style={styles.legendContainer}>
                 <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: '#3B82F6' }]} />
+                  <View style={[styles.legendDot, { backgroundColor: Tokens.accent }]} />
                   <Text style={styles.legendText}>Bookings</Text>
                 </View>
                 <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: '#10B981' }]} />
+                  <View style={[styles.legendDot, { backgroundColor: Tokens.success }]} />
                   <Text style={styles.legendText}>Revenue</Text>
                 </View>
               </View>
@@ -220,7 +222,7 @@ export default function AnalyticsScreen() {
                               styles.bar,
                               {
                                 height: bookingHeight,
-                                backgroundColor: '#3B82F6',
+                                backgroundColor: Tokens.accent,
                                 marginRight: 2,
                               },
                             ]}
@@ -230,7 +232,7 @@ export default function AnalyticsScreen() {
                               styles.bar,
                               {
                                 height: revenueHeight,
-                                backgroundColor: '#10B981',
+                                backgroundColor: Tokens.success,
                               },
                             ]}
                           />
@@ -244,7 +246,7 @@ export default function AnalyticsScreen() {
                 </View>
               ) : (
                 <View style={styles.emptyChart}>
-                  <BarChart3 size={48} color="#ccc" />
+                  <BarChart3 size={48} color={Tokens.textMuted} />
                   <Text style={styles.emptyChartText}>
                     {selectedRange === 'week' ? 'No bookings this week' : 'No bookings this month'}
                   </Text>
@@ -298,14 +300,15 @@ export default function AnalyticsScreen() {
           </View>
         </>
       )}
-    </ScrollView>
+      </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: Tokens.bg,
   },
   scrollContent: {
     paddingBottom: 20,
@@ -319,12 +322,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#1a1a1a',
+    color: Tokens.text,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
+    color: Tokens.textMuted,
     textAlign: 'center',
   },
   loadingContainer: {
@@ -342,18 +345,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#fff',
+    backgroundColor: Tokens.surface,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: Tokens.border,
   },
   rangeChipActive: {
-    backgroundColor: brandColors.primary,
-    borderColor: brandColors.primary,
+    backgroundColor: Tokens.accent,
+    borderColor: Tokens.accent,
   },
   rangeChipText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#666',
+    color: Tokens.textMuted,
   },
   rangeChipTextActive: {
     color: '#fff',
@@ -367,15 +370,12 @@ const styles = StyleSheet.create({
   summaryCard: {
     flex: 1,
     minWidth: '47%',
-    backgroundColor: '#fff',
+    backgroundColor: Tokens.surface,
     padding: 16,
     borderRadius: 12,
     borderLeftWidth: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: Tokens.border,
   },
   summaryIcon: {
     width: 36,
@@ -388,12 +388,12 @@ const styles = StyleSheet.create({
   summaryValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#1a1a1a',
+    color: Tokens.text,
     marginBottom: 4,
   },
   summaryLabel: {
     fontSize: 13,
-    color: '#666',
+    color: Tokens.textMuted,
   },
   section: {
     paddingHorizontal: 16,
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1a1a1a',
+    color: Tokens.text,
   },
   legendContainer: {
     flexDirection: 'row',
@@ -426,17 +426,14 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 12,
-    color: '#666',
+    color: Tokens.textMuted,
   },
   chartContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: Tokens.surface,
     borderRadius: 12,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: Tokens.border,
   },
   barChart: {
     flexDirection: 'row',
@@ -462,7 +459,7 @@ const styles = StyleSheet.create({
   },
   barLabel: {
     fontSize: 10,
-    color: '#666',
+    color: Tokens.textMuted,
     textAlign: 'center',
   },
   emptyChart: {
@@ -472,30 +469,27 @@ const styles = StyleSheet.create({
   },
   emptyChartText: {
     fontSize: 14,
-    color: '#999',
+    color: Tokens.textMuted,
     marginTop: 8,
   },
   servicesList: {
-    backgroundColor: '#fff',
+    backgroundColor: Tokens.surface,
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: Tokens.border,
   },
   serviceItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: Tokens.border,
   },
   serviceRank: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: brandColors.primaryLight,
+    backgroundColor: `${Tokens.accent}15`,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -503,7 +497,7 @@ const styles = StyleSheet.create({
   serviceRankText: {
     fontSize: 14,
     fontWeight: '600',
-    color: brandColors.primary,
+    color: Tokens.accent,
   },
   serviceDetails: {
     flex: 1,
@@ -511,23 +505,23 @@ const styles = StyleSheet.create({
   serviceName: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#1a1a1a',
+    color: Tokens.text,
     marginBottom: 2,
   },
   serviceStats: {
     fontSize: 13,
-    color: '#666',
+    color: Tokens.textMuted,
   },
   serviceProgress: {
     width: 60,
     height: 4,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: Tokens.border,
     borderRadius: 2,
     overflow: 'hidden',
   },
   serviceProgressBar: {
     height: '100%',
-    backgroundColor: brandColors.primary,
+    backgroundColor: Tokens.accent,
     borderRadius: 2,
   },
   emptyServices: {
@@ -536,6 +530,6 @@ const styles = StyleSheet.create({
   },
   emptyServicesText: {
     fontSize: 14,
-    color: '#999',
+    color: Tokens.textMuted,
   },
 });

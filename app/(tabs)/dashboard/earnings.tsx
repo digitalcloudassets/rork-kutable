@@ -8,10 +8,11 @@ import {
   RefreshControl,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { DollarSign, TrendingUp, Clock, CheckCircle, AlertCircle, ExternalLink } from 'lucide-react-native';
 import { useAuth } from '@/providers/AuthProvider';
+import { Screen } from '@/components/Screen';
+import { Tokens } from '@/theme/tokens';
 
 interface EarningsSummary {
   grossCents: number;
@@ -247,7 +248,7 @@ export default function EarningsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <Screen>
       <Stack.Screen options={{ title: 'Earnings' }} />
       
       <ScrollView
@@ -320,7 +321,7 @@ export default function EarningsScreen() {
             <Text style={styles.sectionTitle}>Recent Payouts</Text>
             <TouchableOpacity style={styles.viewAllButton}>
               <Text style={styles.viewAllText}>View All</Text>
-              <ExternalLink size={16} color="#3B82F6" />
+              <ExternalLink size={16} color={Tokens.accent} />
             </TouchableOpacity>
           </View>
           
@@ -372,24 +373,23 @@ export default function EarningsScreen() {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
   scrollView: {
     flex: 1,
+    backgroundColor: Tokens.bg,
   },
   rangeSelector: {
     flexDirection: 'row',
     margin: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Tokens.surface,
     borderRadius: 12,
     padding: 4,
+    borderWidth: 1,
+    borderColor: Tokens.border,
   },
   rangeButton: {
     flex: 1,
@@ -399,12 +399,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   rangeButtonActive: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: Tokens.accent,
   },
   rangeButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6B7280',
+    color: Tokens.textMuted,
   },
   rangeButtonTextActive: {
     color: '#FFFFFF',
@@ -414,20 +414,14 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   summaryCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Tokens.surface,
     borderRadius: 16,
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    borderWidth: 1,
+    borderColor: Tokens.border,
   },
   netEarningsCard: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: Tokens.accent,
   },
   summaryHeader: {
     flexDirection: 'row',
@@ -437,7 +431,7 @@ const styles = StyleSheet.create({
   summaryTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: Tokens.text,
     marginLeft: 8,
   },
   netEarningsTitle: {
@@ -446,7 +440,7 @@ const styles = StyleSheet.create({
   summaryAmount: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#111827',
+    color: Tokens.text,
   },
   netEarningsAmount: {
     color: '#FFFFFF',
@@ -463,7 +457,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#111827',
+    color: Tokens.text,
   },
   viewAllButton: {
     flexDirection: 'row',
@@ -473,49 +467,37 @@ const styles = StyleSheet.create({
   viewAllText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#3B82F6',
+    color: Tokens.accent,
   },
   emptyState: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Tokens.surface,
     borderRadius: 16,
     padding: 40,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    borderWidth: 1,
+    borderColor: Tokens.border,
   },
   emptyStateTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#374151',
+    color: Tokens.text,
     marginTop: 16,
     marginBottom: 8,
   },
   emptyStateText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: Tokens.textMuted,
     textAlign: 'center',
   },
   payoutsList: {
     gap: 12,
   },
   payoutCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Tokens.surface,
     borderRadius: 12,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: Tokens.border,
   },
   payoutHeader: {
     flexDirection: 'row',
@@ -530,23 +512,23 @@ const styles = StyleSheet.create({
   payoutStatusText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: Tokens.text,
     marginLeft: 6,
   },
   payoutAmount: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#111827',
+    color: Tokens.text,
   },
   payoutDetails: {
     gap: 4,
   },
   payoutDate: {
     fontSize: 12,
-    color: '#6B7280',
+    color: Tokens.textMuted,
   },
   payoutArrival: {
     fontSize: 12,
-    color: '#6B7280',
+    color: Tokens.textMuted,
   },
 });
