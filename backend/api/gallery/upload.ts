@@ -1,14 +1,13 @@
+// import { getAdminClient } from '../../lib/supabase';
 import type { GalleryItem } from '../../types';
 
-// Mock upload endpoint for demo purposes
-// In production, this would handle actual file uploads to Supabase storage
 export async function POST(request: Request) {
   try {
     // For demo purposes, we'll simulate a successful upload
-    // In a real implementation, you would:
-    // 1. Parse the FormData to get the file, path, and barberId
-    // 2. Upload the file to Supabase storage
-    // 3. Save the record to the gallery_items table
+    // In a real implementation, you would parse FormData and upload to Supabase storage
+    
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
     const mockItem: GalleryItem = {
       url: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=400&fit=crop',
@@ -16,10 +15,48 @@ export async function POST(request: Request) {
       path: `gallery/mock/${Date.now()}.jpg`
     };
 
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
     return Response.json({ item: mockItem });
+    
+    // TODO: Implement real file upload when Supabase storage is configured
+    // const formData = await request.formData();
+    // const file = formData.get('file');
+    // const path = formData.get('path');
+    // const barberId = formData.get('barberId');
+    // 
+    // if (!file || !path || !barberId) {
+    //   return Response.json({ error: 'file, path, and barberId are required' }, { status: 400 });
+    // }
+
+    // TODO: Implement real Supabase storage upload
+    // const supabase = getAdminClient();
+    // 
+    // const { error: uploadError } = await supabase.storage
+    //   .from('barber-gallery')
+    //   .upload(path, file, { cacheControl: '3600', upsert: false });
+    // 
+    // if (uploadError) {
+    //   console.error('Storage upload error:', uploadError);
+    //   return Response.json({ error: 'Upload failed' }, { status: 500 });
+    // }
+    // 
+    // const { data: urlData } = supabase.storage
+    //   .from('barber-gallery')
+    //   .getPublicUrl(path);
+    // 
+    // const { data: dbData, error: dbError } = await supabase
+    //   .from('gallery_items')
+    //   .insert({ barber_id: barberId, path, url: urlData.publicUrl })
+    //   .select()
+    //   .single();
+    // 
+    // if (dbError) {
+    //   await supabase.storage.from('barber-gallery').remove([path]);
+    //   return Response.json({ error: 'Failed to save gallery item' }, { status: 500 });
+    // }
+    // 
+    // return Response.json({ 
+    //   item: { url: dbData.url, createdAtISO: dbData.created_at, path: dbData.path } 
+    // });
   } catch (error) {
     console.error('Gallery upload error:', error);
     return Response.json({ error: 'Internal server error' }, { status: 500 });

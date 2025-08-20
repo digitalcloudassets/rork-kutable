@@ -29,7 +29,7 @@ export default function GalleryScreen() {
   const { data: galleryItems = [], isLoading } = useQuery({
     queryKey: ['gallery', user?.id],
     queryFn: async () => {
-      const response = await fetch('https://toolkit.rork.com/api/gallery/list', {
+      const response = await fetch('/api/gallery/list', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ barberId: user?.id }),
@@ -42,7 +42,7 @@ export default function GalleryScreen() {
 
   const deleteMutation = useMutation({
     mutationFn: async (path: string) => {
-      const response = await fetch('https://toolkit.rork.com/api/gallery/delete', {
+      const response = await fetch('/api/gallery/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ barberId: user?.id, path }),
@@ -100,7 +100,7 @@ export default function GalleryScreen() {
       formData.append('barberId', user?.id || '');
 
       // Upload to backend
-      const response = await fetch('https://toolkit.rork.com/api/gallery/upload', {
+      const response = await fetch('/api/gallery/upload', {
         method: 'POST',
         body: formData,
       });

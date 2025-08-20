@@ -1,6 +1,7 @@
-import type { GalleryItem } from '../../types';
+import { getAdminClient } from '../../lib/supabase';
+import type { GalleryItem, GalleryItemRow } from '../../types';
 
-// Mock gallery data for demo purposes
+// Mock gallery data for demo purposes (fallback)
 const mockGalleryItems: Record<string, GalleryItem[]> = {
   'barber-1': [
     {
@@ -46,10 +47,37 @@ export async function POST(request: Request) {
       return Response.json({ error: 'barberId is required' }, { status: 400 });
     }
 
-    // Return mock data for demo
-    const items = mockGalleryItems[barberId] || [];
+    const supabase = getAdminClient();
     
-    return Response.json({ items });
+    try {
+      // Try to fetch from database
+      const { data: galleryRows, error } = await supabase
+        .from('gallery_items')
+        .select('*')
+        .eq('barber_id', barberId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Database error:', error);
+        // Fall back to mock data if database fails
+        const items = mockGalleryItems[barberId] || [];
+        return Response.json({ items });
+      }
+
+      // Transform database rows to API format
+      const items: GalleryItem[] = (galleryRows || []).map((row: GalleryItemRow) => ({
+        url: row.url,
+        createdAtISO: row.created_at,
+        path: row.path
+      }));
+
+      return Response.json({ items });
+    } catch (dbError) {
+      console.error('Database connection error:', dbError);
+      // Fall back to mock data if database is unavailable
+      const items = mockGalleryItems[barberId] || [];
+      return Response.json({ items });
+    }
   } catch (error) {
     console.error('Gallery list error:', error);
     return Response.json({ error: 'Internal server error' }, { status: 500 });
