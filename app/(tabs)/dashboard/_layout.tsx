@@ -47,6 +47,12 @@ export default function DashboardLayout() {
           title: "Analytics",
         }} 
       />
+      <Stack.Screen 
+        name="system" 
+        options={{ 
+          title: "System Status",
+        }} 
+      />
     </Stack>
   );
 }
