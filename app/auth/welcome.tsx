@@ -4,11 +4,13 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
+  Image,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Scissors, Users } from 'lucide-react-native';
+import { brandConfig } from '@/config/brand';
 
 export default function WelcomeScreen() {
   return (
@@ -22,9 +24,13 @@ export default function WelcomeScreen() {
         <View style={styles.content}>
           <View style={styles.header}>
             <View style={styles.logoContainer}>
-              <Scissors size={48} color="#fff" />
+              <Image 
+                source={{ uri: brandConfig.logo }} 
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
             </View>
-            <Text style={styles.title}>BarberBook</Text>
+            <Text style={styles.title}>{brandConfig.name}</Text>
             <Text style={styles.subtitle}>
               Book appointments with top barbers or grow your business
             </Text>
@@ -98,10 +104,15 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
+    padding: 8,
+  },
+  logoImage: {
+    width: '100%',
+    height: '100%',
   },
   title: {
     fontSize: 32,

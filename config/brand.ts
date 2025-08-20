@@ -15,5 +15,5 @@ export const brandColors = {
 export const brandConfig = {
   name: "Kutable",
   tagline: "Book Your Perfect Cut",
-  logo: "https://via.placeholder.com/200x60/FF6B35/ffffff?text=Kutable",
+  logo: "https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/4jo70wqigtgig4k3qgayd",
 };

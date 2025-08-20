@@ -9,11 +9,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/providers/AuthProvider';
+import { brandConfig } from '@/config/brand';
 import type { User } from '@/types/models';
 
 export default function ClientSignUpScreen() {
@@ -125,6 +127,13 @@ export default function ClientSignUpScreen() {
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.content}>
+            <View style={styles.logoContainer}>
+              <Image 
+                source={{ uri: brandConfig.logo }} 
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
+            </View>
             <Text style={styles.title}>Create Your Account</Text>
             <Text style={styles.subtitle}>Join thousands of satisfied customers</Text>
 
@@ -231,6 +240,14 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 24,
     justifyContent: 'center',
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  logoImage: {
+    width: 120,
+    height: 60,
   },
   title: {
     fontSize: 28,
