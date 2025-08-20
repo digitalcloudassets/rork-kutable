@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Search, Calendar, Scissors, User } from "lucide-react-native";
+import { Search, Calendar, Settings, User } from "lucide-react-native";
 import React from "react";
 import { useAuth } from "@/providers/AuthProvider";
 import { BRAND } from "@/config/brand";
@@ -45,11 +45,20 @@ export default function TabLayout() {
       />
       {isBarber && (
         <Tabs.Screen
+          name="manage"
+          options={{
+            title: "Manage",
+            headerShown: false,
+            tabBarIcon: ({ color }) => <Settings size={24} color={color} />,
+          }}
+        />
+      )}
+      {isBarber && (
+        <Tabs.Screen
           name="dashboard"
           options={{
-            title: "Dashboard",
+            href: null, // Hide from tab bar but keep accessible
             headerShown: false,
-            tabBarIcon: ({ color }) => <Scissors size={24} color={color} />,
           }}
         />
       )}
