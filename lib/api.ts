@@ -123,56 +123,120 @@ export const api = {
 
   services: {
     list: async ({ barberId }: { barberId: string }) => {
-      await delay(300);
-      // In production, this would call the backend endpoint
-      // const response = await fetch('/api/services/list', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ barberId })
-      // });
-      // const data = await response.json();
-      // return data.services;
-      
-      const barber = seedData.barbers.find(b => b.id === barberId);
-      return barber?.services || [];
+      const backendUrl = getBackendUrl();
+      if (!backendUrl) {
+        // No backend configured, use seed data
+        await delay(300);
+        const barber = seedData.barbers.find(b => b.id === barberId);
+        return barber?.services || [];
+      }
+
+      try {
+        const response = await fetch(`${backendUrl}/api/services/list`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ barberId }),
+        });
+        
+        if (response.ok) {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            return data.services;
+          } else {
+            console.warn('Backend returned non-JSON response for services list, using fallback data');
+            throw new Error('Non-JSON response');
+          }
+        } else {
+          console.error('Failed to fetch services list, status:', response.status);
+          throw new Error('API request failed');
+        }
+      } catch (error) {
+        console.error('Error fetching services list:', error);
+        // Fallback to seed data
+        await delay(300);
+        const barber = seedData.barbers.find(b => b.id === barberId);
+        return barber?.services || [];
+      }
     },
 
     upsert: async ({ barberId, service }: { barberId: string; service: Partial<Service> }) => {
-      await delay(500);
-      // In production, this would call the backend endpoint
-      // const response = await fetch('/api/services/upsert', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ barberId, service })
-      // });
-      // const data = await response.json();
-      // return data.service;
-      
-      // Mock implementation
-      const updatedService: Service = {
-        id: service.id || Date.now().toString(),
-        barberId,
-        name: service.name || '',
-        durationMinutes: service.durationMinutes || 30,
-        priceCents: service.priceCents || 0,
-        description: service.description,
-        active: service.active !== undefined ? service.active : true,
-      };
-      return updatedService;
+      const backendUrl = getBackendUrl();
+      if (!backendUrl) {
+        // No backend configured, use mock implementation
+        await delay(500);
+        const updatedService: Service = {
+          id: service.id || Date.now().toString(),
+          barberId,
+          name: service.name || '',
+          durationMinutes: service.durationMinutes || 30,
+          priceCents: service.priceCents || 0,
+          description: service.description,
+          active: service.active !== undefined ? service.active : true,
+        };
+        return updatedService;
+      }
+
+      try {
+        const response = await fetch(`${backendUrl}/api/services/upsert`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ barberId, service }),
+        });
+        
+        if (response.ok) {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            return data.service;
+          } else {
+            console.warn('Backend returned non-JSON response for service upsert, using fallback data');
+            throw new Error('Non-JSON response');
+          }
+        } else {
+          console.error('Failed to upsert service, status:', response.status);
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          throw new Error(errorData.error || 'API request failed');
+        }
+      } catch (error) {
+        console.error('Error upserting service:', error);
+        throw error;
+      }
     },
 
     delete: async ({ barberId, serviceId }: { barberId: string; serviceId: string }) => {
-      await delay(300);
-      // In production, this would call the backend endpoint
-      // const response = await fetch('/api/services/delete', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ barberId, serviceId })
-      // });
-      // const data = await response.json();
-      // return data;
-      
-      return { ok: true };
+      const backendUrl = getBackendUrl();
+      if (!backendUrl) {
+        // No backend configured, use mock implementation
+        await delay(300);
+        return { ok: true };
+      }
+
+      try {
+        const response = await fetch(`${backendUrl}/api/services/delete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ barberId, serviceId }),
+        });
+        
+        if (response.ok) {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            return data;
+          } else {
+            console.warn('Backend returned non-JSON response for service delete, using fallback data');
+            throw new Error('Non-JSON response');
+          }
+        } else {
+          console.error('Failed to delete service, status:', response.status);
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          throw new Error(errorData.error || 'API request failed');
+        }
+      } catch (error) {
+        console.error('Error deleting service:', error);
+        throw error;
+      }
     },
   },
 
