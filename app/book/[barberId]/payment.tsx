@@ -15,7 +15,7 @@ import { useBooking } from "@/providers/BookingProvider";
 import { useAuth } from "@/providers/AuthProvider";
 import { Tokens } from "@/theme/tokens";
 import { Screen } from "@/components/Screen";
-import { api } from "@/lib/api";
+import { apiClient } from "@/lib/api";
 
 export default function PaymentScreen() {
   const router = useRouter();
@@ -25,7 +25,7 @@ export default function PaymentScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const createBookingMutation = useMutation({
-    mutationFn: api.bookings.create,
+    mutationFn: apiClient.bookings.create,
     onSuccess: (booking) => {
       processPayment(booking.id);
     },
@@ -37,7 +37,7 @@ export default function PaymentScreen() {
 
   const processPayment = async (bookingId: string) => {
     try {
-      await api.payments.createIntent({ bookingId });
+      await apiClient.payments.createIntent({ bookingId });
       
       setTimeout(() => {
         setIsProcessing(false);

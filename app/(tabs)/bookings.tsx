@@ -17,7 +17,7 @@ import { router } from "expo-router";
 import { brandColors, BRAND } from "@/config/brand";
 import { Tokens } from "@/theme/tokens";
 import { Screen } from "@/components/Screen";
-import { api } from "@/lib/api";
+import { apiClient } from "@/lib/api";
 import { useAuth } from "@/providers/AuthProvider";
 import type { Booking } from "@/types/models";
 import { formatDate, formatTime } from "@/utils/dateHelpers";
@@ -40,7 +40,7 @@ function RescheduleModal({ visible, booking, onClose, onReschedule }: Reschedule
     queryKey: ["openSlots", booking?.barberId, booking?.serviceId, selectedDate],
     queryFn: () => {
       if (!booking || !selectedDate) return { slots: [] };
-      return api.availability.openSlots({
+      return apiClient.availability.openSlots({
         barberId: booking.barberId,
         serviceId: booking.serviceId,
         date: selectedDate,
@@ -163,7 +163,7 @@ export default function BookingsScreen() {
 
   const { data: bookings, isLoading, error, refetch } = useQuery({
     queryKey: ["bookings", user?.id],
-    queryFn: () => api.bookings.list({ userId: user?.id }),
+    queryFn: () => apiClient.bookings.list({ userId: user?.id }),
     enabled: !!user,
     retry: 2,
     retryDelay: 1000,
@@ -171,7 +171,7 @@ export default function BookingsScreen() {
 
   const cancelMutation = useMutation({
     mutationFn: ({ bookingId, reason }: { bookingId: string; reason?: string }) => 
-      api.bookings.cancel({ bookingId, reason, userId: user?.id || "" }),
+      apiClient.bookings.cancel({ bookingId, reason, userId: user?.id || "" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookings", user?.id] });
       Alert.alert("Success", "Booking cancelled successfully");
@@ -183,7 +183,7 @@ export default function BookingsScreen() {
 
   const rescheduleMutation = useMutation({
     mutationFn: ({ bookingId, newStartISO }: { bookingId: string; newStartISO: string }) => 
-      api.bookings.reschedule({ bookingId, newStartISO, userId: user?.id || "" }),
+      apiClient.bookings.reschedule({ bookingId, newStartISO, userId: user?.id || "" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookings", user?.id] });
       Alert.alert("Success", "Booking rescheduled successfully");
