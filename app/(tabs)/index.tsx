@@ -14,7 +14,6 @@ import {
 import { Search, MapPin, Star, X, Wifi, WifiOff } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
-import { BRAND, brandColors } from "@/config/brand";
 import { Tokens } from "@/theme/tokens";
 import { Screen } from "@/components/Screen";
 import { api } from "@/lib/api";
@@ -74,17 +73,17 @@ export default function HomeScreen() {
     <Screen>
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
-          <Search size={20} color={BRAND.TEXT_SECONDARY} />
+          <Search size={20} color={Tokens.textMuted} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search barbers or services..."
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholderTextColor={BRAND.TEXT_SECONDARY}
+            placeholderTextColor={Tokens.textMuted}
           />
           {hasActiveFilters && (
             <TouchableOpacity onPress={clearFilters} style={styles.clearButton}>
-              <X size={18} color={BRAND.TEXT_SECONDARY} />
+              <X size={18} color={Tokens.textMuted} />
             </TouchableOpacity>
           )}
         </View>
@@ -126,7 +125,7 @@ export default function HomeScreen() {
         />
       ) : isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={BRAND.ACCENT} style={styles.loader} />
+          <ActivityIndicator size="large" color={Tokens.accent} style={styles.loader} />
         </View>
       ) : barbers && barbers.length > 0 ? (
         <FlatList
@@ -147,7 +146,7 @@ export default function HomeScreen() {
                 )}
                 <View style={styles.barberMeta}>
                   <View style={styles.locationRow}>
-                    <MapPin size={14} color={BRAND.TEXT_SECONDARY} />
+                    <MapPin size={14} color={Tokens.textMuted} />
                     <Text style={styles.locationText}>
                       {barber.shopAddress || "Mobile Service"}
                     </Text>
@@ -222,10 +221,12 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Tokens.surface,
+    backgroundColor: Tokens.bg,
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 44,
+    borderWidth: 1,
+    borderColor: Tokens.border,
   },
   searchInput: {
     flex: 1,
@@ -348,16 +349,16 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   serviceChip: {
-    backgroundColor: "rgba(124, 92, 255, 0.15)",
+    backgroundColor: `${Tokens.accent}15`,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "rgba(124, 92, 255, 0.3)",
+    borderColor: `${Tokens.accent}30`,
   },
   serviceChipText: {
     fontSize: 12,
-    color: BRAND.ACCENT,
+    color: Tokens.accent,
     fontWeight: "500",
   },
 });

@@ -68,12 +68,15 @@ export async function GET(request: Request) {
       path: g.path,
     }));
 
+    // Combine into the expected format for the frontend
+    const result = {
+      ...barber,
+      services,
+      galleryTop: galleryTop.length > 0 ? galleryTop : undefined
+    };
+
     return new Response(
-      JSON.stringify({ 
-        barber, 
-        services, 
-        galleryTop: galleryTop.length > 0 ? galleryTop : undefined 
-      }),
+      JSON.stringify(result),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {

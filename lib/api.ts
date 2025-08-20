@@ -90,12 +90,8 @@ export const api = {
           const contentType = response.headers.get('content-type');
           if (contentType && contentType.includes('application/json')) {
             const data = await response.json();
-            // Combine barber, services, and gallery into the expected format
-            return {
-              ...data.barber,
-              services: data.services,
-              galleryTop: data.galleryTop
-            };
+            // Backend now returns the combined format directly
+            return data;
           } else {
             console.warn('Backend returned non-JSON response for barber profile, using fallback data');
             throw new Error('Non-JSON response');

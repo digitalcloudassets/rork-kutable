@@ -11,7 +11,7 @@ import {
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { MapPin, Phone, Star, Clock, DollarSign, User } from "lucide-react-native";
 import { useQuery } from "@tanstack/react-query";
-import { BRAND } from "@/config/brand";
+import { Tokens } from "@/theme/tokens";
 import { api } from "@/lib/api";
 import { useBooking } from "@/providers/BookingProvider";
 import type { Service, GalleryItem } from "@/types/models";
@@ -37,7 +37,7 @@ export default function BarberProfileScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={BRAND.ACCENT} />
+        <ActivityIndicator size="large" color={Tokens.accent} />
       </View>
     );
   }
@@ -45,7 +45,7 @@ export default function BarberProfileScreen() {
   if (!barber) {
     return (
       <View style={styles.errorContainer}>
-        <User size={48} color={BRAND.TEXT_SECONDARY} />
+        <User size={48} color={Tokens.textMuted} />
         <Text style={styles.errorTitle}>Barber Not Found</Text>
         <Text style={styles.errorText}>
           The barber profile you&apos;re looking for doesn&apos;t exist or has been removed.
@@ -88,13 +88,13 @@ export default function BarberProfileScreen() {
           <View style={styles.contactInfo}>
             {barber.shopAddress && (
               <View style={styles.contactRow}>
-                <MapPin size={16} color={BRAND.TEXT_SECONDARY} />
+                <MapPin size={16} color={Tokens.textMuted} />
                 <Text style={styles.contactText}>{barber.shopAddress}</Text>
               </View>
             )}
             {barber.phone && (
               <View style={styles.contactRow}>
-                <Phone size={16} color={BRAND.TEXT_SECONDARY} />
+                <Phone size={16} color={Tokens.textMuted} />
                 <Text style={styles.contactText}>{barber.phone}</Text>
               </View>
             )}
@@ -112,11 +112,11 @@ export default function BarberProfileScreen() {
                 )}
                 <View style={styles.serviceMeta}>
                   <View style={styles.metaItem}>
-                    <Clock size={14} color={BRAND.TEXT_SECONDARY} />
+                    <Clock size={14} color={Tokens.textMuted} />
                     <Text style={styles.metaText}>{service.durationMinutes} min</Text>
                   </View>
                   <View style={styles.metaItem}>
-                    <DollarSign size={14} color={BRAND.TEXT_SECONDARY} />
+                    <DollarSign size={14} color={Tokens.textMuted} />
                     <Text style={styles.metaText}>
                       ${(service.priceCents / 100).toFixed(2)}
                     </Text>
@@ -164,34 +164,34 @@ export default function BarberProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BRAND.BG_DARK,
+    backgroundColor: Tokens.bg,
   },
   loadingContainer: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: BRAND.BG_DARK,
+    backgroundColor: Tokens.bg,
   },
   coverPhoto: {
     width: "100%",
     height: 250,
-    backgroundColor: "#1F2937",
+    backgroundColor: Tokens.surface,
   },
   profileSection: {
-    backgroundColor: BRAND.SURFACE_DARK,
+    backgroundColor: Tokens.surface,
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#202633",
+    borderBottomColor: Tokens.border,
   },
   barberName: {
     fontSize: 24,
     fontWeight: "700",
-    color: BRAND.TEXT_PRIMARY,
+    color: Tokens.text,
     marginBottom: 4,
   },
   shopName: {
     fontSize: 16,
-    color: BRAND.TEXT_SECONDARY,
+    color: Tokens.textMuted,
     marginBottom: 12,
   },
   infoRow: {
@@ -205,19 +205,19 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 14,
-    color: BRAND.TEXT_PRIMARY,
+    color: Tokens.text,
     marginLeft: 6,
   },
   bio: {
     fontSize: 15,
-    color: BRAND.TEXT_PRIMARY,
+    color: Tokens.text,
     lineHeight: 22,
     marginBottom: 16,
   },
   contactInfo: {
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: "#202633",
+    borderTopColor: Tokens.border,
   },
   contactRow: {
     flexDirection: "row",
@@ -226,26 +226,26 @@ const styles = StyleSheet.create({
   },
   contactText: {
     fontSize: 14,
-    color: BRAND.TEXT_SECONDARY,
+    color: Tokens.textMuted,
     marginLeft: 8,
     flex: 1,
   },
   servicesSection: {
-    backgroundColor: BRAND.SURFACE_DARK,
+    backgroundColor: Tokens.surface,
     marginTop: 12,
     padding: 20,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: BRAND.TEXT_PRIMARY,
+    color: Tokens.text,
     marginBottom: 16,
   },
   serviceCard: {
     flexDirection: "row",
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#202633",
+    borderBottomColor: Tokens.border,
   },
   serviceInfo: {
     flex: 1,
@@ -253,12 +253,12 @@ const styles = StyleSheet.create({
   serviceName: {
     fontSize: 16,
     fontWeight: "500",
-    color: BRAND.TEXT_PRIMARY,
+    color: Tokens.text,
     marginBottom: 4,
   },
   serviceDescription: {
     fontSize: 14,
-    color: BRAND.TEXT_SECONDARY,
+    color: Tokens.textMuted,
     marginBottom: 8,
   },
   serviceMeta: {
@@ -271,23 +271,23 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 13,
-    color: BRAND.TEXT_SECONDARY,
+    color: Tokens.textMuted,
     marginLeft: 4,
   },
   bookButton: {
-    backgroundColor: BRAND.ACCENT,
+    backgroundColor: Tokens.accent,
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 8,
     alignSelf: "center",
   },
   bookButtonText: {
-    color: BRAND.TEXT_PRIMARY,
+    color: Tokens.text,
     fontSize: 14,
     fontWeight: "600",
   },
   reviewsSection: {
-    backgroundColor: BRAND.SURFACE_DARK,
+    backgroundColor: Tokens.surface,
     marginTop: 12,
     padding: 20,
     marginBottom: 20,
@@ -295,15 +295,15 @@ const styles = StyleSheet.create({
   reviewsPlaceholder: {
     paddingVertical: 40,
     alignItems: "center",
-    backgroundColor: "#1F2937",
+    backgroundColor: Tokens.surface,
     borderRadius: 8,
   },
   placeholderText: {
     fontSize: 14,
-    color: BRAND.TEXT_SECONDARY,
+    color: Tokens.textMuted,
   },
   gallerySection: {
-    backgroundColor: BRAND.SURFACE_DARK,
+    backgroundColor: Tokens.surface,
     marginTop: 12,
     padding: 20,
   },
@@ -315,37 +315,37 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 8,
-    backgroundColor: "#1F2937",
+    backgroundColor: Tokens.surface,
   },
   errorContainer: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 32,
-    backgroundColor: BRAND.BG_DARK,
+    backgroundColor: Tokens.bg,
   },
   errorTitle: {
     fontSize: 20,
     fontWeight: "600",
-    color: BRAND.TEXT_PRIMARY,
+    color: Tokens.text,
     marginTop: 16,
     marginBottom: 8,
   },
   errorText: {
     fontSize: 14,
-    color: BRAND.TEXT_SECONDARY,
+    color: Tokens.textMuted,
     textAlign: "center",
     lineHeight: 20,
     marginBottom: 24,
   },
   errorButton: {
-    backgroundColor: BRAND.ACCENT,
+    backgroundColor: Tokens.accent,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
   errorButtonText: {
-    color: BRAND.TEXT_PRIMARY,
+    color: Tokens.text,
     fontSize: 14,
     fontWeight: "600",
   },

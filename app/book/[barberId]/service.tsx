@@ -20,15 +20,9 @@ export default function SelectServiceScreen() {
   const { barberId } = useLocalSearchParams<{ barberId: string }>();
   const { setSelectedBarber, setSelectedService } = useBooking();
 
-  const { data: barberData, isLoading: isLoadingBarber } = useQuery({
+  const { data: barberData, isLoading } = useQuery({
     queryKey: ["barber", barberId],
     queryFn: () => api.barbers.profile({ barberId: barberId! }),
-    enabled: !!barberId,
-  });
-
-  const { data: servicesData, isLoading: isLoadingServices } = useQuery({
-    queryKey: ["services", barberId],
-    queryFn: () => api.services.list({ barberId: barberId! }),
     enabled: !!barberId,
   });
 
@@ -40,8 +34,7 @@ export default function SelectServiceScreen() {
     router.push(`/book/${barberId}/time`);
   };
 
-  const isLoading = isLoadingBarber || isLoadingServices;
-  const services = servicesData || [];
+  const services = barberData?.services || [];
   const barber = barberData;
 
   if (isLoading) {
