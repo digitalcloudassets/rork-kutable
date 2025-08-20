@@ -27,34 +27,26 @@ import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { brandColors } from '@/config/brand';
 
-interface HealthCheckResult {
-  supabase: { ok: boolean; message: string };
-  tables: {
-    barbers: boolean;
-    services: boolean;
-    bookings: boolean;
-    availability_blocks: boolean;
-    gallery_items: boolean;
+interface HealthSnapshot {
+  supabase: { ok: boolean; message?: string };
+  counts: {
+    barbers: number | null;
+    services: number | null;
+    bookings7d: number | null;
+    blocks7d: number | null;
+    gallery: number | null;
   };
   stripe: {
     keysLoaded: boolean;
-    connectedAccountFound: boolean;
-    chargesEnabled: boolean | null;
-    payoutsEnabled: boolean | null;
+    connectedAccounts: number;
+    exampleConnected?: string | null;
   };
   endpoints: {
-    'services.list': boolean;
-    'availability.list': boolean;
-    'availability.openSlots': boolean;
-    'bookings.create': boolean;
-    'payments.createIntent': boolean;
-    'gallery.list': boolean;
-    'analytics.summary': boolean;
+    services_list?: boolean;
+    availability_openSlots?: boolean;
+    bookings_create?: boolean;
   };
-  version: {
-    commit: string | null;
-    buildTime: string;
-  };
+  timestamp: string;
 }
 
 interface StatusItemProps {
@@ -129,8 +121,8 @@ export default function SystemStatusScreen() {
 
   const { data: healthData, isLoading, refetch, error } = useQuery({
     queryKey: ['system-health'],
-    queryFn: async (): Promise<HealthCheckResult> => {
-      const response = await fetch('/backend/health/full');
+    queryFn: async (): Promise<HealthSnapshot> => {
+      const response = await fetch('/backend/health/snapshot');
       if (!response.ok) {
         throw new Error(`Health check failed: ${response.status}`);
       }
@@ -200,18 +192,13 @@ export default function SystemStatusScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Version Info */}
-      {healthData?.version && (
+      {/* Timestamp Info */}
+      {healthData?.timestamp && (
         <View style={styles.versionCard}>
-          <Text style={styles.versionTitle}>Version Information</Text>
+          <Text style={styles.versionTitle}>Last Updated</Text>
           <Text style={styles.versionText}>
-            Build: {new Date(healthData.version.buildTime).toLocaleString()}
+            {new Date(healthData.timestamp).toLocaleString()}
           </Text>
-          {healthData.version.commit && (
-            <Text style={styles.versionText}>
-              Commit: {healthData.version.commit.substring(0, 8)}
-            </Text>
-          )}
         </View>
       )}
 
@@ -224,31 +211,36 @@ export default function SystemStatusScreen() {
         />
       </Section>
 
-      {/* Tables Section */}
-      <Section title="Database Tables" icon={Server}>
+      {/* Data Counts Section */}
+      <Section title="Data Counts" icon={Server}>
         <StatusItem
-          label="Barbers Table"
-          status={healthData?.tables.barbers ?? false}
+          label="Barbers"
+          status={healthData?.counts.barbers !== null}
+          message={healthData?.counts.barbers !== null ? `${healthData?.counts.barbers} records` : 'Table not found'}
         />
         <StatusItem
-          label="Services Table"
-          status={healthData?.tables.services ?? false}
+          label="Services"
+          status={healthData?.counts.services !== null}
+          message={healthData?.counts.services !== null ? `${healthData?.counts.services} records` : 'Table not found'}
           onFix={() => handleNavigation('/(tabs)/dashboard/services')}
           fixLabel="Manage Services"
         />
         <StatusItem
-          label="Bookings Table"
-          status={healthData?.tables.bookings ?? false}
+          label="Bookings (7d)"
+          status={healthData?.counts.bookings7d !== null}
+          message={healthData?.counts.bookings7d !== null ? `${healthData?.counts.bookings7d} recent` : 'Table not found'}
         />
         <StatusItem
-          label="Availability Blocks Table"
-          status={healthData?.tables.availability_blocks ?? false}
+          label="Availability Blocks (7d)"
+          status={healthData?.counts.blocks7d !== null}
+          message={healthData?.counts.blocks7d !== null ? `${healthData?.counts.blocks7d} recent` : 'Table not found'}
           onFix={() => handleNavigation('/(tabs)/dashboard/calendar')}
           fixLabel="Manage Calendar"
         />
         <StatusItem
-          label="Gallery Table"
-          status={healthData?.tables.gallery_items ?? false}
+          label="Gallery Items"
+          status={healthData?.counts.gallery !== null}
+          message={healthData?.counts.gallery !== null ? `${healthData?.counts.gallery} items` : 'Table not found'}
           onFix={() => handleNavigation('/(tabs)/dashboard/gallery')}
           fixLabel="Manage Gallery"
         />
@@ -259,62 +251,37 @@ export default function SystemStatusScreen() {
         <StatusItem
           label="Stripe Keys Loaded"
           status={healthData?.stripe.keysLoaded ?? false}
+          message={healthData?.stripe.keysLoaded ? 'Keys configured' : 'Missing STRIPE_SECRET_KEY'}
         />
         <StatusItem
-          label="Connected Account Found"
-          status={healthData?.stripe.connectedAccountFound ?? false}
+          label="Connected Accounts"
+          status={(healthData?.stripe.connectedAccounts ?? 0) > 0}
+          message={`${healthData?.stripe.connectedAccounts ?? 0} connected${healthData?.stripe.exampleConnected ? ` (e.g. ${healthData.stripe.exampleConnected.slice(0, 12)}...)` : ''}`}
           onFix={() => handleNavigation('/(tabs)/dashboard/onboarding')}
           fixLabel="Connect Stripe"
-        />
-        <StatusItem
-          label="Charges Enabled"
-          status={healthData?.stripe.chargesEnabled ?? null}
-          message={healthData?.stripe.chargesEnabled === null ? 'No connected account' : undefined}
-        />
-        <StatusItem
-          label="Payouts Enabled"
-          status={healthData?.stripe.payoutsEnabled ?? null}
-          message={healthData?.stripe.payoutsEnabled === null ? 'No connected account' : undefined}
         />
       </Section>
 
       {/* API Endpoints Section */}
       <Section title="API Endpoints" icon={Settings}>
         <StatusItem
-          label="Services API"
-          status={healthData?.endpoints['services.list'] ?? false}
+          label="Services List"
+          status={healthData?.endpoints.services_list ?? false}
+          message={healthData?.endpoints.services_list ? 'Responding' : 'Not responding'}
           onFix={() => handleNavigation('/(tabs)/dashboard/services')}
           fixLabel="Services"
         />
         <StatusItem
-          label="Availability API"
-          status={healthData?.endpoints['availability.list'] ?? false}
+          label="Availability Slots"
+          status={healthData?.endpoints.availability_openSlots ?? false}
+          message={healthData?.endpoints.availability_openSlots ? 'Responding' : 'Not responding'}
           onFix={() => handleNavigation('/(tabs)/dashboard/calendar')}
           fixLabel="Calendar"
         />
         <StatusItem
-          label="Open Slots API"
-          status={healthData?.endpoints['availability.openSlots'] ?? false}
-        />
-        <StatusItem
-          label="Bookings API"
-          status={healthData?.endpoints['bookings.create'] ?? false}
-        />
-        <StatusItem
-          label="Payments API"
-          status={healthData?.endpoints['payments.createIntent'] ?? false}
-        />
-        <StatusItem
-          label="Gallery API"
-          status={healthData?.endpoints['gallery.list'] ?? false}
-          onFix={() => handleNavigation('/(tabs)/dashboard/gallery')}
-          fixLabel="Gallery"
-        />
-        <StatusItem
-          label="Analytics API"
-          status={healthData?.endpoints['analytics.summary'] ?? false}
-          onFix={() => handleNavigation('/(tabs)/dashboard/analytics')}
-          fixLabel="Analytics"
+          label="Booking Creation"
+          status={healthData?.endpoints.bookings_create ?? false}
+          message={healthData?.endpoints.bookings_create ? 'Responding' : 'Not responding'}
         />
       </Section>
 
