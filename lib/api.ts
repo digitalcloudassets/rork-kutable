@@ -996,7 +996,7 @@ export const apiClient = {
     createOrFetchAccount: async ({ barberId }: { barberId: string }) => {
       const backendUrl = getBackendUrl();
       if (!backendUrl) {
-        // Fallback to mock data
+        console.log('No backend URL configured, using mock Stripe account creation');
         await delay(800);
         return {
           accountId: `acct_mock_${barberId}_${Date.now()}`
@@ -1004,6 +1004,7 @@ export const apiClient = {
       }
 
       try {
+        console.log(`Creating/fetching Stripe account for barber: ${barberId}`);
         const response = await fetch(`${backendUrl}/api/stripe/create-or-fetch-account`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1012,13 +1013,29 @@ export const apiClient = {
         
         if (response.ok) {
           const data = await response.json();
+          console.log('Successfully created/fetched Stripe account:', data.accountId);
           return data;
         } else {
-          const error = await response.json();
-          throw new Error(error.error || 'Failed to create/fetch account');
+          const errorText = await response.text();
+          let errorData;
+          try {
+            errorData = JSON.parse(errorText);
+          } catch {
+            errorData = { error: `HTTP ${response.status}: ${errorText}` };
+          }
+          console.error('Failed to create/fetch Stripe account:', errorData);
+          throw new Error(errorData.error || 'Failed to create/fetch account');
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error creating/fetching Stripe account:', error);
+        // If it's a network error, fall back to mock data
+        if (error.message?.includes('Failed to fetch') || error.name === 'TypeError') {
+          console.log('Network error, falling back to mock Stripe account');
+          await delay(800);
+          return {
+            accountId: `acct_mock_${barberId}_${Date.now()}`
+          };
+        }
         throw error;
       }
     },
@@ -1030,7 +1047,7 @@ export const apiClient = {
     }) => {
       const backendUrl = getBackendUrl();
       if (!backendUrl) {
-        // Fallback to mock data
+        console.log('No backend URL configured, using mock Stripe account link');
         await delay(500);
         return {
           url: `https://connect.stripe.com/express/oauth/authorize?client_id=mock&state=${barberId}&redirect_uri=${encodeURIComponent(returnUrl || '')}`
@@ -1038,6 +1055,7 @@ export const apiClient = {
       }
 
       try {
+        console.log(`Creating Stripe account link for barber: ${barberId}`);
         const response = await fetch(`${backendUrl}/api/stripe/account-link`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1046,13 +1064,29 @@ export const apiClient = {
         
         if (response.ok) {
           const data = await response.json();
+          console.log('Successfully created Stripe account link');
           return data;
         } else {
-          const error = await response.json();
-          throw new Error(error.error || 'Failed to create account link');
+          const errorText = await response.text();
+          let errorData;
+          try {
+            errorData = JSON.parse(errorText);
+          } catch {
+            errorData = { error: `HTTP ${response.status}: ${errorText}` };
+          }
+          console.error('Failed to create Stripe account link:', errorData);
+          throw new Error(errorData.error || 'Failed to create account link');
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error creating account link:', error);
+        // If it's a network error, fall back to mock data
+        if (error.message?.includes('Failed to fetch') || error.name === 'TypeError') {
+          console.log('Network error, falling back to mock Stripe account link');
+          await delay(500);
+          return {
+            url: `https://connect.stripe.com/express/oauth/authorize?client_id=mock&state=${barberId}&redirect_uri=${encodeURIComponent(returnUrl || '')}`
+          };
+        }
         throw error;
       }
     },
@@ -1060,26 +1094,47 @@ export const apiClient = {
     getAccountStatus: async ({ barberId }: { barberId: string }) => {
       const backendUrl = getBackendUrl();
       if (!backendUrl) {
-        // Fallback to mock data
+        console.log('No backend URL configured, using mock Stripe account status');
         await delay(300);
         return {
-          chargesEnabled: true,
-          payoutsEnabled: true
+          chargesEnabled: false,
+          payoutsEnabled: false
         };
       }
 
       try {
-        const response = await fetch(`${backendUrl}/api/stripe/account-status?barberId=${barberId}`);
+        console.log(`Checking Stripe account status for barber: ${barberId}`);
+        const response = await fetch(`${backendUrl}/api/stripe/account-status?barberId=${barberId}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        });
         
         if (response.ok) {
           const data = await response.json();
+          console.log('Successfully retrieved Stripe account status:', data);
           return data;
         } else {
-          const error = await response.json();
-          throw new Error(error.error || 'Failed to get account status');
+          const errorText = await response.text();
+          let errorData;
+          try {
+            errorData = JSON.parse(errorText);
+          } catch {
+            errorData = { error: `HTTP ${response.status}: ${errorText}` };
+          }
+          console.error('Failed to get Stripe account status:', errorData);
+          throw new Error(errorData.error || 'Failed to get account status');
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error getting account status:', error);
+        // If it's a network error, fall back to mock data
+        if (error.message?.includes('Failed to fetch') || error.name === 'TypeError') {
+          console.log('Network error, falling back to mock Stripe account status (not connected)');
+          await delay(300);
+          return {
+            chargesEnabled: false,
+            payoutsEnabled: false
+          };
+        }
         throw error;
       }
     },
