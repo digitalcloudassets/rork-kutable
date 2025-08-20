@@ -14,6 +14,7 @@ import availabilityBlock from './api/availability/block';
 import availabilityUnblock from './api/availability/unblock';
 import availabilityOpenSlots from './api/availability/open-slots';
 import { POST as barbersSearch } from './api/barbers/search';
+import { GET as barbersProfile } from './api/barbers/profile';
 import earningsSummary from './api/earnings/summary';
 import payoutsList from './api/payouts/list';
 import bookingsCreate from './api/bookings/create';
@@ -218,6 +219,10 @@ app.get('/api/availability/open-slots', async (c) => {
 // Barbers endpoints
 app.post('/api/barbers/search', async (c) => {
   return await barbersSearch(c.req.raw);
+});
+
+app.get('/api/barbers/profile', async (c) => {
+  return await barbersProfile(c.req.raw);
 });
 
 // Earnings endpoints

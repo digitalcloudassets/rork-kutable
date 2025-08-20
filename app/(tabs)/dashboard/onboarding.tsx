@@ -13,7 +13,8 @@ import * as WebBrowser from "expo-web-browser";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/providers/AuthProvider";
 import { Tokens } from "@/theme/tokens";
-import { api } from "@/lib/api";
+import { brandColors } from "@/config/brand";
+import { apiClient } from "@/lib/api";
 
 export default function OnboardingScreen() {
   const router = useRouter();
@@ -23,12 +24,12 @@ export default function OnboardingScreen() {
 
   const { data: accountStatus, isLoading: statusLoading, refetch } = useQuery({
     queryKey: ["stripe-status", user?.id],
-    queryFn: () => api.stripe.getAccountStatus({ barberId: user?.id || "" }),
+    queryFn: () => apiClient.stripe.getAccountStatus({ barberId: user?.id || "" }),
     enabled: !!user,
   });
 
   const createAccountMutation = useMutation({
-    mutationFn: api.stripe.createOrFetchAccount,
+    mutationFn: apiClient.stripe.createOrFetchAccount,
     onSuccess: async (data) => {
       console.log("Account created/fetched:", data.accountId);
       await handleAccountLink(data.accountId);
@@ -41,7 +42,7 @@ export default function OnboardingScreen() {
   });
 
   const accountLinkMutation = useMutation({
-    mutationFn: api.stripe.createAccountLink,
+    mutationFn: apiClient.stripe.createAccountLink,
     onSuccess: async (data) => {
       console.log("Opening account link:", data.url);
       try {
@@ -90,7 +91,7 @@ export default function OnboardingScreen() {
     const pollInterval = setInterval(async () => {
       try {
         await refetch();
-        const status = await api.stripe.getAccountStatus({ barberId: user?.id || "" });
+        const status = await apiClient.stripe.getAccountStatus({ barberId: user?.id || "" });
         if (status.chargesEnabled && status.payoutsEnabled) {
           clearInterval(pollInterval);
           setIsPolling(false);
