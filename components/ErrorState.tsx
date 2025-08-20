@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { AlertTriangle, RefreshCw } from 'lucide-react-native';
-import { brandColors } from '@/config/brand';
+import { brandColors } from '../config/brand';
 
 interface ErrorStateProps {
   title?: string;

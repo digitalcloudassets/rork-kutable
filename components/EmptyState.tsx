@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { LucideIcon } from 'lucide-react-native';
-import { brandColors } from '@/config/brand';
+import { brandColors } from '../config/brand';
 
 interface EmptyStateProps {
   icon: LucideIcon;

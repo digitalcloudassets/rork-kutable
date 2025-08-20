@@ -9,7 +9,7 @@ import {
 import { Stack, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Scissors, Users } from 'lucide-react-native';
-import { brandConfig, BRAND } from '@/config/brand';
+import { brandConfig, BRAND } from '../../config/brand';
 
 export default function WelcomeScreen() {
   return (

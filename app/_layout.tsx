@@ -7,7 +7,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { BookingProvider } from "@/providers/BookingProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { BRAND } from "@/config/brand";
+import { BRAND } from "../config/brand";
 
 SplashScreen.preventAutoHideAsync();
 

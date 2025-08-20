@@ -14,7 +14,7 @@ import { Stack } from 'expo-router';
 import { Plus, Trash2 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { brandColors } from '@/config/brand';
+import { brandColors } from '../../../config/brand';
 import { useAuth } from '@/providers/AuthProvider';
 import { api } from '@/lib/api';
 import type { GalleryItem } from '@/types/models';

@@ -1,4 +1,4 @@
-import { BRAND } from '@/config/brand';
+import { BRAND } from '../config/brand';
 
 export const themeTokens = {
   background: BRAND.BG_DARK,

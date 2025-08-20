@@ -25,7 +25,7 @@ import {
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { brandColors } from '@/config/brand';
+import { brandColors } from '../../../config/brand';
 
 interface HealthSnapshot {
   supabase: { ok: boolean; message?: string };

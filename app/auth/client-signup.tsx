@@ -15,7 +15,7 @@ import { Stack, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/providers/AuthProvider';
-import { brandConfig, BRAND } from '@/config/brand';
+import { brandConfig, BRAND } from '../../config/brand';
 import type { User } from '@/types/models';
 
 export default function ClientSignUpScreen() {

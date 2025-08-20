@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { BarChart3, TrendingUp, DollarSign, Users, Calendar, XCircle } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
-import { brandColors } from '@/config/brand';
+import { brandColors } from '../../../config/brand';
 import { api } from '@/lib/api';
 import { useAuth } from '@/providers/AuthProvider';
 import type { AnalyticsSummary, TimeSeriesPoint, TopService } from '@/backend/types';
