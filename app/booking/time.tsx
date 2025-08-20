@@ -8,12 +8,11 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { Calendar, Clock } from "lucide-react-native";
+import { Clock, AlertCircle } from "lucide-react-native";
 import { useQuery } from "@tanstack/react-query";
 import { useBooking } from "@/providers/BookingProvider";
 import { brandColors } from "@/config/brand";
 import { api } from "@/lib/api";
-import { formatDate } from "@/utils/dateHelpers";
 
 export default function SelectTimeScreen() {
   const router = useRouter();
@@ -21,52 +20,59 @@ export default function SelectTimeScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
 
-  const { data: availability, isLoading } = useQuery({
-    queryKey: ["availability", selectedBarber?.id, selectedDate.toISOString().split("T")[0]],
-    queryFn: () => api.availability.list({
-      barberId: selectedBarber?.id,
-      date: selectedDate.toISOString().split("T")[0],
-    }),
-    enabled: !!selectedBarber,
+  // Get device timezone
+  const deviceTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  
+  // Format date as YYYY-MM-DD for the API
+  const formatDateForAPI = (date: Date) => {
+    return date.toISOString().split('T')[0];
+  };
+
+  const { data: slotsData, isLoading, error } = useQuery({
+    queryKey: [
+      "openSlots", 
+      selectedBarber?.id, 
+      selectedService?.id, 
+      formatDateForAPI(selectedDate),
+      deviceTimezone
+    ],
+    queryFn: () => {
+      if (!selectedBarber?.id || !selectedService?.id) {
+        throw new Error('Missing barber or service');
+      }
+      return api.availability.openSlots({
+        barberId: selectedBarber.id,
+        serviceId: selectedService.id,
+        date: formatDateForAPI(selectedDate),
+        tz: deviceTimezone,
+      });
+    },
+    enabled: !!selectedBarber?.id && !!selectedService?.id,
   });
 
   const handleContinue = () => {
-    if (selectedSlot) {
-      setSelectedTime(selectedSlot);
+    if (selectedSlot && selectedService) {
+      const startISO = selectedSlot;
+      const endISO = new Date(
+        new Date(startISO).getTime() + selectedService.durationMinutes * 60 * 1000
+      ).toISOString();
+      
+      setSelectedTime({ startISO, endISO });
       router.push("/booking/details");
     }
   };
 
-  const generateTimeSlots = () => {
-    const slots = [];
-    const startHour = 9;
-    const endHour = 18;
-    
-    for (let hour = startHour; hour < endHour; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
-        const time = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
-        const displayTime = `${hour > 12 ? hour - 12 : hour}:${minute.toString().padStart(2, "0")} ${hour >= 12 ? "PM" : "AM"}`;
-        
-        const isAvailable = !availability?.blocks?.some((block: any) => {
-          const blockStart = new Date(block.startISO);
-          const blockEnd = new Date(block.endISO);
-          const slotTime = new Date(selectedDate);
-          slotTime.setHours(hour, minute, 0, 0);
-          return slotTime >= blockStart && slotTime < blockEnd;
-        });
-
-        slots.push({
-          time,
-          displayTime,
-          isAvailable,
-        });
-      }
-    }
-    
-    return slots;
+  // Format slot time for display (12-hour format)
+  const formatSlotTime = (isoString: string) => {
+    const date = new Date(isoString);
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
   };
 
-  const timeSlots = generateTimeSlots();
+  const availableSlots = slotsData?.slots || [];
 
   const nextSevenDays = Array.from({ length: 7 }, (_, i) => {
     const date = new Date();
@@ -108,31 +114,57 @@ export default function SelectTimeScreen() {
       <ScrollView style={styles.timeSlotsContainer}>
         <Text style={styles.sectionTitle}>Available Times</Text>
         {isLoading ? (
-          <ActivityIndicator size="large" color={brandColors.primary} />
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={brandColors.primary} />
+            <Text style={styles.loadingText}>Finding available times...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <AlertCircle size={48} color="#ff6b6b" />
+            <Text style={styles.errorTitle}>Unable to load times</Text>
+            <Text style={styles.errorText}>Please try selecting a different date</Text>
+          </View>
+        ) : availableSlots.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Clock size={48} color="#ccc" />
+            <Text style={styles.emptyTitle}>No available times</Text>
+            <Text style={styles.emptyText}>Please pick another date to see available slots</Text>
+            <TouchableOpacity 
+              style={styles.pickDateButton}
+              onPress={() => {
+                // Reset to today if current selection has no slots
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                setSelectedDate(tomorrow);
+              }}
+            >
+              <Text style={styles.pickDateButtonText}>Pick Another Date</Text>
+            </TouchableOpacity>
+          </View>
         ) : (
           <View style={styles.timeSlotsGrid}>
-            {timeSlots.map((slot) => (
-              <TouchableOpacity
-                key={slot.time}
-                style={[
-                  styles.timeSlot,
-                  !slot.isAvailable && styles.unavailableSlot,
-                  selectedSlot === slot.time && styles.selectedSlot,
-                ]}
-                onPress={() => slot.isAvailable && setSelectedSlot(slot.time)}
-                disabled={!slot.isAvailable}
-              >
-                <Text
+            {availableSlots.map((slotISO: string) => {
+              const isSelected = selectedSlot === slotISO;
+              return (
+                <TouchableOpacity
+                  key={slotISO}
                   style={[
-                    styles.timeSlotText,
-                    !slot.isAvailable && styles.unavailableText,
-                    selectedSlot === slot.time && styles.selectedSlotText,
+                    styles.timeSlot,
+                    isSelected && styles.selectedSlot,
                   ]}
+                  onPress={() => setSelectedSlot(slotISO)}
                 >
-                  {slot.displayTime}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Text
+                    style={[
+                      styles.timeSlotText,
+                      isSelected && styles.selectedSlotText,
+                    ]}
+                  >
+                    {formatSlotTime(slotISO)}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         )}
       </ScrollView>
@@ -227,10 +259,6 @@ const styles = StyleSheet.create({
     minWidth: "30%",
     alignItems: "center",
   },
-  unavailableSlot: {
-    backgroundColor: "#f5f5f5",
-    borderColor: "#f0f0f0",
-  },
   selectedSlot: {
     backgroundColor: brandColors.primary,
     borderColor: brandColors.primary,
@@ -240,11 +268,61 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: "#333",
   },
-  unavailableText: {
-    color: "#ccc",
-  },
   selectedSlotText: {
     color: "#fff",
+  },
+  loadingContainer: {
+    alignItems: "center",
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: "#666",
+  },
+  errorContainer: {
+    alignItems: "center",
+    paddingVertical: 40,
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#333",
+    marginTop: 12,
+  },
+  errorText: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 4,
+    textAlign: "center",
+  },
+  emptyContainer: {
+    alignItems: "center",
+    paddingVertical: 40,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#333",
+    marginTop: 12,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 4,
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  pickDateButton: {
+    backgroundColor: brandColors.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+  },
+  pickDateButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
   },
   footer: {
     backgroundColor: "#fff",

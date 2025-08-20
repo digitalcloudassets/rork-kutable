@@ -54,7 +54,21 @@ export default function BookingDetailsScreen() {
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Date & Time:</Text>
-            <Text style={styles.summaryValue}>{selectedTime}</Text>
+            <Text style={styles.summaryValue}>
+              {selectedTime ? 
+                new Date(selectedTime.startISO).toLocaleDateString('en-US', {
+                  weekday: 'short',
+                  month: 'short', 
+                  day: 'numeric'
+                }) + ' at ' + 
+                new Date(selectedTime.startISO).toLocaleTimeString('en-US', {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  hour12: true
+                })
+                : 'Not selected'
+              }
+            </Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Duration:</Text>

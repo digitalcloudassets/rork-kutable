@@ -52,7 +52,8 @@ export default function PaymentScreen() {
     createBookingMutation.mutate({
       barberId: selectedBarber?.id,
       serviceId: selectedService?.id,
-      startISO: selectedTime,
+      startISO: selectedTime?.startISO,
+      endISO: selectedTime?.endISO,
       clientName: clientDetails?.name,
       clientPhone: clientDetails?.phone,
       note: clientDetails?.note,

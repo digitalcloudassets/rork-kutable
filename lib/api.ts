@@ -123,6 +123,38 @@ export const api = {
       }
     },
 
+    openSlots: async ({ barberId, serviceId, date, tz }: { 
+      barberId: string; 
+      serviceId: string; 
+      date: string; 
+      tz?: string; 
+    }) => {
+      try {
+        const params = new URLSearchParams({
+          barberId,
+          serviceId,
+          date,
+          ...(tz && { tz }),
+        });
+        
+        const response = await fetch(`/api/availability/open-slots?${params}`, {
+          method: 'GET',
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          return data;
+        } else {
+          const error = await response.json();
+          console.error('Failed to fetch open slots:', error);
+          return { slots: [] };
+        }
+      } catch (error) {
+        console.error('Error fetching open slots:', error);
+        return { slots: [] };
+      }
+    },
+
     block: async ({ barberId, startISO, endISO, reason }: { barberId: string; startISO: string; endISO: string; reason?: string }) => {
       try {
         const response = await fetch('/api/availability/block', {
