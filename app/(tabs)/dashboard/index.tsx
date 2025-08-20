@@ -32,7 +32,7 @@ export default function DashboardScreen() {
 
   const { data: earnings } = useQuery({
     queryKey: ["earnings", user?.id],
-    queryFn: () => api.earnings.summary({ barberId: user!.id, range: "month" }),
+    queryFn: () => api.earnings.summary({ barberId: user?.id || "", range: "month" }),
     enabled: !!user && user.role === "barber",
   });
 
@@ -236,9 +236,12 @@ export default function DashboardScreen() {
             <DollarSign size={24} color={brandColors.primary} />
             <Text style={styles.actionText}>View Earnings</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionCard}>
-            <Users size={24} color={brandColors.primary} />
-            <Text style={styles.actionText}>Client List</Text>
+          <TouchableOpacity 
+            style={styles.actionCard}
+            onPress={() => router.push("/dashboard/analytics")}
+          >
+            <TrendingUp size={24} color={brandColors.primary} />
+            <Text style={styles.actionText}>Analytics</Text>
           </TouchableOpacity>
         </View>
       </View>

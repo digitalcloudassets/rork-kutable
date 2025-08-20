@@ -350,6 +350,150 @@ export const api = {
     },
   },
 
+  analytics: {
+    summary: async ({ barberId, range }: { barberId: string; range: 'week' | 'month' }) => {
+      try {
+        const response = await fetch(
+          `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/analytics/summary?barberId=${barberId}&range=${range}`
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          return data;
+        } else {
+          console.error('Failed to fetch analytics summary');
+          // Fallback to mock data
+          await delay(500);
+          return {
+            bookingsCount: range === 'week' ? 12 : 47,
+            grossCents: range === 'week' ? 125000 : 542000,
+            netCents: range === 'week' ? 117500 : 509500,
+            avgTicketCents: range === 'week' ? 10400 : 11500,
+            cancellationsCount: range === 'week' ? 2 : 8,
+            range,
+          };
+        }
+      } catch (error) {
+        console.error('Error fetching analytics summary:', error);
+        // Fallback to mock data
+        await delay(500);
+        return {
+          bookingsCount: range === 'week' ? 12 : 47,
+          grossCents: range === 'week' ? 125000 : 542000,
+          netCents: range === 'week' ? 117500 : 509500,
+          avgTicketCents: range === 'week' ? 10400 : 11500,
+          cancellationsCount: range === 'week' ? 2 : 8,
+          range,
+        };
+      }
+    },
+
+    timeseries: async ({ barberId, start, end, bucket = 'day' }: { 
+      barberId: string; 
+      start: string; 
+      end: string; 
+      bucket?: string; 
+    }) => {
+      try {
+        const params = new URLSearchParams({
+          barberId,
+          start,
+          end,
+          bucket,
+        });
+        
+        const response = await fetch(
+          `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/analytics/timeseries?${params}`
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          return data;
+        } else {
+          console.error('Failed to fetch analytics timeseries');
+          // Fallback to mock data
+          await delay(500);
+          const mockData = [];
+          const startDate = new Date(start);
+          const endDate = new Date(end);
+          const currentDate = new Date(startDate);
+          
+          while (currentDate <= endDate) {
+            mockData.push({
+              date: currentDate.toISOString().split('T')[0],
+              bookingsCount: Math.floor(Math.random() * 8) + 1,
+              grossCents: Math.floor(Math.random() * 50000) + 10000,
+            });
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
+          
+          return { timeSeries: mockData };
+        }
+      } catch (error) {
+        console.error('Error fetching analytics timeseries:', error);
+        // Fallback to mock data
+        await delay(500);
+        const mockData = [];
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        const currentDate = new Date(startDate);
+        
+        while (currentDate <= endDate) {
+          mockData.push({
+            date: currentDate.toISOString().split('T')[0],
+            bookingsCount: Math.floor(Math.random() * 8) + 1,
+            grossCents: Math.floor(Math.random() * 50000) + 10000,
+          });
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+        
+        return { timeSeries: mockData };
+      }
+    },
+
+    topServices: async ({ barberId, range }: { barberId: string; range: 'month' }) => {
+      try {
+        const params = new URLSearchParams({
+          barberId,
+          range,
+        });
+        
+        const response = await fetch(
+          `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/analytics/top-services?${params}`
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          return data;
+        } else {
+          console.error('Failed to fetch top services');
+          // Fallback to mock data
+          await delay(500);
+          return {
+            topServices: [
+              { serviceId: '1', serviceName: 'Classic Cut', bookingsCount: 18, grossCents: 180000 },
+              { serviceId: '2', serviceName: 'Beard Trim', bookingsCount: 15, grossCents: 112500 },
+              { serviceId: '3', serviceName: 'Fade Cut', bookingsCount: 12, grossCents: 144000 },
+              { serviceId: '4', serviceName: 'Shampoo & Style', bookingsCount: 8, grossCents: 64000 },
+            ],
+          };
+        }
+      } catch (error) {
+        console.error('Error fetching top services:', error);
+        // Fallback to mock data
+        await delay(500);
+        return {
+          topServices: [
+            { serviceId: '1', serviceName: 'Classic Cut', bookingsCount: 18, grossCents: 180000 },
+            { serviceId: '2', serviceName: 'Beard Trim', bookingsCount: 15, grossCents: 112500 },
+            { serviceId: '3', serviceName: 'Fade Cut', bookingsCount: 12, grossCents: 144000 },
+            { serviceId: '4', serviceName: 'Shampoo & Style', bookingsCount: 8, grossCents: 64000 },
+          ],
+        };
+      }
+    },
+  },
+
   stripe: {
     createOrFetchAccount: async ({ barberId }: { barberId: string }) => {
       await delay(800);

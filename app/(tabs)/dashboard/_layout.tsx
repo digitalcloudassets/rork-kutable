@@ -41,6 +41,12 @@ export default function DashboardLayout() {
           title: "Earnings",
         }} 
       />
+      <Stack.Screen 
+        name="analytics" 
+        options={{ 
+          title: "Analytics",
+        }} 
+      />
     </Stack>
   );
 }

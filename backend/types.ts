@@ -135,3 +135,25 @@ export interface GalleryItemRow {
   url: string;
   created_at: string;
 }
+
+export interface AnalyticsSummary {
+  bookingsCount: number;
+  grossCents: number;
+  netCents: number;
+  avgTicketCents: number;
+  cancellationsCount: number;
+  range: 'week' | 'month';
+}
+
+export interface TimeSeriesPoint {
+  date: string;
+  bookingsCount: number;
+  grossCents: number;
+}
+
+export interface TopService {
+  serviceId: string;
+  serviceName: string;
+  bookingsCount: number;
+  grossCents: number;
+}
