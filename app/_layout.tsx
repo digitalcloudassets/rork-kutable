@@ -5,6 +5,7 @@ import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { BookingProvider } from "@/providers/BookingProvider";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -23,6 +24,8 @@ function RootLayoutNav() {
       <Stack.Screen name="barber-onboarding" options={{ title: "Become a Barber", presentation: "modal" }} />
       <Stack.Screen name="manage-services" options={{ title: "Manage Services", presentation: "modal" }} />
       <Stack.Screen name="earnings-details" options={{ title: "Earnings Details", presentation: "modal" }} />
+      <Stack.Screen name="privacy-policy" options={{ title: "Privacy Policy", presentation: "modal" }} />
+      <Stack.Screen name="terms-of-service" options={{ title: "Terms of Service", presentation: "modal" }} />
     </Stack>
   );
 }
@@ -33,14 +36,16 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <AuthProvider>
-          <BookingProvider>
-            <RootLayoutNav />
-          </BookingProvider>
-        </AuthProvider>
-      </GestureHandlerRootView>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <AuthProvider>
+            <BookingProvider>
+              <RootLayoutNav />
+            </BookingProvider>
+          </AuthProvider>
+        </GestureHandlerRootView>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

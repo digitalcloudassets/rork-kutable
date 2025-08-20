@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
-import { MapPin, Phone, Star, Clock, DollarSign } from "lucide-react-native";
+import { MapPin, Phone, Star, Clock, DollarSign, User } from "lucide-react-native";
 import { useQuery } from "@tanstack/react-query";
 import { brandColors } from "@/config/brand";
 import { api } from "@/lib/api";
@@ -79,8 +79,18 @@ export default function BarberProfileScreen() {
 
   if (!barber) {
     return (
-      <View style={styles.loadingContainer}>
-        <Text>Barber not found</Text>
+      <View style={styles.errorContainer}>
+        <User size={48} color="#ccc" />
+        <Text style={styles.errorTitle}>Barber Not Found</Text>
+        <Text style={styles.errorText}>
+          The barber profile you&apos;re looking for doesn&apos;t exist or has been removed.
+        </Text>
+        <TouchableOpacity 
+          style={styles.errorButton}
+          onPress={() => router.back()}
+        >
+          <Text style={styles.errorButtonText}>Go Back</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -340,5 +350,37 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 8,
     backgroundColor: "#f0f0f0",
+  },
+  errorContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 32,
+    backgroundColor: "#f8f9fa",
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#333",
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  errorText: {
+    fontSize: 14,
+    color: "#666",
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  errorButton: {
+    backgroundColor: brandColors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  errorButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
   },
 });

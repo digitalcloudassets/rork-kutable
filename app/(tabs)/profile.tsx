@@ -69,6 +69,13 @@ export default function ProfileScreen() {
         { icon: Settings, label: "Settings", onPress: () => {} },
       ],
     },
+    {
+      title: "Legal",
+      items: [
+        { icon: Settings, label: "Privacy Policy", onPress: () => router.push("/privacy-policy") },
+        { icon: Settings, label: "Terms of Service", onPress: () => router.push("/terms-of-service") },
+      ],
+    },
   ];
 
   return (
