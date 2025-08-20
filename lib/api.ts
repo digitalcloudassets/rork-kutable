@@ -1005,11 +1005,22 @@ export const apiClient = {
 
       try {
         console.log(`Creating/fetching Stripe account for barber: ${barberId}`);
+        console.log(`API URL: ${backendUrl}/api/stripe/create-or-fetch-account`);
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
         const response = await fetch(`${backendUrl}/api/stripe/create-or-fetch-account`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ barberId })
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ barberId }),
+          signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
         
         if (response.ok) {
           const data = await response.json();
@@ -1028,12 +1039,19 @@ export const apiClient = {
         }
       } catch (error: any) {
         console.error('Error creating/fetching Stripe account:', error);
-        // Always fall back to mock data for better UX
-        console.log('API error, falling back to mock Stripe account');
-        await delay(800);
-        return {
-          accountId: `acct_mock_${barberId}_${Date.now()}`
-        };
+        
+        if (error.name === 'AbortError') {
+          console.error('Request timed out');
+          throw new Error('Request timed out. Please check your internet connection.');
+        }
+        
+        if (error.message === 'Failed to fetch' || error.message.includes('Network request failed')) {
+          console.error('Network error - possibly CORS or connectivity issue');
+          throw new Error('Network error. Please check your internet connection and try again.');
+        }
+        
+        // Re-throw the original error for other cases
+        throw error;
       }
     },
 
@@ -1053,11 +1071,22 @@ export const apiClient = {
 
       try {
         console.log(`Creating Stripe account link for barber: ${barberId}`);
+        console.log(`API URL: ${backendUrl}/api/stripe/account-link`);
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        
         const response = await fetch(`${backendUrl}/api/stripe/account-link`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ barberId, refreshUrl, returnUrl })
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ barberId, refreshUrl, returnUrl }),
+          signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
         
         if (response.ok) {
           const data = await response.json();
@@ -1076,12 +1105,18 @@ export const apiClient = {
         }
       } catch (error: any) {
         console.error('Error creating account link:', error);
-        // Always fall back to mock data for better UX
-        console.log('API error, falling back to mock Stripe account link');
-        await delay(500);
-        return {
-          url: `https://connect.stripe.com/express/oauth/authorize?client_id=mock&state=${barberId}&redirect_uri=${encodeURIComponent(returnUrl || '')}`
-        };
+        
+        if (error.name === 'AbortError') {
+          console.error('Request timed out');
+          throw new Error('Request timed out. Please check your internet connection.');
+        }
+        
+        if (error.message === 'Failed to fetch' || error.message.includes('Network request failed')) {
+          console.error('Network error - possibly CORS or connectivity issue');
+          throw new Error('Network error. Please check your internet connection and try again.');
+        }
+        
+        throw error;
       }
     },
 
@@ -1098,10 +1133,21 @@ export const apiClient = {
 
       try {
         console.log(`Checking Stripe account status for barber: ${barberId}`);
+        console.log(`API URL: ${backendUrl}/api/stripe/account-status?barberId=${barberId}`);
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        
         const response = await fetch(`${backendUrl}/api/stripe/account-status?barberId=${barberId}`, {
           method: 'GET',
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
         
         if (response.ok) {
           const data = await response.json();
@@ -1120,13 +1166,18 @@ export const apiClient = {
         }
       } catch (error: any) {
         console.error('Error getting account status:', error);
-        // Always fall back to mock data for better UX
-        console.log('API error, falling back to mock Stripe account status (not connected)');
-        await delay(300);
-        return {
-          chargesEnabled: false,
-          payoutsEnabled: false
-        };
+        
+        if (error.name === 'AbortError') {
+          console.error('Request timed out');
+          throw new Error('Request timed out. Please check your internet connection.');
+        }
+        
+        if (error.message === 'Failed to fetch' || error.message.includes('Network request failed')) {
+          console.error('Network error - possibly CORS or connectivity issue');
+          throw new Error('Network error. Please check your internet connection and try again.');
+        }
+        
+        throw error;
       }
     },
   },

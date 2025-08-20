@@ -96,9 +96,19 @@ export default function Diagnostics() {
             </View>
             <View style={styles.row}>
               <Text style={styles.label}>API Base URL</Text>
-              <Text style={[styles.value, !base && { color: '#EF4444' }]}>
-                {base || 'Not configured'}
-              </Text>
+              <View style={styles.valueContainer}>
+                {base ? (
+                  <View style={styles.urlContainer}>
+                    <CheckCircle size={16} color="#10B981" />
+                    <Text style={styles.urlText}>{base}</Text>
+                  </View>
+                ) : (
+                  <View style={styles.urlContainer}>
+                    <XCircle size={16} color="#EF4444" />
+                    <Text style={[styles.urlText, { color: '#EF4444' }]}>Not configured</Text>
+                  </View>
+                )}
+              </View>
             </View>
           </View>
         </View>
@@ -148,18 +158,36 @@ export default function Diagnostics() {
         {/* Health Check */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Health Check</Text>
-          <Pressable 
-            style={styles.healthButton}
-            onPress={() => {
-              fetch(`${base}/api/health/ping`)
-                .then(res => res.json())
-                .then(data => alert(`Server OK: ${data.time}`))
-                .catch(e => alert(`Server Error: ${e.message}`));
-            }}
-          >
-            <Activity size={20} color="#fff" />
-            <Text style={styles.healthButtonText}>Ping Server</Text>
-          </Pressable>
+          <View style={styles.buttonContainer}>
+            <Pressable 
+              style={styles.healthButton}
+              onPress={() => {
+                fetch(`${base}/api/health/ping`)
+                  .then(res => res.json())
+                  .then(data => alert(`Server OK: ${data.time}`))
+                  .catch(e => alert(`Server Error: ${e.message}`));
+              }}
+            >
+              <Activity size={20} color="#fff" />
+              <Text style={styles.healthButtonText}>Ping Server</Text>
+            </Pressable>
+            
+            <Pressable 
+              style={[styles.healthButton, styles.stripeButton]}
+              onPress={() => {
+                fetch(`${base}/api/stripe/account-status?barberId=test`)
+                  .then(res => {
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    return res.json();
+                  })
+                  .then(data => alert(`Stripe API OK: ${JSON.stringify(data)}`))
+                  .catch(e => alert(`Stripe API Error: ${e.message}`));
+              }}
+            >
+              <Activity size={20} color="#fff" />
+              <Text style={styles.healthButtonText}>Test Stripe API</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
     </ScrollScreen>
@@ -295,5 +323,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#fff',
+  },
+  buttonContainer: {
+    gap: 12,
+  },
+  stripeButton: {
+    backgroundColor: '#635BFF',
+  },
+  urlContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  urlText: {
+    fontSize: 12,
+    color: Tokens.textMuted,
+    fontFamily: 'monospace',
+    flexShrink: 1,
   },
 });

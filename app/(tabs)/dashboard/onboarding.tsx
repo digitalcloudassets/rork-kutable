@@ -34,9 +34,10 @@ export default function OnboardingScreen() {
       console.log("Account created/fetched:", data.accountId);
       await handleAccountLink(data.accountId);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error creating account:", error);
-      Alert.alert("Error", "Failed to create Stripe account. Please try again.");
+      const message = error?.message || "Failed to create Stripe account. Please try again.";
+      Alert.alert("Connection Error", message);
       setIsConnecting(false);
     },
   });
@@ -58,9 +59,10 @@ export default function OnboardingScreen() {
         setIsConnecting(false);
       }
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error creating account link:", error);
-      Alert.alert("Error", "Failed to create onboarding link. Please try again.");
+      const message = error?.message || "Failed to create onboarding link. Please try again.";
+      Alert.alert("Connection Error", message);
       setIsConnecting(false);
     },
   });
@@ -98,8 +100,9 @@ export default function OnboardingScreen() {
           // Navigate to dashboard on successful connection
           router.replace("/(tabs)/dashboard");
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error polling account status:', error);
+        // Don't show alerts during polling, just log the error
       }
     }, 3000); // Poll every 3 seconds
 
