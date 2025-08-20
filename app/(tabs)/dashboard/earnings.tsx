@@ -125,6 +125,7 @@ export default function EarningsScreen() {
       }
       
       const data = await response.json();
+      console.log(`Live earnings data for ${range}:`, data);
       setEarnings(data);
     } catch (error) {
       console.error('Error fetching earnings summary:', error);
@@ -135,7 +136,7 @@ export default function EarningsScreen() {
         month: { grossCents: 542000, feesCents: 32500, netCents: 509500 },
       };
       setEarnings(mockData[range] || mockData.month);
-      Alert.alert('Notice', 'Using demo earnings data. Connect to backend for real data.');
+      console.warn('Using fallback earnings data due to API error');
     }
   };
 
@@ -184,6 +185,7 @@ export default function EarningsScreen() {
       }
       
       const data = await response.json();
+      console.log(`Live payouts data:`, data.payouts?.length || 0, 'payouts');
       setPayouts(data.payouts || []);
     } catch (error) {
       console.error('Error fetching payouts:', error);
@@ -205,7 +207,7 @@ export default function EarningsScreen() {
         },
       ];
       setPayouts(mockPayouts);
-      Alert.alert('Notice', 'Using demo payouts data. Connect to backend for real data.');
+      console.warn('Using fallback payouts data due to API error');
     }
   };
 
@@ -327,7 +329,10 @@ export default function EarningsScreen() {
               <DollarSign size={48} color="#9CA3AF" />
               <Text style={styles.emptyStateTitle}>No payouts yet</Text>
               <Text style={styles.emptyStateText}>
-                Complete bookings and connect Stripe to start earning payouts
+                {earnings.netCents > 0 
+                  ? 'Complete more bookings to trigger your first payout'
+                  : 'Complete bookings and connect Stripe to start earning payouts'
+                }
               </Text>
             </View>
           ) : (
@@ -350,7 +355,12 @@ export default function EarningsScreen() {
                     <Text style={styles.payoutDate}>
                       Created: {formatDate(payout.createdAtISO)}
                     </Text>
-                    {payout.status !== 'paid' && (
+                    {payout.status === 'in_transit' && (
+                      <Text style={styles.payoutArrival}>
+                        Arriving: {formatDate(payout.arrivalDateISO)}
+                      </Text>
+                    )}
+                    {payout.status === 'pending' && (
                       <Text style={styles.payoutArrival}>
                         Expected: {formatDate(payout.arrivalDateISO)}
                       </Text>

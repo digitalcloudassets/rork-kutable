@@ -24,13 +24,18 @@ export default function AnalyticsScreen() {
 
   const { data: summary, isLoading: summaryLoading, refetch: refetchSummary } = useQuery({
     queryKey: ['analytics-summary', user?.id, selectedRange],
-    queryFn: () => api.analytics.summary({ barberId: user?.id || '', range: selectedRange }),
+    queryFn: async () => {
+      console.log(`Fetching analytics summary for barber ${user?.id}, range: ${selectedRange}`);
+      const result = await api.analytics.summary({ barberId: user?.id || '', range: selectedRange });
+      console.log(`Analytics summary result:`, result);
+      return result;
+    },
     enabled: !!user && user.role === 'barber',
   });
 
   const { data: timeseries, isLoading: timeseriesLoading } = useQuery({
     queryKey: ['analytics-timeseries', user?.id, selectedRange],
-    queryFn: () => {
+    queryFn: async () => {
       const now = new Date();
       let start: Date;
       
@@ -40,19 +45,27 @@ export default function AnalyticsScreen() {
         start = new Date(now.getFullYear(), now.getMonth(), 1);
       }
       
-      return api.analytics.timeseries({
+      console.log(`Fetching timeseries data for barber ${user?.id}, range: ${selectedRange}`);
+      const result = await api.analytics.timeseries({
         barberId: user?.id || '',
         start: start.toISOString(),
         end: now.toISOString(),
         bucket: 'day',
       });
+      console.log(`Timeseries result:`, result?.timeSeries?.length || 0, 'data points');
+      return result;
     },
     enabled: !!user && user.role === 'barber',
   });
 
   const { data: topServices, isLoading: servicesLoading } = useQuery({
     queryKey: ['analytics-top-services', user?.id],
-    queryFn: () => api.analytics.topServices({ barberId: user?.id || '', range: 'month' }),
+    queryFn: async () => {
+      console.log(`Fetching top services for barber ${user?.id}`);
+      const result = await api.analytics.topServices({ barberId: user?.id || '', range: 'month' });
+      console.log(`Top services result:`, result?.topServices?.length || 0, 'services');
+      return result;
+    },
     enabled: !!user && user.role === 'barber',
   });
 
@@ -194,13 +207,13 @@ export default function AnalyticsScreen() {
               {timeseries?.timeSeries?.length > 0 ? (
                 <View style={styles.barChart}>
                   {timeseries.timeSeries.slice(-7).map((point: TimeSeriesPoint, index: number) => {
-                    const maxBookings = Math.max(...timeseries.timeSeries.map((p: TimeSeriesPoint) => p.bookingsCount));
-                    const maxRevenue = Math.max(...timeseries.timeSeries.map((p: TimeSeriesPoint) => p.grossCents));
-                    const bookingHeight = maxBookings > 0 ? (point.bookingsCount / maxBookings) * 80 : 0;
-                    const revenueHeight = maxRevenue > 0 ? (point.grossCents / maxRevenue) * 80 : 0;
+                    const maxBookings = Math.max(...timeseries.timeSeries.map((p: TimeSeriesPoint) => p.bookingsCount), 1);
+                    const maxRevenue = Math.max(...timeseries.timeSeries.map((p: TimeSeriesPoint) => p.grossCents), 1);
+                    const bookingHeight = maxBookings > 0 ? Math.max((point.bookingsCount / maxBookings) * 80, 2) : 2;
+                    const revenueHeight = maxRevenue > 0 ? Math.max((point.grossCents / maxRevenue) * 80, 2) : 2;
                     
                     return (
-                      <View key={index} style={styles.barGroup}>
+                      <View key={`${point.date}-${index}`} style={styles.barGroup}>
                         <View style={styles.barContainer}>
                           <View
                             style={[
@@ -232,7 +245,9 @@ export default function AnalyticsScreen() {
               ) : (
                 <View style={styles.emptyChart}>
                   <BarChart3 size={48} color="#ccc" />
-                  <Text style={styles.emptyChartText}>No data available</Text>
+                  <Text style={styles.emptyChartText}>
+                    {selectedRange === 'week' ? 'No bookings this week' : 'No bookings this month'}
+                  </Text>
                 </View>
               )}
             </View>
@@ -271,7 +286,12 @@ export default function AnalyticsScreen() {
                 ))
               ) : (
                 <View style={styles.emptyServices}>
-                  <Text style={styles.emptyServicesText}>No services data available</Text>
+                  <Text style={styles.emptyServicesText}>
+                    {summary?.bookingsCount === 0 
+                      ? 'No completed bookings this month'
+                      : 'No services data available'
+                    }
+                  </Text>
                 </View>
               )}
             </View>
