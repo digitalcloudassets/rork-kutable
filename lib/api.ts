@@ -241,6 +241,150 @@ export const apiClient = {
         throw error;
       }
     },
+
+    create: async ({ barberId, name, durationMinutes, priceCents, description }: { 
+      barberId: string; 
+      name: string; 
+      durationMinutes: number; 
+      priceCents: number; 
+      description?: string; 
+    }) => {
+      const backendUrl = getBackendUrl();
+      if (!backendUrl) {
+        // No backend configured, use mock implementation
+        await delay(500);
+        const service: Service = {
+          id: Date.now().toString(),
+          barberId,
+          name,
+          durationMinutes,
+          priceCents,
+          description,
+          active: true,
+        };
+        return service;
+      }
+
+      try {
+        const response = await fetch(`${backendUrl}/api/services/create`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ barberId, name, durationMinutes, priceCents, description }),
+        });
+        
+        if (response.ok) {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            return data.service;
+          } else {
+            console.warn('Backend returned non-JSON response for service create, using fallback data');
+            throw new Error('Non-JSON response');
+          }
+        } else {
+          console.error('Failed to create service, status:', response.status);
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          throw new Error(errorData.error || 'API request failed');
+        }
+      } catch (error) {
+        console.error('Error creating service:', error);
+        throw error;
+      }
+    },
+
+    update: async ({ id, barberId, name, durationMinutes, priceCents, description, active }: { 
+      id: string;
+      barberId: string; 
+      name: string; 
+      durationMinutes: number; 
+      priceCents: number; 
+      description?: string;
+      active?: boolean;
+    }) => {
+      const backendUrl = getBackendUrl();
+      if (!backendUrl) {
+        // No backend configured, use mock implementation
+        await delay(500);
+        const service: Service = {
+          id,
+          barberId,
+          name,
+          durationMinutes,
+          priceCents,
+          description,
+          active: active !== undefined ? active : true,
+        };
+        return service;
+      }
+
+      try {
+        const response = await fetch(`${backendUrl}/api/services/update`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, barberId, name, durationMinutes, priceCents, description, active }),
+        });
+        
+        if (response.ok) {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            return data.service;
+          } else {
+            console.warn('Backend returned non-JSON response for service update, using fallback data');
+            throw new Error('Non-JSON response');
+          }
+        } else {
+          console.error('Failed to update service, status:', response.status);
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          throw new Error(errorData.error || 'API request failed');
+        }
+      } catch (error) {
+        console.error('Error updating service:', error);
+        throw error;
+      }
+    },
+
+    toggle: async ({ id, barberId, active }: { id: string; barberId: string; active: boolean }) => {
+      const backendUrl = getBackendUrl();
+      if (!backendUrl) {
+        // No backend configured, use mock implementation
+        await delay(300);
+        return {
+          id,
+          barberId,
+          name: 'Mock Service',
+          durationMinutes: 30,
+          priceCents: 2500,
+          active,
+        } as Service;
+      }
+
+      try {
+        const response = await fetch(`${backendUrl}/api/services/toggle`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, barberId, active }),
+        });
+        
+        if (response.ok) {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            return data.service;
+          } else {
+            console.warn('Backend returned non-JSON response for service toggle, using fallback data');
+            throw new Error('Non-JSON response');
+          }
+        } else {
+          console.error('Failed to toggle service, status:', response.status);
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          throw new Error(errorData.error || 'API request failed');
+        }
+      } catch (error) {
+        console.error('Error toggling service:', error);
+        throw error;
+      }
+    },
   },
 
   bookings: {

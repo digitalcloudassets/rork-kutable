@@ -104,22 +104,32 @@ export default function ServicesScreen() {
     try {
       setSubmitting(true);
       
-      const serviceData: Partial<Service> = {
-        id: editingService?.id,
-        name: formData.name.trim(),
-        durationMinutes: parseInt(formData.durationMinutes),
-        priceCents: Math.round(parseFloat(formData.priceCents) * 100), // Convert dollars to cents
-        description: formData.description.trim() || undefined,
-        active: formData.active,
-      };
-
       const uid = await getUserId();
       if (!uid) throw new Error('Not signed in');
-      const savedService = await apiClient.services.upsert({ barberId: uid, service: serviceData });
+
+      let savedService: Service;
       
       if (editingService) {
+        // Update existing service
+        savedService = await apiClient.services.update({
+          id: editingService.id,
+          barberId: uid,
+          name: formData.name.trim(),
+          durationMinutes: parseInt(formData.durationMinutes),
+          priceCents: Math.round(parseFloat(formData.priceCents) * 100), // Convert dollars to cents
+          description: formData.description.trim() || undefined,
+          active: formData.active,
+        });
         setServices(prev => prev.map(s => s.id === savedService.id ? savedService : s));
       } else {
+        // Create new service
+        savedService = await apiClient.services.create({
+          barberId: uid,
+          name: formData.name.trim(),
+          durationMinutes: parseInt(formData.durationMinutes),
+          priceCents: Math.round(parseFloat(formData.priceCents) * 100), // Convert dollars to cents
+          description: formData.description.trim() || undefined,
+        });
         setServices(prev => [savedService, ...prev]);
       }
 

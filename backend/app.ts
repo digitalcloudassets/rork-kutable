@@ -9,6 +9,9 @@ import stripeAccountStatus from './api/stripe/account-status';
 import servicesList from './api/services/list';
 import servicesUpsert from './api/services/upsert';
 import servicesDelete from './api/services/delete';
+import servicesCreate from './api/services/create';
+import servicesUpdate from './api/services/update';
+import servicesToggle from './api/services/toggle';
 import availabilityList from './api/availability/list';
 import availabilityBlock from './api/availability/block';
 import availabilityUnblock from './api/availability/unblock';
@@ -228,6 +231,27 @@ app.post('/api/services/upsert', async (c) => {
 
 app.post('/api/services/delete', async (c) => {
   const response = await servicesDelete(c.req.raw);
+  const data = await response.json();
+  c.status(response.status as any);
+  return c.json(data);
+});
+
+app.post('/api/services/create', async (c) => {
+  const response = await servicesCreate(c.req.raw);
+  const data = await response.json();
+  c.status(response.status as any);
+  return c.json(data);
+});
+
+app.post('/api/services/update', async (c) => {
+  const response = await servicesUpdate(c.req.raw);
+  const data = await response.json();
+  c.status(response.status as any);
+  return c.json(data);
+});
+
+app.post('/api/services/toggle', async (c) => {
+  const response = await servicesToggle(c.req.raw);
   const data = await response.json();
   c.status(response.status as any);
   return c.json(data);
