@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { LucideIcon } from 'lucide-react-native';
-import { brandColors } from '../config/brand';
+import { BRAND } from '../config/brand';
 
 interface EmptyStateProps {
   icon: LucideIcon;
@@ -27,7 +27,7 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <View style={styles.container} testID={testID}>
-      <Icon size={64} color="#ccc" />
+      <Icon size={64} color={BRAND.TEXT_SECONDARY} />
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.description}>{description}</Text>
       {actionLabel && onAction && (
@@ -54,26 +54,26 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#333',
+    color: BRAND.TEXT_PRIMARY,
     marginTop: 24,
     marginBottom: 12,
     textAlign: 'center',
   },
   description: {
     fontSize: 16,
-    color: '#666',
+    color: BRAND.TEXT_SECONDARY,
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 32,
   },
   actionButton: {
-    backgroundColor: brandColors.primary,
+    backgroundColor: BRAND.ACCENT,
     paddingHorizontal: 32,
     paddingVertical: 16,
     borderRadius: 12,
   },
   actionButtonText: {
-    color: '#fff',
+    color: BRAND.TEXT_PRIMARY,
     fontSize: 16,
     fontWeight: '600',
   },

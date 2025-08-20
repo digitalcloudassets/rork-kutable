@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { AlertTriangle, RefreshCw } from 'lucide-react-native';
-import { brandColors } from '../config/brand';
+import { BRAND } from '../config/brand';
 
 interface ErrorStateProps {
   title?: string;
@@ -63,14 +63,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#333',
+    color: BRAND.TEXT_PRIMARY,
     marginTop: 24,
     marginBottom: 12,
     textAlign: 'center',
   },
   message: {
     fontSize: 16,
-    color: '#666',
+    color: BRAND.TEXT_SECONDARY,
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 32,
@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
   retryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: brandColors.primary,
+    backgroundColor: BRAND.ACCENT,
     paddingHorizontal: 32,
     paddingVertical: 16,
     borderRadius: 12,
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   retryButtonText: {
-    color: '#fff',
+    color: BRAND.TEXT_PRIMARY,
     fontSize: 16,
     fontWeight: '600',
   },

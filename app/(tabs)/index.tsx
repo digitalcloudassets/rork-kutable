@@ -14,7 +14,7 @@ import {
 import { Search, MapPin, Star, X, Wifi, WifiOff } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
-import { brandColors } from "@/config/brand";
+import { BRAND, brandColors } from "@/config/brand";
 import { api } from "@/lib/api";
 import type { Barber, Service } from "@/types/models";
 import { seedData } from "@/lib/seedData";
@@ -72,17 +72,17 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
-          <Search size={20} color="#999" />
+          <Search size={20} color={BRAND.TEXT_SECONDARY} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search barbers or services..."
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholderTextColor="#999"
+            placeholderTextColor={BRAND.TEXT_SECONDARY}
           />
           {hasActiveFilters && (
             <TouchableOpacity onPress={clearFilters} style={styles.clearButton}>
-              <X size={18} color="#666" />
+              <X size={18} color={BRAND.TEXT_SECONDARY} />
             </TouchableOpacity>
           )}
         </View>
@@ -124,7 +124,7 @@ export default function HomeScreen() {
         />
       ) : isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={brandColors.primary} style={styles.loader} />
+          <ActivityIndicator size="large" color={BRAND.ACCENT} style={styles.loader} />
         </View>
       ) : barbers && barbers.length > 0 ? (
         <FlatList
@@ -145,7 +145,7 @@ export default function HomeScreen() {
                 )}
                 <View style={styles.barberMeta}>
                   <View style={styles.locationRow}>
-                    <MapPin size={14} color="#666" />
+                    <MapPin size={14} color={BRAND.TEXT_SECONDARY} />
                     <Text style={styles.locationText}>
                       {barber.shopAddress || "Mobile Service"}
                     </Text>
@@ -209,19 +209,19 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: BRAND.BG_DARK,
   },
   searchContainer: {
-    backgroundColor: "#fff",
+    backgroundColor: BRAND.SURFACE_DARK,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: "#202633",
   },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#1F2937",
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 44,
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 8,
     fontSize: 16,
-    color: "#333",
+    color: BRAND.TEXT_PRIMARY,
   },
   clearButton: {
     padding: 4,
@@ -243,22 +243,22 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   filterChip: {
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#1F2937",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     marginRight: 8,
   },
   filterChipActive: {
-    backgroundColor: brandColors.primary,
+    backgroundColor: BRAND.ACCENT,
   },
   filterChipText: {
     fontSize: 14,
-    color: "#666",
+    color: BRAND.TEXT_SECONDARY,
     fontWeight: "500",
   },
   filterChipTextActive: {
-    color: "#fff",
+    color: BRAND.TEXT_PRIMARY,
   },
   loadingContainer: {
     flex: 1,
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#1a1a1a",
+    color: BRAND.TEXT_PRIMARY,
     marginHorizontal: 16,
     marginTop: 20,
     marginBottom: 16,
@@ -284,20 +284,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   barberCard: {
-    backgroundColor: "#fff",
+    backgroundColor: BRAND.SURFACE_DARK,
     borderRadius: 16,
     marginBottom: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 3,
+    elevation: 8,
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#202633",
   },
   barberPhoto: {
     width: "100%",
     height: 200,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "#1F2937",
   },
   barberInfo: {
     padding: 16,
@@ -305,12 +307,12 @@ const styles = StyleSheet.create({
   barberName: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#1a1a1a",
+    color: BRAND.TEXT_PRIMARY,
     marginBottom: 4,
   },
   shopName: {
     fontSize: 14,
-    color: "#666",
+    color: BRAND.TEXT_SECONDARY,
     marginBottom: 8,
   },
   barberMeta: {
@@ -325,7 +327,7 @@ const styles = StyleSheet.create({
   },
   locationText: {
     fontSize: 13,
-    color: "#666",
+    color: BRAND.TEXT_SECONDARY,
     marginLeft: 4,
     flex: 1,
   },
@@ -335,7 +337,7 @@ const styles = StyleSheet.create({
   },
   ratingText: {
     fontSize: 13,
-    color: "#666",
+    color: BRAND.TEXT_SECONDARY,
     marginLeft: 4,
     fontWeight: "600",
   },
@@ -345,15 +347,16 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   serviceChip: {
-    backgroundColor: brandColors.primaryLight,
+    backgroundColor: "rgba(124, 92, 255, 0.15)",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(124, 92, 255, 0.3)",
   },
   serviceChipText: {
     fontSize: 12,
-    color: brandColors.primary,
+    color: BRAND.ACCENT,
     fontWeight: "500",
   },
-
 });
