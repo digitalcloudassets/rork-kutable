@@ -29,6 +29,12 @@ export default function DashboardLayout() {
           title: "Calendar",
         }} 
       />
+      <Stack.Screen 
+        name="gallery" 
+        options={{ 
+          title: "Gallery",
+        }} 
+      />
     </Stack>
   );
 }

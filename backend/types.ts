@@ -121,3 +121,17 @@ export interface UserRow {
   created_at: string;
   updated_at: string;
 }
+
+export interface GalleryItem {
+  url: string;
+  createdAtISO: string;
+  path: string;
+}
+
+export interface GalleryItemRow {
+  id: string;
+  barber_id: string;
+  path: string;
+  url: string;
+  created_at: string;
+}

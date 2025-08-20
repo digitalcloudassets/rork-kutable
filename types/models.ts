@@ -59,3 +59,9 @@ export interface EarningsSummary {
   netCents: number;
   range: "week" | "month" | "year";
 }
+
+export interface GalleryItem {
+  url: string;
+  createdAtISO: string;
+  path: string;
+}

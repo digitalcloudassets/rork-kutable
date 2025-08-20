@@ -8,7 +8,7 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from "react-native";
-import { Calendar, Clock, DollarSign, Settings, TrendingUp, Users, CreditCard, AlertTriangle } from "lucide-react-native";
+import { Calendar, Clock, DollarSign, Settings, TrendingUp, Users, CreditCard, AlertTriangle, Camera } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { brandColors } from "@/config/brand";
@@ -221,6 +221,13 @@ export default function DashboardScreen() {
           >
             <Calendar size={24} color={brandColors.primary} />
             <Text style={styles.actionText}>Block Time</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.actionCard}
+            onPress={() => router.push("/dashboard/gallery")}
+          >
+            <Camera size={24} color={brandColors.primary} />
+            <Text style={styles.actionText}>Gallery</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.actionCard}

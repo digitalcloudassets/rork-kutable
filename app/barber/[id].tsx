@@ -14,7 +14,7 @@ import { useQuery } from "@tanstack/react-query";
 import { brandColors } from "@/config/brand";
 import { api } from "@/lib/api";
 import { useBooking } from "@/providers/BookingProvider";
-import type { Service } from "@/types/models";
+import type { Service, GalleryItem } from "@/types/models";
 
 export default function BarberProfileScreen() {
   const { id } = useLocalSearchParams();
@@ -24,6 +24,20 @@ export default function BarberProfileScreen() {
   const { data: barber, isLoading } = useQuery({
     queryKey: ["barber", id],
     queryFn: () => api.barbers.profile({ barberId: id as string }),
+  });
+
+  const { data: galleryItems = [] } = useQuery({
+    queryKey: ['gallery', id],
+    queryFn: async () => {
+      const response = await fetch('https://toolkit.rork.com/api/gallery/list', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ barberId: id }),
+      });
+      const data = await response.json();
+      return (data.items || []).slice(0, 6); // Show top 6 images
+    },
+    enabled: !!id,
   });
 
   const handleBookService = (service: Service) => {
@@ -120,6 +134,23 @@ export default function BarberProfileScreen() {
             </View>
           ))}
         </View>
+
+        {galleryItems.length > 0 && (
+          <View style={styles.gallerySection}>
+            <Text style={styles.sectionTitle}>Gallery</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={styles.galleryGrid}>
+                {galleryItems.map((item: GalleryItem, index: number) => (
+                  <Image
+                    key={item.path}
+                    source={{ uri: item.url }}
+                    style={styles.galleryImage}
+                  />
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+        )}
 
         <View style={styles.reviewsSection}>
           <Text style={styles.sectionTitle}>Reviews</Text>
@@ -271,5 +302,20 @@ const styles = StyleSheet.create({
   placeholderText: {
     fontSize: 14,
     color: "#999",
+  },
+  gallerySection: {
+    backgroundColor: "#fff",
+    marginTop: 12,
+    padding: 20,
+  },
+  galleryGrid: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  galleryImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    backgroundColor: "#f0f0f0",
   },
 });
