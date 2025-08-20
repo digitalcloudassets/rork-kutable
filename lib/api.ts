@@ -326,22 +326,37 @@ export const api = {
 
   availability: {
     list: async ({ barberId, startISO, endISO }: { barberId: string; startISO: string; endISO: string }) => {
+      const backendUrl = getBackendUrl();
+      if (!backendUrl) {
+        // No backend configured, return empty blocks
+        await delay(300);
+        return { blocks: [] };
+      }
+
       try {
-        const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/availability/list`, {
+        const response = await fetch(`${backendUrl}/api/availability/list`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ barberId, startISO, endISO }),
         });
         
         if (response.ok) {
-          const data = await response.json();
-          return data;
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            return data;
+          } else {
+            console.warn('Backend returned non-JSON response for availability list, using fallback data');
+            throw new Error('Non-JSON response');
+          }
         } else {
-          console.error('Failed to fetch availability blocks');
-          return { blocks: [] };
+          console.error('Failed to fetch availability blocks, status:', response.status);
+          throw new Error('API request failed');
         }
       } catch (error) {
         console.error('Error fetching availability blocks:', error);
+        // Fallback to empty blocks
+        await delay(300);
         return { blocks: [] };
       }
     },
@@ -419,19 +434,42 @@ export const api = {
     },
 
     block: async ({ barberId, startISO, endISO, reason }: { barberId: string; startISO: string; endISO: string; reason?: string }) => {
+      const backendUrl = getBackendUrl();
+      if (!backendUrl) {
+        // No backend configured, use mock implementation
+        await delay(500);
+        return {
+          block: {
+            id: Date.now().toString(),
+            barberId,
+            startISO,
+            endISO,
+            reason,
+            createdAtISO: new Date().toISOString(),
+          }
+        };
+      }
+
       try {
-        const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/availability/block`, {
+        const response = await fetch(`${backendUrl}/api/availability/block`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ barberId, startISO, endISO, reason }),
         });
         
         if (response.ok) {
-          const data = await response.json();
-          return data;
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            return data;
+          } else {
+            console.warn('Backend returned non-JSON response for availability block, using fallback data');
+            throw new Error('Non-JSON response');
+          }
         } else {
-          const error = await response.json();
-          throw new Error(error.error || 'Failed to block time');
+          console.error('Failed to block time, status:', response.status);
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          throw new Error(errorData.error || 'API request failed');
         }
       } catch (error) {
         console.error('Error blocking time:', error);
@@ -440,19 +478,33 @@ export const api = {
     },
 
     unblock: async ({ barberId, blockId }: { barberId: string; blockId: string }) => {
+      const backendUrl = getBackendUrl();
+      if (!backendUrl) {
+        // No backend configured, use mock implementation
+        await delay(300);
+        return { ok: true };
+      }
+
       try {
-        const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL}/api/availability/unblock`, {
+        const response = await fetch(`${backendUrl}/api/availability/unblock`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ barberId, blockId }),
         });
         
         if (response.ok) {
-          const data = await response.json();
-          return data;
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            return data;
+          } else {
+            console.warn('Backend returned non-JSON response for availability unblock, using fallback data');
+            throw new Error('Non-JSON response');
+          }
         } else {
-          const error = await response.json();
-          throw new Error(error.error || 'Failed to unblock time');
+          console.error('Failed to unblock time, status:', response.status);
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          throw new Error(errorData.error || 'API request failed');
         }
       } catch (error) {
         console.error('Error unblocking time:', error);
@@ -496,28 +548,39 @@ export const api = {
 
   earnings: {
     summary: async ({ barberId, range }: { barberId: string; range: 'today' | 'week' | 'month' }) => {
+      const backendUrl = getBackendUrl();
+      if (!backendUrl) {
+        // No backend configured, use mock data
+        await delay(500);
+        const amounts = {
+          today: { gross: 8500, fees: 500, net: 8000 },
+          week: { gross: 125000, fees: 7500, net: 117500 },
+          month: { gross: 542000, fees: 32500, net: 509500 },
+        };
+        return amounts[range] || amounts.month;
+      }
+
       try {
         const response = await fetch(
-          `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/earnings/summary?barberId=${barberId}&range=${range}`
+          `${backendUrl}/api/earnings/summary?barberId=${barberId}&range=${range}`
         );
         
         if (response.ok) {
-          const data = await response.json();
-          return {
-            gross: data.grossCents,
-            fees: data.feesCents,
-            net: data.netCents,
-          };
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            return {
+              gross: data.grossCents,
+              fees: data.feesCents,
+              net: data.netCents,
+            };
+          } else {
+            console.warn('Backend returned non-JSON response for earnings summary, using fallback data');
+            throw new Error('Non-JSON response');
+          }
         } else {
-          console.error('Failed to fetch earnings summary');
-          // Fallback to mock data
-          await delay(500);
-          const amounts = {
-            today: { gross: 8500, fees: 500, net: 8000 },
-            week: { gross: 125000, fees: 7500, net: 117500 },
-            month: { gross: 542000, fees: 32500, net: 509500 },
-          };
-          return amounts[range] || amounts.month;
+          console.error('Failed to fetch earnings summary, status:', response.status);
+          throw new Error('API request failed');
         }
       } catch (error) {
         console.error('Error fetching earnings summary:', error);
@@ -535,28 +598,39 @@ export const api = {
 
   payouts: {
     list: async ({ barberId }: { barberId: string }) => {
+      const backendUrl = getBackendUrl();
+      if (!backendUrl) {
+        // No backend configured, use mock data
+        await delay(500);
+        return [
+          { id: "1", amount: 117500, date: "2024-03-10", status: "completed" },
+          { id: "2", amount: 98000, date: "2024-03-03", status: "completed" },
+        ];
+      }
+
       try {
         const response = await fetch(
-          `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/payouts/list?barberId=${barberId}`
+          `${backendUrl}/api/payouts/list?barberId=${barberId}`
         );
         
         if (response.ok) {
-          const data = await response.json();
-          return data.payouts.map((payout: any) => ({
-            id: payout.id,
-            amount: payout.amountCents,
-            date: payout.createdAtISO.split('T')[0],
-            status: payout.status === 'paid' ? 'completed' : payout.status,
-            arrivalDate: payout.arrivalDateISO,
-          }));
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            return data.payouts.map((payout: any) => ({
+              id: payout.id,
+              amount: payout.amountCents,
+              date: payout.createdAtISO.split('T')[0],
+              status: payout.status === 'paid' ? 'completed' : payout.status,
+              arrivalDate: payout.arrivalDateISO,
+            }));
+          } else {
+            console.warn('Backend returned non-JSON response for payouts list, using fallback data');
+            throw new Error('Non-JSON response');
+          }
         } else {
-          console.error('Failed to fetch payouts');
-          // Fallback to mock data
-          await delay(500);
-          return [
-            { id: "1", amount: 117500, date: "2024-03-10", status: "completed" },
-            { id: "2", amount: 98000, date: "2024-03-03", status: "completed" },
-          ];
+          console.error('Failed to fetch payouts, status:', response.status);
+          throw new Error('API request failed');
         }
       } catch (error) {
         console.error('Error fetching payouts:', error);
@@ -572,26 +646,37 @@ export const api = {
 
   analytics: {
     summary: async ({ barberId, range }: { barberId: string; range: 'week' | 'month' }) => {
+      const backendUrl = getBackendUrl();
+      if (!backendUrl) {
+        // No backend configured, use mock data
+        await delay(500);
+        return {
+          bookingsCount: range === 'week' ? 12 : 47,
+          grossCents: range === 'week' ? 125000 : 542000,
+          netCents: range === 'week' ? 117500 : 509500,
+          avgTicketCents: range === 'week' ? 10400 : 11500,
+          cancellationsCount: range === 'week' ? 2 : 8,
+          range,
+        };
+      }
+
       try {
         const response = await fetch(
-          `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/analytics/summary?barberId=${barberId}&range=${range}`
+          `${backendUrl}/api/analytics/summary?barberId=${barberId}&range=${range}`
         );
         
         if (response.ok) {
-          const data = await response.json();
-          return data;
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            return data;
+          } else {
+            console.warn('Backend returned non-JSON response for analytics summary, using fallback data');
+            throw new Error('Non-JSON response');
+          }
         } else {
-          console.error('Failed to fetch analytics summary');
-          // Fallback to mock data
-          await delay(500);
-          return {
-            bookingsCount: range === 'week' ? 12 : 47,
-            grossCents: range === 'week' ? 125000 : 542000,
-            netCents: range === 'week' ? 117500 : 509500,
-            avgTicketCents: range === 'week' ? 10400 : 11500,
-            cancellationsCount: range === 'week' ? 2 : 8,
-            range,
-          };
+          console.error('Failed to fetch analytics summary, status:', response.status);
+          throw new Error('API request failed');
         }
       } catch (error) {
         console.error('Error fetching analytics summary:', error);
@@ -614,6 +699,27 @@ export const api = {
       end: string; 
       bucket?: string; 
     }) => {
+      const backendUrl = getBackendUrl();
+      if (!backendUrl) {
+        // No backend configured, use mock data
+        await delay(500);
+        const mockData = [];
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        const currentDate = new Date(startDate);
+        
+        while (currentDate <= endDate) {
+          mockData.push({
+            date: currentDate.toISOString().split('T')[0],
+            bookingsCount: Math.floor(Math.random() * 8) + 1,
+            grossCents: Math.floor(Math.random() * 50000) + 10000,
+          });
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+        
+        return { timeSeries: mockData };
+      }
+
       try {
         const params = new URLSearchParams({
           barberId,
@@ -623,31 +729,21 @@ export const api = {
         });
         
         const response = await fetch(
-          `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/analytics/timeseries?${params}`
+          `${backendUrl}/api/analytics/timeseries?${params}`
         );
         
         if (response.ok) {
-          const data = await response.json();
-          return data;
-        } else {
-          console.error('Failed to fetch analytics timeseries');
-          // Fallback to mock data
-          await delay(500);
-          const mockData = [];
-          const startDate = new Date(start);
-          const endDate = new Date(end);
-          const currentDate = new Date(startDate);
-          
-          while (currentDate <= endDate) {
-            mockData.push({
-              date: currentDate.toISOString().split('T')[0],
-              bookingsCount: Math.floor(Math.random() * 8) + 1,
-              grossCents: Math.floor(Math.random() * 50000) + 10000,
-            });
-            currentDate.setDate(currentDate.getDate() + 1);
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            return data;
+          } else {
+            console.warn('Backend returned non-JSON response for analytics timeseries, using fallback data');
+            throw new Error('Non-JSON response');
           }
-          
-          return { timeSeries: mockData };
+        } else {
+          console.error('Failed to fetch analytics timeseries, status:', response.status);
+          throw new Error('API request failed');
         }
       } catch (error) {
         console.error('Error fetching analytics timeseries:', error);
@@ -672,6 +768,20 @@ export const api = {
     },
 
     topServices: async ({ barberId, range }: { barberId: string; range: 'month' }) => {
+      const backendUrl = getBackendUrl();
+      if (!backendUrl) {
+        // No backend configured, use mock data
+        await delay(500);
+        return {
+          topServices: [
+            { serviceId: '1', serviceName: 'Classic Cut', bookingsCount: 18, grossCents: 180000 },
+            { serviceId: '2', serviceName: 'Beard Trim', bookingsCount: 15, grossCents: 112500 },
+            { serviceId: '3', serviceName: 'Fade Cut', bookingsCount: 12, grossCents: 144000 },
+            { serviceId: '4', serviceName: 'Shampoo & Style', bookingsCount: 8, grossCents: 64000 },
+          ],
+        };
+      }
+
       try {
         const params = new URLSearchParams({
           barberId,
@@ -679,24 +789,21 @@ export const api = {
         });
         
         const response = await fetch(
-          `${process.env.EXPO_PUBLIC_BACKEND_URL}/api/analytics/top-services?${params}`
+          `${backendUrl}/api/analytics/top-services?${params}`
         );
         
         if (response.ok) {
-          const data = await response.json();
-          return data;
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            return data;
+          } else {
+            console.warn('Backend returned non-JSON response for top services, using fallback data');
+            throw new Error('Non-JSON response');
+          }
         } else {
-          console.error('Failed to fetch top services');
-          // Fallback to mock data
-          await delay(500);
-          return {
-            topServices: [
-              { serviceId: '1', serviceName: 'Classic Cut', bookingsCount: 18, grossCents: 180000 },
-              { serviceId: '2', serviceName: 'Beard Trim', bookingsCount: 15, grossCents: 112500 },
-              { serviceId: '3', serviceName: 'Fade Cut', bookingsCount: 12, grossCents: 144000 },
-              { serviceId: '4', serviceName: 'Shampoo & Style', bookingsCount: 8, grossCents: 64000 },
-            ],
-          };
+          console.error('Failed to fetch top services, status:', response.status);
+          throw new Error('API request failed');
         }
       } catch (error) {
         console.error('Error fetching top services:', error);
