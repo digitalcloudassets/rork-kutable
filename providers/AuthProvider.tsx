@@ -50,7 +50,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             userId: authUser.id
           });
           
-          // If barber record doesn't exist, create a basic user profile
+          // Handle missing table error (42P01)
+          if (barberError.code === '42P01') {
+            console.log('Barbers table does not exist yet, creating fallback profile for user:', authUser.id);
+            const user: User = {
+              id: authUser.id,
+              role: 'barber',
+              name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'Barber',
+              phone: authUser.user_metadata?.phone || '',
+              email: authUser.email || '',
+            };
+            await saveUser(user);
+            return;
+          }
+          
+          // If barber record doesn't exist (PGRST116 = no rows returned)
           if (barberError.code === 'PGRST116') {
             console.log('Barber record not found, creating basic profile for user:', authUser.id);
             const user: User = {
@@ -61,7 +75,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               email: authUser.email || '',
             };
             await saveUser(user);
+            return;
           }
+          
+          // For other database errors, create fallback profile
+          console.log('Database error, creating fallback profile for barber:', authUser.id);
+          const user: User = {
+            id: authUser.id,
+            role: 'barber',
+            name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'Barber',
+            phone: authUser.user_metadata?.phone || '',
+            email: authUser.email || '',
+          };
+          await saveUser(user);
           return;
         }
 
@@ -92,7 +118,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             userId: authUser.id
           });
           
-          // If client record doesn't exist, create a basic user profile
+          // Handle missing table error (42P01)
+          if (clientError.code === '42P01') {
+            console.log('Clients table does not exist yet, creating fallback profile for user:', authUser.id);
+            const user: User = {
+              id: authUser.id,
+              role: 'client',
+              name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'Client',
+              phone: authUser.user_metadata?.phone || '',
+              email: authUser.email || '',
+            };
+            await saveUser(user);
+            return;
+          }
+          
+          // If client record doesn't exist (PGRST116 = no rows returned)
           if (clientError.code === 'PGRST116') {
             console.log('Client record not found, creating basic profile for user:', authUser.id);
             const user: User = {
@@ -103,7 +143,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               email: authUser.email || '',
             };
             await saveUser(user);
+            return;
           }
+          
+          // For other database errors, create fallback profile
+          console.log('Database error, creating fallback profile for client:', authUser.id);
+          const user: User = {
+            id: authUser.id,
+            role: 'client',
+            name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'Client',
+            phone: authUser.user_metadata?.phone || '',
+            email: authUser.email || '',
+          };
+          await saveUser(user);
           return;
         }
 
