@@ -41,7 +41,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .single();
 
         if (barberError) {
-          console.error('Error fetching barber record in AuthProvider:', {
+          console.error('Error fetching barber record in AuthProvider:', barberError.message);
+          console.error('Full error details:', {
             message: barberError.message,
             code: barberError.code,
             details: barberError.details,
@@ -82,7 +83,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .single();
 
         if (clientError) {
-          console.error('Error fetching client record in AuthProvider:', {
+          console.error('Error fetching client record in AuthProvider:', clientError.message);
+          console.error('Full error details:', {
             message: clientError.message,
             code: clientError.code,
             details: clientError.details,
@@ -118,6 +120,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('Failed to load user from session:', error);
+      // Create a fallback user profile to prevent app crashes
+      const fallbackUser: User = {
+        id: authUser.id,
+        role: authUser.user_metadata?.role || 'client',
+        name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
+        phone: authUser.user_metadata?.phone || '',
+        email: authUser.email || '',
+      };
+      await saveUser(fallbackUser);
     }
   }, [saveUser]);
 
