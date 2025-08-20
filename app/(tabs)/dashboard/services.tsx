@@ -10,12 +10,14 @@ import {
   Switch,
   ScrollView,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Plus, Edit3, Trash2, DollarSign, Clock } from 'lucide-react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Screen } from '@/components/Screen';
+import { Tokens } from '@/theme/tokens';
 import { api } from '@/lib/api';
-import { useAuth } from '@/providers/AuthProvider';
+import { getUserId } from '@/lib/session';
 import type { Service } from '@/types/models';
 
 interface ServiceFormData {
@@ -36,6 +38,7 @@ interface FormErrors {
 export default function ServicesScreen() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [formData, setFormData] = useState<ServiceFormData>({
@@ -48,27 +51,12 @@ export default function ServicesScreen() {
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState<boolean>(false);
 
-  const { user } = useAuth();
-  const barberId = user?.id;
-
-  // Don't render if no authenticated barber
-  if (!barberId || user?.role !== 'barber') {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorTitle}>Access Denied</Text>
-          <Text style={styles.errorDescription}>
-            You must be logged in as a barber to manage services
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   const loadServices = useCallback(async () => {
     try {
       setLoading(true);
-      const servicesList = await api.services.list({ barberId });
+      const uid = await getUserId();
+      if (!uid) throw new Error('Not signed in');
+      const servicesList = await api.services.list({ barberId: uid });
       setServices(servicesList);
     } catch (error) {
       console.error('Failed to load services:', error);
@@ -77,7 +65,13 @@ export default function ServicesScreen() {
     } finally {
       setLoading(false);
     }
-  }, [barberId]);
+  }, []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadServices();
+    setRefreshing(false);
+  }, [loadServices]);
 
   useEffect(() => {
     loadServices();
@@ -119,7 +113,9 @@ export default function ServicesScreen() {
         active: formData.active,
       };
 
-      const savedService = await api.services.upsert({ barberId, service: serviceData });
+      const uid = await getUserId();
+      if (!uid) throw new Error('Not signed in');
+      const savedService = await api.services.upsert({ barberId: uid, service: serviceData });
       
       if (editingService) {
         setServices(prev => prev.map(s => s.id === savedService.id ? savedService : s));
@@ -128,7 +124,6 @@ export default function ServicesScreen() {
       }
 
       handleCloseModal();
-      // Show success feedback without blocking UI
       console.log(`Service ${editingService ? 'updated' : 'created'} successfully`);
     } catch (error) {
       console.error('Failed to save service:', error);
@@ -150,9 +145,10 @@ export default function ServicesScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await api.services.delete({ barberId, serviceId: service.id });
+              const uid = await getUserId();
+              if (!uid) throw new Error('Not signed in');
+              await api.services.delete({ barberId: uid, serviceId: service.id });
               setServices(prev => prev.filter(s => s.id !== service.id));
-              // Show success feedback without blocking UI
               console.log('Service deleted successfully');
             } catch (error) {
               console.error('Failed to delete service:', error);
@@ -235,7 +231,7 @@ export default function ServicesScreen() {
             accessibilityLabel={`Edit ${item.name}`}
             accessibilityHint="Opens edit form for this service"
           >
-            <Edit3 size={18} color="#007AFF" />
+            <Edit3 size={18} color={Tokens.accent} />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.actionButton}
@@ -244,18 +240,18 @@ export default function ServicesScreen() {
             accessibilityLabel={`Delete ${item.name}`}
             accessibilityHint="Deletes this service permanently"
           >
-            <Trash2 size={18} color="#FF3B30" />
+            <Trash2 size={18} color={Tokens.error} />
           </TouchableOpacity>
         </View>
       </View>
       
       <View style={styles.serviceDetails}>
         <View style={styles.detailItem}>
-          <DollarSign size={16} color="#666" />
+          <DollarSign size={16} color={Tokens.textMuted} />
           <Text style={styles.detailText}>{formatPrice(item.priceCents)}</Text>
         </View>
         <View style={styles.detailItem}>
-          <Clock size={16} color="#666" />
+          <Clock size={16} color={Tokens.textMuted} />
           <Text style={styles.detailText}>{formatDuration(item.durationMinutes)}</Text>
         </View>
         <View style={[styles.statusBadge, item.active ? styles.activeBadge : styles.inactiveBadge]}>
@@ -269,17 +265,17 @@ export default function ServicesScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <Screen>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color={Tokens.accent} />
           <Text style={styles.loadingText}>Loading services...</Text>
         </View>
-      </SafeAreaView>
+      </Screen>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <Screen>
       <View style={styles.header}>
         <Text style={styles.title}>Services</Text>
         <TouchableOpacity
@@ -287,22 +283,28 @@ export default function ServicesScreen() {
           onPress={handleAdd}
           testID="add-service-button"
         >
-          <Plus size={20} color="#FFF" />
+          <Plus size={20} color="#FFFFFF" />
           <Text style={styles.addButtonText}>Add Service</Text>
         </TouchableOpacity>
       </View>
 
       {services.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyTitle}>No Services Yet</Text>
-          <Text style={styles.emptyDescription}>
-            Add your first service to start accepting bookings
-          </Text>
-          <TouchableOpacity style={styles.emptyButton} onPress={handleAdd}>
-            <Plus size={20} color="#007AFF" />
-            <Text style={styles.emptyButtonText}>Add Service</Text>
-          </TouchableOpacity>
-        </View>
+        <ScrollView
+          style={{ flex: 1, backgroundColor: Tokens.bg }}
+          contentContainerStyle={{ flex: 1 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        >
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyTitle}>No Services Yet</Text>
+            <Text style={styles.emptyDescription}>
+              Add your first service to start accepting bookings
+            </Text>
+            <TouchableOpacity style={styles.emptyButton} onPress={handleAdd}>
+              <Plus size={20} color={Tokens.accent} />
+              <Text style={styles.emptyButtonText}>Add Service</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
       ) : (
         <FlashList
           data={services}
@@ -311,6 +313,7 @@ export default function ServicesScreen() {
           estimatedItemSize={120}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         />
       )}
 
@@ -320,7 +323,7 @@ export default function ServicesScreen() {
         presentationStyle="pageSheet"
         onRequestClose={handleCloseModal}
       >
-        <SafeAreaView style={styles.modalContainer}>
+        <Screen style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={handleCloseModal}>
               <Text style={styles.cancelButton}>Cancel</Text>
@@ -334,7 +337,7 @@ export default function ServicesScreen() {
               style={[styles.saveButton, submitting && styles.saveButtonDisabled]}
             >
               {submitting ? (
-                <ActivityIndicator size="small" color="#FFF" />
+                <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <Text style={styles.saveButtonText}>Save</Text>
               )}
@@ -416,16 +419,16 @@ export default function ServicesScreen() {
               </Text>
             </View>
           </ScrollView>
-        </SafeAreaView>
+        </Screen>
       </Modal>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: Tokens.bg,
   },
   loadingContainer: {
     flex: 1,
@@ -435,7 +438,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#666',
+    color: Tokens.textMuted,
   },
   header: {
     flexDirection: 'row',
@@ -443,25 +446,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: '#FFF',
+    backgroundColor: Tokens.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E7',
+    borderBottomColor: Tokens.border,
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#1D1D1F',
+    color: Tokens.text,
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#007AFF',
+    backgroundColor: Tokens.accent,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
   },
   addButtonText: {
-    color: '#FFF',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 6,
@@ -475,12 +478,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#1D1D1F',
+    color: Tokens.text,
     marginBottom: 8,
   },
   emptyDescription: {
     fontSize: 16,
-    color: '#666',
+    color: Tokens.textMuted,
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 22,
@@ -488,15 +491,15 @@ const styles = StyleSheet.create({
   emptyButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F0F8FF',
+    backgroundColor: Tokens.surface,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: Tokens.accent,
   },
   emptyButtonText: {
-    color: '#007AFF',
+    color: Tokens.accent,
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
@@ -506,7 +509,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   serviceCard: {
-    backgroundColor: '#FFF',
+    backgroundColor: Tokens.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -529,12 +532,12 @@ const styles = StyleSheet.create({
   serviceName: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1D1D1F',
+    color: Tokens.text,
     marginBottom: 4,
   },
   serviceDescription: {
     fontSize: 14,
-    color: '#666',
+    color: Tokens.textMuted,
     lineHeight: 18,
   },
   serviceActions: {
@@ -557,7 +560,7 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 14,
-    color: '#666',
+    color: Tokens.textMuted,
     marginLeft: 4,
     fontWeight: '500',
   },
@@ -568,24 +571,24 @@ const styles = StyleSheet.create({
     marginLeft: 'auto',
   },
   activeBadge: {
-    backgroundColor: '#E8F5E8',
+    backgroundColor: Tokens.success + '20',
   },
   inactiveBadge: {
-    backgroundColor: '#FFF2F2',
+    backgroundColor: Tokens.error + '20',
   },
   statusText: {
     fontSize: 12,
     fontWeight: '600',
   },
   activeText: {
-    color: '#34C759',
+    color: Tokens.success,
   },
   inactiveText: {
-    color: '#FF3B30',
+    color: Tokens.error,
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: Tokens.bg,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -593,21 +596,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: '#FFF',
+    backgroundColor: Tokens.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E7',
+    borderBottomColor: Tokens.border,
   },
   cancelButton: {
     fontSize: 16,
-    color: '#007AFF',
+    color: Tokens.accent,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1D1D1F',
+    color: Tokens.text,
   },
   saveButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: Tokens.accent,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -618,7 +621,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   saveButtonText: {
-    color: '#FFF',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -640,21 +643,21 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1D1D1F',
+    color: Tokens.text,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#FFF',
+    backgroundColor: Tokens.surface,
     borderWidth: 1,
-    borderColor: '#E5E5E7',
+    borderColor: Tokens.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 16,
-    color: '#1D1D1F',
+    color: Tokens.text,
   },
   inputError: {
-    borderColor: '#FF3B30',
+    borderColor: Tokens.error,
   },
   textArea: {
     height: 80,
@@ -662,7 +665,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 14,
-    color: '#FF3B30',
+    color: Tokens.error,
     marginTop: 4,
   },
   switchRow: {
@@ -673,25 +676,7 @@ const styles = StyleSheet.create({
   },
   helpText: {
     fontSize: 14,
-    color: '#666',
+    color: Tokens.textMuted,
     lineHeight: 18,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 40,
-  },
-  errorTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FF3B30',
-    marginBottom: 8,
-  },
-  errorDescription: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 22,
   },
 });
