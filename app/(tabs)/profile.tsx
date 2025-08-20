@@ -45,9 +45,9 @@ export default function ProfileScreen() {
     {
       title: "Account",
       items: [
-        { icon: User, label: "Edit Profile", onPress: () => {} },
-        { icon: CreditCard, label: "Payment Methods", onPress: () => {} },
-        { icon: Bell, label: "Notifications", onPress: () => {} },
+        { icon: User, label: "Edit Profile", onPress: () => router.push("/profile/edit") },
+        { icon: CreditCard, label: "Payment Methods", onPress: () => router.push("/profile/payments") },
+        { icon: Bell, label: "Notifications", onPress: () => router.push("/profile/notifications") },
       ],
     },
     {
@@ -56,11 +56,11 @@ export default function ProfileScreen() {
         { 
           icon: Scissors, 
           label: user?.role === "barber" ? "Barber Settings" : "Become a Barber", 
-          onPress: () => router.push("/barber-onboarding") 
+          onPress: () => user?.role === "barber" ? router.push("/(tabs)/dashboard/services") : router.push("/barber-onboarding") 
         },
         ...(user?.role === "barber" ? [
-          { icon: Calendar, label: "Availability", onPress: () => {} },
-          { icon: Star, label: "Reviews", onPress: () => {} },
+          { icon: Calendar, label: "Availability", onPress: () => router.push("/(tabs)/dashboard/calendar") },
+          { icon: Star, label: "Reviews", onPress: () => router.push("/profile/reviews") },
         ] : []),
       ],
     },
