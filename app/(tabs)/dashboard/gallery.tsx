@@ -11,10 +11,10 @@ import {
   Dimensions,
 } from 'react-native';
 import { Stack } from 'expo-router';
-import { Plus, Trash2 } from 'lucide-react-native';
+import { Plus, Trash2, Camera } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { brandColors } from '../../../config/brand';
+import { BRAND } from '../../../config/brand';
 import { useAuth } from '@/providers/AuthProvider';
 import { api } from '@/lib/api';
 import type { GalleryItem } from '@/types/models';
@@ -41,10 +41,46 @@ export default function GalleryScreen() {
   });
 
   const handleAddPhoto = async () => {
+    Alert.alert(
+      'Add Photo',
+      'Choose how you want to add a photo',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Camera', onPress: () => takePhoto() },
+        { text: 'Photo Library', onPress: () => pickFromLibrary() },
+      ]
+    );
+  };
+
+  const takePhoto = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Please grant camera permissions to take photos.');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        await uploadImage(result.assets[0]);
+      }
+    } catch (error) {
+      console.error('Error taking photo:', error);
+      Alert.alert('Error', 'Failed to take photo');
+    }
+  };
+
+  const pickFromLibrary = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Please grant camera roll permissions to upload photos.');
+        Alert.alert('Permission needed', 'Please grant photo library permissions to select photos.');
         return;
       }
 
@@ -140,10 +176,10 @@ export default function GalleryScreen() {
       disabled={uploading}
     >
       {uploading ? (
-        <ActivityIndicator size="small" color={brandColors.primary} />
+        <ActivityIndicator size="small" color={BRAND.ACCENT} />
       ) : (
         <>
-          <Plus size={32} color={brandColors.primary} />
+          <Plus size={32} color={BRAND.ACCENT} />
           <Text style={styles.addButtonText}>Add Photo</Text>
         </>
       )}
@@ -153,8 +189,39 @@ export default function GalleryScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={brandColors.primary} />
+        <ActivityIndicator size="large" color={BRAND.ACCENT} />
       </View>
+    );
+  }
+
+  if (galleryItems.length === 0) {
+    return (
+      <>
+        <Stack.Screen options={{ title: 'Gallery' }} />
+        <View style={styles.container}>
+          <View style={styles.emptyState}>
+            <Camera size={64} color={BRAND.TEXT_SECONDARY} />
+            <Text style={styles.emptyTitle}>No Photos Yet</Text>
+            <Text style={styles.emptyText}>
+              Showcase your work by adding photos to your gallery. Clients love to see examples of your skills!
+            </Text>
+            <TouchableOpacity
+              style={styles.emptyButton}
+              onPress={handleAddPhoto}
+              disabled={uploading}
+            >
+              {uploading ? (
+                <ActivityIndicator size="small" color={BRAND.TEXT_PRIMARY} />
+              ) : (
+                <>
+                  <Plus size={20} color={BRAND.TEXT_PRIMARY} />
+                  <Text style={styles.emptyButtonText}>Add First Photo</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </>
     );
   }
 
@@ -185,12 +252,13 @@ export default function GalleryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: BRAND.BG_DARK,
   },
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: BRAND.BG_DARK,
   },
   grid: {
     padding: 20,
@@ -207,19 +275,19 @@ const styles = StyleSheet.create({
   galleryImage: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#f0f0f0',
+    backgroundColor: BRAND.SURFACE_DARK,
   },
   addButton: {
-    backgroundColor: '#fff',
+    backgroundColor: BRAND.SURFACE_DARK,
     borderWidth: 2,
-    borderColor: brandColors.primary,
+    borderColor: BRAND.ACCENT,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
   },
   addButtonText: {
     fontSize: 12,
-    color: brandColors.primary,
+    color: BRAND.ACCENT,
     marginTop: 4,
     fontWeight: '500',
   },
@@ -227,11 +295,45 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     borderRadius: 16,
     width: 32,
     height: 32,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: BRAND.TEXT_PRIMARY,
+    marginTop: 24,
+    marginBottom: 12,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: BRAND.TEXT_SECONDARY,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 32,
+  },
+  emptyButton: {
+    backgroundColor: BRAND.ACCENT,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+  },
+  emptyButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: BRAND.TEXT_PRIMARY,
   },
 });
