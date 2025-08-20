@@ -87,6 +87,30 @@ export async function blockAvailability(request: Request): Promise<Response> {
 
     const supabase = getAdminClient();
     
+    // Check for overlapping bookings (exclude cancelled/refunded)
+    const { data: bookingOverlaps, error: bookingError } = await supabase
+      .from('bookings')
+      .select('id')
+      .eq('barber_id', barberId)
+      .not('status', 'in', '("cancelled","refunded")')
+      .lt('start_iso', endISO)
+      .gt('end_iso', startISO);
+
+    if (bookingError) {
+      console.error('Error checking booking overlaps:', bookingError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to validate booking conflicts' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (bookingOverlaps && bookingOverlaps.length > 0) {
+      return new Response(
+        JSON.stringify({ error: 'Overlaps with an existing booking' }),
+        { status: 409, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    
     // Check for overlapping blocks
     const { data: overlapping, error: overlapError } = await supabase
       .from('availability_blocks')
@@ -104,8 +128,8 @@ export async function blockAvailability(request: Request): Promise<Response> {
 
     if (overlapping && overlapping.length > 0) {
       return new Response(
-        JSON.stringify({ error: 'Block overlaps with existing availability block' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Overlaps with another blocked time' }),
+        { status: 409, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
@@ -184,6 +208,72 @@ export async function unblockAvailability(request: Request): Promise<Response> {
     );
   } catch (error) {
     console.error('Error in unblockAvailability:', error);
+    return new Response(
+      JSON.stringify({ error: 'Internal server error' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+}
+
+/**
+ * DELETE /api/availability/block/:id
+ * Delete an availability block by ID with barberId query param
+ */
+export async function deleteAvailabilityBlock(request: Request, blockId: string): Promise<Response> {
+  try {
+    const url = new URL(request.url);
+    const barberId = url.searchParams.get('barberId');
+    
+    if (!barberId || !blockId) {
+      return new Response(
+        JSON.stringify({ error: 'Missing required fields: barberId, blockId' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabase = getAdminClient();
+    
+    // Verify the block exists and belongs to the barber
+    const { data: block, error: fetchError } = await supabase
+      .from('availability_blocks')
+      .select('barber_id')
+      .eq('id', blockId)
+      .single();
+
+    if (fetchError || !block) {
+      return new Response(
+        JSON.stringify({ error: 'Block not found' }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (block.barber_id !== barberId) {
+      return new Response(
+        JSON.stringify({ error: 'Forbidden' }),
+        { status: 403, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Delete the block
+    const { error } = await supabase
+      .from('availability_blocks')
+      .delete()
+      .eq('id', blockId);
+
+    if (error) {
+      console.error('Error deleting availability block:', error);
+      return new Response(
+        JSON.stringify({ error: 'Failed to delete availability block' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    return new Response(
+      JSON.stringify({ ok: true }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error('Error in deleteAvailabilityBlock:', error);
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
