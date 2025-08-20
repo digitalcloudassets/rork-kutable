@@ -10,13 +10,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
-import { DollarSign, TrendingUp, Clock, CheckCircle, AlertCircle } from 'lucide-react-native';
+import { DollarSign, TrendingUp, Clock, CheckCircle, AlertCircle, ExternalLink } from 'lucide-react-native';
 import { useAuth } from '@/providers/AuthProvider';
 
 interface EarningsSummary {
   grossCents: number;
   feesCents: number;
   netCents: number;
+  range?: string;
 }
 
 interface Payout {
@@ -235,14 +236,20 @@ export default function EarningsScreen() {
 
         {/* Payouts Section */}
         <View style={styles.payoutsSection}>
-          <Text style={styles.sectionTitle}>Recent Payouts</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Recent Payouts</Text>
+            <TouchableOpacity style={styles.viewAllButton}>
+              <Text style={styles.viewAllText}>View All</Text>
+              <ExternalLink size={16} color="#3B82F6" />
+            </TouchableOpacity>
+          </View>
           
           {payouts.length === 0 ? (
             <View style={styles.emptyState}>
               <DollarSign size={48} color="#9CA3AF" />
               <Text style={styles.emptyStateTitle}>No payouts yet</Text>
               <Text style={styles.emptyStateText}>
-                Complete bookings to start earning payouts
+                Complete bookings and connect Stripe to start earning payouts
               </Text>
             </View>
           ) : (
@@ -359,11 +366,26 @@ const styles = StyleSheet.create({
   payoutsSection: {
     margin: 16,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#111827',
-    marginBottom: 16,
+  },
+  viewAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  viewAllText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#3B82F6',
   },
   emptyState: {
     backgroundColor: '#FFFFFF',

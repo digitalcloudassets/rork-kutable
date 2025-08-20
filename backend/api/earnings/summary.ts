@@ -1,15 +1,12 @@
 import { getAdminClient } from '../../lib/supabase';
+import { getStripe } from '../../lib/stripe';
 import type { BarberRow } from '../../types';
-
-interface EarningsSummaryRequest {
-  barberId: string;
-  range: 'today' | 'week' | 'month';
-}
 
 interface EarningsSummaryResponse {
   grossCents: number;
   feesCents: number;
   netCents: number;
+  range: string;
 }
 
 export default async function handler(req: Request): Promise<Response> {
@@ -61,7 +58,8 @@ export default async function handler(req: Request): Promise<Response> {
       return new Response(JSON.stringify({ 
         grossCents: 0,
         feesCents: 0,
-        netCents: 0
+        netCents: 0,
+        range,
       }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
@@ -87,58 +85,97 @@ export default async function handler(req: Request): Promise<Response> {
         break;
     }
 
-    // In production, this would fetch from Stripe:
-    // const charges = await stripe.charges.list({
-    //   created: {
-    //     gte: Math.floor(startDate.getTime() / 1000),
-    //     lt: Math.floor(now.getTime() / 1000),
-    //   },
-    //   destination: barberRow.connected_account_id,
-    // });
-    
-    // For now, we'll fetch from our bookings table and calculate mock earnings
-    const { data: bookings, error: bookingsError } = await supabase
-      .from('bookings')
-      .select('*')
-      .eq('barber_id', barberId)
-      .eq('status', 'completed')
-      .gte('created_at', startDate.toISOString())
-      .lt('created_at', now.toISOString());
+    // Fetch real earnings data from Stripe Connect
+    let grossCents = 0;
+    let feesCents = 0;
+    let netCents = 0;
 
-    if (bookingsError) {
-      console.error('Error fetching bookings:', bookingsError);
-      return new Response(JSON.stringify({ error: 'Failed to fetch earnings data' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
+    try {
+      const stripe = getStripe();
+      
+      // Fetch balance transactions for the connected account
+      const balanceTransactions = await stripe.balanceTransactions.list(
+        {
+          created: {
+            gte: Math.floor(startDate.getTime() / 1000),
+            lt: Math.floor(now.getTime() / 1000),
+          },
+          type: 'charge',
+          limit: 100,
+        },
+        {
+          stripeAccount: barberRow.connected_account_id,
+        }
+      );
+
+      // Calculate totals from Stripe balance transactions
+      for (const transaction of balanceTransactions.data) {
+        // Gross amount (before fees)
+        grossCents += transaction.amount;
+        
+        // Stripe fees
+        feesCents += transaction.fee;
+        
+        // Net amount (after fees)
+        netCents += transaction.net;
+      }
+
+      console.log(`Stripe earnings for barber ${barberId} (${range}):`, {
+        transactionCount: balanceTransactions.data.length,
+        grossCents,
+        feesCents,
+        netCents,
+      });
+    } catch (stripeError: any) {
+      console.error('Error fetching Stripe balance transactions:', stripeError);
+      
+      // Fallback to bookings-based calculation if Stripe fails
+      const { data: bookings, error: bookingsError } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('barber_id', barberId)
+        .eq('status', 'completed')
+        .gte('created_at', startDate.toISOString())
+        .lt('created_at', now.toISOString());
+
+      if (bookingsError) {
+        console.error('Error fetching bookings fallback:', bookingsError);
+        return new Response(JSON.stringify({ error: 'Failed to fetch earnings data' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Calculate earnings from completed bookings (fallback)
+      grossCents = (bookings || []).reduce((total, booking) => {
+        return total + (booking.total_price_cents || 0);
+      }, 0);
+
+      // Calculate platform fees (2.9% + $0.30 per transaction)
+      feesCents = (bookings || []).reduce((total, booking) => {
+        const bookingAmount = booking.total_price_cents || 0;
+        const percentageFee = Math.round(bookingAmount * 0.029);
+        const fixedFee = 30; // $0.30 in cents
+        return total + percentageFee + fixedFee;
+      }, 0);
+
+      netCents = grossCents - feesCents;
+      
+      console.log(`Fallback earnings calculation for barber ${barberId} (${range}):`, {
+        bookingsCount: bookings?.length || 0,
+        grossCents,
+        feesCents,
+        netCents,
       });
     }
 
-    // Calculate earnings from completed bookings
-    const grossCents = (bookings || []).reduce((total, booking) => {
-      return total + (booking.total_price_cents || 0);
-    }, 0);
 
-    // Calculate platform fees (2.9% + $0.30 per transaction)
-    const feesCents = (bookings || []).reduce((total, booking) => {
-      const bookingAmount = booking.total_price_cents || 0;
-      const percentageFee = Math.round(bookingAmount * 0.029);
-      const fixedFee = 30; // $0.30 in cents
-      return total + percentageFee + fixedFee;
-    }, 0);
-
-    const netCents = grossCents - feesCents;
-
-    console.log(`Earnings summary for barber ${barberId} (${range}):`, {
-      grossCents,
-      feesCents,
-      netCents,
-      bookingsCount: bookings?.length || 0,
-    });
 
     const response: EarningsSummaryResponse = {
       grossCents,
       feesCents,
       netCents,
+      range,
     };
 
     return new Response(JSON.stringify(response), {
