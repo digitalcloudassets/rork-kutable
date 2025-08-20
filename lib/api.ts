@@ -44,26 +44,17 @@ export const api = {
         });
         
         if (response.ok) {
-          const data = await response.json();
-          return data.barbers;
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            return data.barbers;
+          } else {
+            console.warn('Backend returned non-JSON response, using fallback data');
+            throw new Error('Non-JSON response');
+          }
         } else {
-          console.error('Failed to search barbers');
-          // Fallback to seed data
-          await delay(500);
-          let barbers = seedData.barbers;
-          if (q) {
-            barbers = barbers.filter(b => 
-              b.name.toLowerCase().includes(q.toLowerCase()) ||
-              b.shopName?.toLowerCase().includes(q.toLowerCase()) ||
-              b.services.some(s => s.name.toLowerCase().includes(q.toLowerCase()))
-            );
-          }
-          if (serviceId) {
-            barbers = barbers.filter(b => 
-              b.services.some(s => s.id === serviceId)
-            );
-          }
-          return barbers;
+          console.error('Failed to search barbers, status:', response.status);
+          throw new Error('API request failed');
         }
       } catch (error) {
         console.error('Error searching barbers:', error);
@@ -105,17 +96,21 @@ export const api = {
         });
         
         if (response.ok) {
-          const data = await response.json();
-          // Combine barber and services into the expected format
-          return {
-            ...data.barber,
-            services: data.services
-          };
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            // Combine barber and services into the expected format
+            return {
+              ...data.barber,
+              services: data.services
+            };
+          } else {
+            console.warn('Backend returned non-JSON response for barber profile, using fallback data');
+            throw new Error('Non-JSON response');
+          }
         } else {
-          console.error('Failed to fetch barber profile');
-          // Fallback to seed data
-          await delay(300);
-          return seedData.barbers.find(b => b.id === barberId) || null;
+          console.error('Failed to fetch barber profile, status:', response.status);
+          throw new Error('API request failed');
         }
       } catch (error) {
         console.error('Error fetching barber profile:', error);
@@ -265,16 +260,36 @@ export const api = {
         });
         
         if (response.ok) {
-          const data = await response.json();
-          return data;
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            return data;
+          } else {
+            console.warn('Backend returned non-JSON response for open slots, using fallback data');
+            throw new Error('Non-JSON response');
+          }
         } else {
-          const error = await response.json();
-          console.error('Failed to fetch open slots:', error);
-          return { slots: [] };
+          console.error('Failed to fetch open slots, status:', response.status);
+          throw new Error('API request failed');
         }
       } catch (error) {
         console.error('Error fetching open slots:', error);
-        return { slots: [] };
+        // Fallback to mock slots
+        await delay(500);
+        const mockSlots = [];
+        const startHour = 9; // 9 AM
+        const endHour = 18; // 6 PM
+        const stepMinutes = 15;
+        
+        for (let hour = startHour; hour < endHour; hour++) {
+          for (let minute = 0; minute < 60; minute += stepMinutes) {
+            const slotDate = new Date(date + 'T00:00:00');
+            slotDate.setHours(hour, minute, 0, 0);
+            mockSlots.push(slotDate.toISOString());
+          }
+        }
+        
+        return { slots: mockSlots };
       }
     },
 

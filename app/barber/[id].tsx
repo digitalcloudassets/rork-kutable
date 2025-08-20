@@ -43,10 +43,16 @@ export default function BarberProfileScreen() {
         });
         
         if (response.ok) {
-          const data = await response.json();
-          return (data.items || []).slice(0, 6); // Show top 6 images
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            return (data.items || []).slice(0, 6); // Show top 6 images
+          } else {
+            console.warn('Backend returned non-JSON response for gallery, no gallery items');
+            return [];
+          }
         } else {
-          console.error('Failed to fetch gallery items');
+          console.error('Failed to fetch gallery items, status:', response.status);
           return [];
         }
       } catch (error) {
