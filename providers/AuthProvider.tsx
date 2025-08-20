@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "@/lib/supabaseClient";
+import { ensureProfiles } from "@/lib/profileBootstrap";
 import type { User } from "@/types/models";
 
 interface AuthContextType {
@@ -31,6 +32,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadUserFromSession = useCallback(async (authUser: any) => {
     try {
+      // Ensure profiles exist in database
+      await ensureProfiles();
+      
       const role = authUser.user_metadata?.role || 'client';
       
       if (role === 'barber') {
@@ -244,6 +248,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           
           if (mounted) {
             if (session?.user) {
+              // Ensure profiles exist after sign-in/sign-up
+              if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+                await ensureProfiles();
+              }
               await loadUserFromSession(session.user);
             } else {
               await saveUser(null);
