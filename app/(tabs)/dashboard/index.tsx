@@ -108,14 +108,14 @@ export default function DashboardScreen() {
           </Text>
           <TouchableOpacity 
             style={styles.ctaButton}
-            onPress={() => router.push("/dashboard/onboarding")}
+            onPress={() => router.push("/(tabs)/dashboard/onboarding")}
           >
             <CreditCard size={20} color="#fff" />
             <Text style={styles.ctaButtonText}>Connect Stripe</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.secondaryButton}
-            onPress={() => router.push("/dashboard")}
+            onPress={() => router.push("/(tabs)/dashboard")}
           >
             <Text style={styles.secondaryButtonText}>Skip for now</Text>
           </TouchableOpacity>
@@ -149,7 +149,7 @@ export default function DashboardScreen() {
             {!isStripeConnected && (
               <TouchableOpacity 
                 style={styles.connectButton}
-                onPress={() => router.push("/dashboard/onboarding")}
+                onPress={() => router.push("/(tabs)/dashboard/onboarding")}
               >
                 <Text style={styles.connectButtonText}>Connect</Text>
               </TouchableOpacity>

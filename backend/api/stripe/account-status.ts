@@ -1,4 +1,5 @@
 import { getAdminClient } from '../../lib/supabase';
+import { getStripe } from '../../lib/stripe';
 import type { BarberRow } from '../../types';
 
 interface ResponseBody {
@@ -53,25 +54,22 @@ export default async function handler(req: Request): Promise<Response> {
       });
     }
 
-    // For now, we'll mock the account status since we don't have actual Stripe integration
-    // In production, this would be:
-    // const account = await stripe.accounts.retrieve(barberRow.connected_account_id);
-    // const chargesEnabled = account.charges_enabled;
-    // const payoutsEnabled = account.payouts_enabled;
+    // Get account status from Stripe
+    const stripe = getStripe();
+    const account = await stripe.accounts.retrieve(barberRow.connected_account_id);
     
-    // Mock: assume account is enabled if it has been created (for demo purposes)
-    const mockChargesEnabled = true;
-    const mockPayoutsEnabled = true;
+    const chargesEnabled = account.charges_enabled || false;
+    const payoutsEnabled = account.payouts_enabled || false;
     
     console.log(`Checking account status for barber ${barberId}:`, {
       accountId: barberRow.connected_account_id,
-      chargesEnabled: mockChargesEnabled,
-      payoutsEnabled: mockPayoutsEnabled,
+      chargesEnabled,
+      payoutsEnabled,
     });
 
     const response: ResponseBody = {
-      chargesEnabled: mockChargesEnabled,
-      payoutsEnabled: mockPayoutsEnabled,
+      chargesEnabled,
+      payoutsEnabled,
     };
 
     return new Response(JSON.stringify(response), {

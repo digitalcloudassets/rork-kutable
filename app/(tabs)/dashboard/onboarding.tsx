@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   Text,
@@ -19,6 +19,7 @@ export default function OnboardingScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isPolling, setIsPolling] = useState(false);
 
   const { data: accountStatus, isLoading: statusLoading, refetch } = useQuery({
     queryKey: ["stripe-status", user?.id],
@@ -47,11 +48,9 @@ export default function OnboardingScreen() {
         const result = await WebBrowser.openBrowserAsync(data.url);
         console.log("Browser result:", result);
         
-        // Refresh status after user returns
-        setTimeout(() => {
-          refetch();
-          setIsConnecting(false);
-        }, 2000);
+        // Start polling for account status after user returns
+        setIsConnecting(false);
+        startPolling();
       } catch (error) {
         console.error("Error opening browser:", error);
         Alert.alert("Error", "Failed to open Stripe onboarding. Please try again.");
@@ -66,8 +65,10 @@ export default function OnboardingScreen() {
   });
 
   const handleAccountLink = async (accountId: string) => {
-    const refreshUrl = "exp://localhost:8081/dashboard/onboarding";
-    const returnUrl = "exp://localhost:8081/dashboard";
+    // Use environment variable or fallback URLs
+    const baseUrl = process.env.EXPO_PUBLIC_APP_BASE_URL || "exp://localhost:8081";
+    const refreshUrl = `${baseUrl}/(tabs)/dashboard/onboarding`;
+    const returnUrl = `${baseUrl}/(tabs)/dashboard`;
     
     accountLinkMutation.mutate({
       barberId: user?.id || "",
@@ -83,6 +84,30 @@ export default function OnboardingScreen() {
     createAccountMutation.mutate({ barberId: user.id });
   };
 
+  // Polling function to check account status
+  const startPolling = () => {
+    setIsPolling(true);
+    const pollInterval = setInterval(async () => {
+      try {
+        await refetch();
+        const status = await api.stripe.getAccountStatus({ barberId: user?.id || "" });
+        if (status.chargesEnabled && status.payoutsEnabled) {
+          clearInterval(pollInterval);
+          setIsPolling(false);
+          // Optionally navigate to dashboard or show success message
+        }
+      } catch (error) {
+        console.error('Error polling account status:', error);
+      }
+    }, 3000); // Poll every 3 seconds
+
+    // Stop polling after 2 minutes
+    setTimeout(() => {
+      clearInterval(pollInterval);
+      setIsPolling(false);
+    }, 120000);
+  };
+
   const isConnected = accountStatus?.chargesEnabled && accountStatus?.payoutsEnabled;
 
   if (statusLoading) {
@@ -91,7 +116,9 @@ export default function OnboardingScreen() {
         <Stack.Screen options={{ title: "Connect Stripe" }} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={brandColors.primary} />
-          <Text style={styles.loadingText}>Checking connection status...</Text>
+          <Text style={styles.loadingText}>
+            {isPolling ? "Waiting for Stripe setup completion..." : "Checking connection status..."}
+          </Text>
         </View>
       </View>
     );
@@ -160,7 +187,7 @@ export default function OnboardingScreen() {
           {isConnected ? (
             <TouchableOpacity
               style={styles.primaryButton}
-              onPress={() => router.push("/dashboard")}
+              onPress={() => router.push("/(tabs)/dashboard")}
             >
               <Text style={styles.primaryButtonText}>Go to Dashboard</Text>
             </TouchableOpacity>
@@ -183,7 +210,7 @@ export default function OnboardingScreen() {
               
               <TouchableOpacity
                 style={styles.secondaryButton}
-                onPress={() => router.back()}
+                onPress={() => router.push("/(tabs)/dashboard")}
               >
                 <Text style={styles.secondaryButtonText}>Skip for now</Text>
               </TouchableOpacity>

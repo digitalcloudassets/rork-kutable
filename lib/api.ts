@@ -568,42 +568,94 @@ export const api = {
 
   stripe: {
     createOrFetchAccount: async ({ barberId }: { barberId: string }) => {
-      await delay(800);
-      // In production, this would call the backend endpoint
-      // const response = await fetch('/api/stripe/create-or-fetch-account', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ barberId })
-      // });
-      // return response.json();
-      
-      return {
-        accountId: `acct_mock_${barberId}_${Date.now()}`
-      };
+      const backendUrl = getBackendUrl();
+      if (!backendUrl) {
+        // Fallback to mock data
+        await delay(800);
+        return {
+          accountId: `acct_mock_${barberId}_${Date.now()}`
+        };
+      }
+
+      try {
+        const response = await fetch(`${backendUrl}/api/stripe/create-or-fetch-account`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ barberId })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          return data;
+        } else {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to create/fetch account');
+        }
+      } catch (error) {
+        console.error('Error creating/fetching Stripe account:', error);
+        throw error;
+      }
     },
 
     createAccountLink: async ({ barberId, refreshUrl, returnUrl }: { 
       barberId: string; 
-      refreshUrl: string; 
-      returnUrl: string; 
+      refreshUrl?: string; 
+      returnUrl?: string; 
     }) => {
-      await delay(500);
-      // In production, this would call the backend endpoint
-      return {
-        url: `https://connect.stripe.com/express/oauth/authorize?client_id=mock&state=${barberId}&redirect_uri=${encodeURIComponent(returnUrl)}`
-      };
+      const backendUrl = getBackendUrl();
+      if (!backendUrl) {
+        // Fallback to mock data
+        await delay(500);
+        return {
+          url: `https://connect.stripe.com/express/oauth/authorize?client_id=mock&state=${barberId}&redirect_uri=${encodeURIComponent(returnUrl || '')}`
+        };
+      }
+
+      try {
+        const response = await fetch(`${backendUrl}/api/stripe/account-link`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ barberId, refreshUrl, returnUrl })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          return data;
+        } else {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to create account link');
+        }
+      } catch (error) {
+        console.error('Error creating account link:', error);
+        throw error;
+      }
     },
 
     getAccountStatus: async ({ barberId }: { barberId: string }) => {
-      await delay(300);
-      // In production, this would call the backend endpoint
-      // const response = await fetch(`/api/stripe/account-status?barberId=${barberId}`);
-      // return response.json();
-      
-      return {
-        chargesEnabled: true,
-        payoutsEnabled: true
-      };
+      const backendUrl = getBackendUrl();
+      if (!backendUrl) {
+        // Fallback to mock data
+        await delay(300);
+        return {
+          chargesEnabled: true,
+          payoutsEnabled: true
+        };
+      }
+
+      try {
+        const response = await fetch(`${backendUrl}/api/stripe/account-status?barberId=${barberId}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          return data;
+        } else {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to get account status');
+        }
+      } catch (error) {
+        console.error('Error getting account status:', error);
+        throw error;
+      }
     },
   },
 };

@@ -1,4 +1,5 @@
 import { getAdminClient } from '../../lib/supabase';
+import { getStripe } from '../../lib/stripe';
 import type { BarberRow } from '../../types';
 
 interface RequestBody {
@@ -51,16 +52,24 @@ export default async function handler(req: Request): Promise<Response> {
       });
     }
 
-    // For now, we'll create a mock account ID since we don't have actual Stripe integration
-    // In production, this would be: const account = await stripe.accounts.create({ type: 'express' });
-    const mockAccountId = `acct_mock_${barberId}_${Date.now()}`;
+    // Create Stripe Express account
+    const stripe = getStripe();
+    const account = await stripe.accounts.create({
+      type: 'express',
+      country: 'US', // You may want to make this configurable
+      // email: barberRow.email, // Remove if email field doesn't exist
+      capabilities: {
+        card_payments: { requested: true },
+        transfers: { requested: true },
+      },
+    });
     
-    console.log(`Creating Stripe account for barber ${barberId}:`, mockAccountId);
+    console.log(`Created Stripe account for barber ${barberId}:`, account.id);
 
     // Update barber with the new connected account ID
     const { error: updateError } = await supabase
       .from('barbers')
-      .update({ connected_account_id: mockAccountId })
+      .update({ connected_account_id: account.id })
       .eq('id', barberId);
 
     if (updateError) {
@@ -71,7 +80,7 @@ export default async function handler(req: Request): Promise<Response> {
       });
     }
 
-    return new Response(JSON.stringify({ accountId: mockAccountId }), {
+    return new Response(JSON.stringify({ accountId: account.id }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });

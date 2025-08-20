@@ -1,10 +1,11 @@
 import { getAdminClient } from '../../lib/supabase';
+import { getStripe } from '../../lib/stripe';
 import type { BarberRow } from '../../types';
 
 interface RequestBody {
   barberId: string;
-  refreshUrl: string;
-  returnUrl: string;
+  refreshUrl?: string;
+  returnUrl?: string;
 }
 
 interface ResponseBody {
@@ -22,12 +23,17 @@ export default async function handler(req: Request): Promise<Response> {
   try {
     const { barberId, refreshUrl, returnUrl }: RequestBody = await req.json();
 
-    if (!barberId || !refreshUrl || !returnUrl) {
-      return new Response(JSON.stringify({ error: 'barberId, refreshUrl, and returnUrl are required' }), {
+    if (!barberId) {
+      return new Response(JSON.stringify({ error: 'barberId is required' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
     }
+
+    // Get base URL from environment or request
+    const baseUrl = process.env.APP_BASE_URL || 'exp://localhost:8081';
+    const finalRefreshUrl = refreshUrl || `${baseUrl}/(tabs)/dashboard/onboarding`;
+    const finalReturnUrl = returnUrl || `${baseUrl}/(tabs)/dashboard`;
 
     const supabase = getAdminClient();
     
@@ -54,20 +60,18 @@ export default async function handler(req: Request): Promise<Response> {
       });
     }
 
-    // For now, we'll create a mock onboarding URL since we don't have actual Stripe integration
-    // In production, this would be:
-    // const accountLink = await stripe.accountLinks.create({
-    //   account: barberRow.connected_account_id,
-    //   refresh_url: refreshUrl,
-    //   return_url: returnUrl,
-    //   type: 'account_onboarding',
-    // });
+    // Create Stripe account link for onboarding
+    const stripe = getStripe();
+    const accountLink = await stripe.accountLinks.create({
+      account: barberRow.connected_account_id,
+      refresh_url: finalRefreshUrl,
+      return_url: finalReturnUrl,
+      type: 'account_onboarding',
+    });
     
-    const mockOnboardingUrl = `https://connect.stripe.com/express/oauth/authorize?client_id=mock&state=${barberId}&redirect_uri=${encodeURIComponent(returnUrl)}`;
-    
-    console.log(`Creating account link for barber ${barberId}:`, mockOnboardingUrl);
+    console.log(`Created account link for barber ${barberId}:`, accountLink.url);
 
-    const response: ResponseBody = { url: mockOnboardingUrl };
+    const response: ResponseBody = { url: accountLink.url };
 
     return new Response(JSON.stringify(response), {
       status: 200,
