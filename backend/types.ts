@@ -90,8 +90,8 @@ export interface ServiceRow {
 export interface AvailabilityBlockRow {
   id: string;
   barber_id: string;
-  start_iso: string;
-  end_iso: string;
+  start_utc: string;
+  end_utc: string;
   reason?: string;
   created_at: string;
 }

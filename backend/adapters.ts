@@ -84,8 +84,8 @@ export function mapAvailabilityBlockRowToAvailabilityBlock(row: AvailabilityBloc
   return {
     id: row.id,
     barberId: row.barber_id,
-    startISO: row.start_iso,
-    endISO: row.end_iso,
+    startISO: row.start_utc,
+    endISO: row.end_utc,
     reason: row.reason
   };
 }
@@ -97,8 +97,8 @@ export function mapAvailabilityBlockToAvailabilityBlockRow(block: Partial<Availa
   return {
     id: block.id,
     barber_id: block.barberId,
-    start_iso: block.startISO,
-    end_iso: block.endISO,
+    start_utc: block.startISO,
+    end_utc: block.endISO,
     reason: block.reason
   };
 }
