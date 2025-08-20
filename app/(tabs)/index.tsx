@@ -140,7 +140,9 @@ export default function ExploreScreen() {
                   </View>
                   <View style={styles.ratingRow}>
                     <Star size={14} color="#FFB800" fill="#FFB800" />
-                    <Text style={styles.ratingText}>{barber.rating || 4.8}</Text>
+                    <Text style={styles.ratingText}>
+                      {barber.rating ? barber.rating.toFixed(1) : '4.8'}
+                    </Text>
                   </View>
                 </View>
                 <View style={styles.servicesPreview}>

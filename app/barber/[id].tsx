@@ -26,42 +26,7 @@ export default function BarberProfileScreen() {
     queryFn: () => api.barbers.profile({ barberId: id as string }),
   });
 
-  const { data: galleryItems = [] } = useQuery({
-    queryKey: ['gallery', id],
-    queryFn: async () => {
-      const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
-      if (!backendUrl) {
-        console.warn('EXPO_PUBLIC_BACKEND_URL not configured, no gallery items');
-        return [];
-      }
-      
-      try {
-        const response = await fetch(`${backendUrl}/api/gallery/list`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ barberId: id }),
-        });
-        
-        if (response.ok) {
-          const contentType = response.headers.get('content-type');
-          if (contentType && contentType.includes('application/json')) {
-            const data = await response.json();
-            return (data.items || []).slice(0, 6); // Show top 6 images
-          } else {
-            console.warn('Backend returned non-JSON response for gallery, no gallery items');
-            return [];
-          }
-        } else {
-          console.error('Failed to fetch gallery items, status:', response.status);
-          return [];
-        }
-      } catch (error) {
-        console.error('Error fetching gallery items:', error);
-        return [];
-      }
-    },
-    enabled: !!id,
-  });
+  const galleryItems = barber?.galleryTop || [];
 
   const handleBookService = (service: Service) => {
     setSelectedBarber(barber);

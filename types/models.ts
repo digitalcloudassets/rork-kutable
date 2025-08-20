@@ -8,6 +8,9 @@ export interface Barber {
   phone?: string;
   services: Service[];
   connectedAccountId?: string;
+  rating?: number;
+  reviewCount?: number;
+  galleryTop?: GalleryItem[];
 }
 
 export interface Service {

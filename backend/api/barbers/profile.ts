@@ -1,5 +1,5 @@
 import { getAdminClient } from '../../lib/supabase';
-import { Barber, Service } from '../../types';
+import { Barber, Service, GalleryItem } from '../../types';
 import { mapBarberRowToBarber, mapServiceRowToService } from '../../adapters';
 
 export async function GET(request: Request) {
@@ -36,7 +36,7 @@ export async function GET(request: Request) {
       .select('*')
       .eq('barber_id', barberId)
       .eq('active', true)
-      .order('name');
+      .order('price_cents');
 
     if (servicesError) {
       console.error('Error fetching services:', servicesError);
@@ -46,11 +46,34 @@ export async function GET(request: Request) {
       );
     }
 
+    // Fetch top gallery items (limit 6)
+    const { data: galleryData, error: galleryError } = await supabase
+      .from('gallery_items')
+      .select('*')
+      .eq('barber_id', barberId)
+      .order('created_at', { ascending: false })
+      .limit(6);
+
+    // Don't fail if gallery fails, just log it
+    if (galleryError) {
+      console.error('Gallery error:', galleryError);
+    }
+
     const barber: Barber = mapBarberRowToBarber(barberData);
     const services: Service[] = (servicesData || []).map(mapServiceRowToService);
+    
+    const galleryTop: GalleryItem[] = (galleryData || []).map((g: any) => ({
+      url: g.url,
+      createdAtISO: g.created_at,
+      path: g.path,
+    }));
 
     return new Response(
-      JSON.stringify({ barber, services }),
+      JSON.stringify({ 
+        barber, 
+        services, 
+        galleryTop: galleryTop.length > 0 ? galleryTop : undefined 
+      }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {
