@@ -7,7 +7,7 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const { barberId, serviceId, startISO, clientName, clientPhone, note } = req.body;
+    const { barberId, serviceId, startISO, clientName, clientPhone, clientUserId, note } = req.body;
 
     if (!barberId || !serviceId || !startISO || !clientName || !clientPhone) {
       return res.status(400).json({ error: 'Missing required fields' });
@@ -42,6 +42,7 @@ export default async function handler(req: any, res: any) {
         end_iso: endISO,
         client_name: clientName,
         client_phone: clientPhone,
+        client_user_id: clientUserId || null,
         note: note || null,
         status: 'pending',
       })
@@ -62,6 +63,7 @@ export default async function handler(req: any, res: any) {
       endISO: booking.end_iso,
       clientName: booking.client_name,
       clientPhone: booking.client_phone,
+      clientUserId: booking.client_user_id,
       note: booking.note,
       status: booking.status,
       createdAtISO: booking.created_at,

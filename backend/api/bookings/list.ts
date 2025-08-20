@@ -21,9 +21,8 @@ export default async function handler(req: any, res: any) {
 
     // Filter by user or barber
     if (userId) {
-      // For client bookings - would need user_id field in bookings table
-      // For now, we'll use client_phone as identifier
-      query = query.eq('client_phone', userId);
+      // For client bookings - filter by client_user_id (auth.uid())
+      query = query.eq('client_user_id', userId);
     } else if (barberId) {
       query = query.eq('barber_id', barberId);
     }
@@ -68,6 +67,7 @@ export default async function handler(req: any, res: any) {
       endISO: booking.end_iso,
       clientName: booking.client_name,
       clientPhone: booking.client_phone,
+      clientUserId: booking.client_user_id,
       note: booking.note,
       status: booking.status,
       paymentIntentId: booking.payment_intent_id,

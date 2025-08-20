@@ -33,6 +33,7 @@ export interface Booking {
   endISO: string;
   clientName: string;
   clientPhone: string;
+  clientUserId?: string; // Link to auth.users.id for registered clients
   note?: string;
   status: "pending" | "confirmed" | "completed" | "cancelled";
   paymentIntentId?: string;
@@ -53,6 +54,14 @@ export interface User {
   name: string;
   phone: string;
   email?: string;
+  photoUrl?: string;
+}
+
+export interface Client {
+  id: string;
+  name: string;
+  email: string;
+  phoneE164?: string;
   photoUrl?: string;
 }
 

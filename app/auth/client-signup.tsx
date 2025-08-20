@@ -17,6 +17,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/providers/AuthProvider';
 import { brandConfig, BRAND } from '../../config/brand';
 import type { User } from '@/types/models';
+import { formatToE164, isValidPhoneNumber } from '@/utils/phoneHelpers';
 
 export default function ClientSignUpScreen() {
   const [name, setName] = useState('');
@@ -43,6 +44,11 @@ export default function ClientSignUpScreen() {
       return;
     }
 
+    if (!isValidPhoneNumber(phone)) {
+      Alert.alert('Error', 'Please enter a valid phone number');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -64,24 +70,32 @@ export default function ClientSignUpScreen() {
       }
 
       if (authData.user) {
-        // Create client record in database (using users table)
+        // Format phone number to E.164
+        const phoneE164 = formatToE164(phone.trim());
+        
+        // Create client record in database
         const { error: clientError } = await supabase
-          .from('users')
-          .insert({
+          .from('clients')
+          .upsert({
             id: authData.user.id,
-            role: 'client',
             name: name.trim(),
-            phone: phone.trim(),
             email: email.trim().toLowerCase(),
-            photo_url: null,
-          });
+            phone_e164: phoneE164,
+          }, { onConflict: 'id' });
 
         if (clientError) {
           console.error('Error creating client record:', clientError);
           throw new Error(clientError.message || 'Failed to create client profile');
         }
 
-        // Create user object for local state
+        console.log('Client profile created successfully:', {
+          id: authData.user.id,
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          phone_e164: phoneE164
+        });
+
+        // Create user object for local state (keeping existing User interface for compatibility)
         const user: User = {
           id: authData.user.id,
           role: 'client',
