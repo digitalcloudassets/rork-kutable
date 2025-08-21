@@ -67,9 +67,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             code: barberError.code,
             details: barberError.details,
             hint: barberError.hint,
-            userId: authUser.id,
-            fullError: barberError
+            userId: authUser.id
           });
+          console.error('Full barber error object:', JSON.stringify(barberError, null, 2));
           
           // Handle missing table error (42P01)
           if (barberError.code === '42P01') {
@@ -135,9 +135,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             code: clientError.code,
             details: clientError.details,
             hint: clientError.hint,
-            userId: authUser.id,
-            fullError: clientError
+            userId: authUser.id
           });
+          console.error('Full client error object:', JSON.stringify(clientError, null, 2));
           
           // Handle missing table error (42P01)
           if (clientError.code === '42P01') {
