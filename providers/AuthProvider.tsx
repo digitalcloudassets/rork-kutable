@@ -62,15 +62,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .single();
 
         if (barberError) {
-          console.error('Error fetching barber record in AuthProvider:', {
-            message: barberError.message,
-            code: barberError.code,
-            details: barberError.details,
-            hint: barberError.hint,
-            userId: authUser.id
-          });
-          console.error('Full barber error object:', JSON.stringify(barberError, null, 2));
-          
           // Handle missing table error (42P01)
           if (barberError.code === '42P01') {
             console.log('Barbers table does not exist yet, creating fallback profile for user:', authUser.id);
@@ -98,6 +89,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             await saveUser(user);
             return;
           }
+          
+          // Only log unexpected database errors
+          console.error('Unexpected error fetching barber record in AuthProvider:', {
+            message: barberError.message,
+            code: barberError.code,
+            details: barberError.details,
+            hint: barberError.hint,
+            userId: authUser.id
+          });
           
           // For other database errors, create fallback profile
           console.log('Database error, creating fallback profile for barber:', authUser.id);
@@ -130,15 +130,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .single();
 
         if (clientError) {
-          console.error('Error fetching client record in AuthProvider:', {
-            message: clientError.message,
-            code: clientError.code,
-            details: clientError.details,
-            hint: clientError.hint,
-            userId: authUser.id
-          });
-          console.error('Full client error object:', JSON.stringify(clientError, null, 2));
-          
           // Handle missing table error (42P01)
           if (clientError.code === '42P01') {
             console.log('Clients table does not exist yet, creating fallback profile for user:', authUser.id);
@@ -166,6 +157,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             await saveUser(user);
             return;
           }
+          
+          // Only log unexpected database errors
+          console.error('Unexpected error fetching client record in AuthProvider:', {
+            message: clientError.message,
+            code: clientError.code,
+            details: clientError.details,
+            hint: clientError.hint,
+            userId: authUser.id
+          });
           
           // For other database errors, create fallback profile
           console.log('Database error, creating fallback profile for client:', authUser.id);
