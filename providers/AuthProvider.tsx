@@ -257,18 +257,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let mounted = true;
     
     const initializeAuth = async () => {
+      console.log('🔄 Starting auth initialization...');
       try {
         // Check if Supabase is properly configured
+        console.log('🔍 Checking Supabase configuration...');
         if (!isSupabaseConfigured()) {
-          console.log('Supabase not configured, using offline mode');
+          console.log('✅ Supabase not configured, using offline mode');
           // Just load stored user and skip Supabase operations
           if (mounted) {
+            console.log('📱 Loading stored user...');
             await loadStoredUser();
             
             // If no stored user, create a mock user for testing
             const storedUser = await AsyncStorage.getItem("user");
             if (!storedUser) {
-              console.log('No stored user found, creating mock user for testing');
+              console.log('👤 No stored user found, creating mock user for testing');
               const mockUser: User = {
                 id: 'mock-user-' + Date.now(),
                 role: 'client',
@@ -277,8 +280,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 email: 'test@example.com',
               };
               await saveUser(mockUser);
+            } else {
+              console.log('✅ Stored user loaded successfully');
             }
           }
+          console.log('✅ Auth initialization complete (offline mode)');
           return;
         }
         
@@ -293,7 +299,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: string, session: any) => {
           console.log('Auth state changed:', event, session?.user?.id);
           
           if (mounted) {
@@ -313,13 +319,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           subscription.unsubscribe();
         };
       } catch (error) {
-        console.error('Failed to initialize auth:', {
-          error,
-          message: error instanceof Error ? error.message : 'Unknown error'
+        console.error('Failed to initialize auth:', error);
+        console.error('Error details:', {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+          name: error instanceof Error ? error.name : undefined
         });
         // Fallback to stored user on any error
         if (mounted) {
-          await loadStoredUser();
+          try {
+            await loadStoredUser();
+          } catch (loadError) {
+            console.error('Failed to load stored user as fallback:', loadError);
+          }
         }
       } finally {
         if (mounted) {

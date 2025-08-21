@@ -6,6 +6,16 @@ export const env = {
 };
 
 export function validateEnv() {
+  console.log('Environment validation:');
+  console.log('API_URL:', env.API_URL);
+  console.log('SUPABASE_URL:', env.SUPABASE_URL);
+  console.log('SUPABASE_ANON:', env.SUPABASE_ANON ? '[SET]' : '[NOT SET]');
+  console.log('DATA_MODE:', env.DATA_MODE);
+  
   const missing = Object.entries(env).filter(([,v]) => !v).map(([k]) => k);
-  if (missing.length) console.warn('Missing env:', missing.join(', '));
+  if (missing.length) {
+    console.warn('Missing env variables:', missing.join(', '));
+  } else {
+    console.log('All environment variables are set');
+  }
 }
