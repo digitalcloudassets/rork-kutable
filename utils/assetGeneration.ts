@@ -6,7 +6,63 @@
  * - Android Screenshots (Pixel 6 Pro)
  * - App Store Icons
  * - Feature Graphics
+ * - Kutable App Icons with Dark Background
  */
+
+/**
+ * Kutable App Icons - Dark Background Theme
+ * Generated icons with dark background (#0E1117) and white logo
+ */
+export const KUTABLE_ASSETS = {
+  // Main app icon (1024x1024) - dark background with white logo
+  MAIN_ICON: 'https://r2-pub.rork.com/generated-images/e06b01e7-b911-4bd6-b8f6-27aaeb468077.png',
+  
+  // Adaptive icon foreground (transparent background, white logo only)
+  ADAPTIVE_FOREGROUND: 'https://r2-pub.rork.com/generated-images/fe0d64d1-c23b-49b5-bef6-9de1c090cc07.png',
+  
+  // Dark background color for consistent branding
+  DARK_BACKGROUND: '#0E1117',
+};
+
+/**
+ * Instructions for setting up Kutable app icons
+ */
+export const KUTABLE_SETUP_INSTRUCTIONS = `
+To set up the Kutable app icons with dark background:
+
+1. Download the main icon from: ${KUTABLE_ASSETS.MAIN_ICON}
+   Save as: ./assets/kutable-icon-1024.png
+
+2. Download the adaptive foreground from: ${KUTABLE_ASSETS.ADAPTIVE_FOREGROUND}
+   Save as: ./assets/kutable-adaptive-foreground.png
+
+3. Update your app.json with this configuration:
+
+{
+  "icon": "./assets/kutable-icon-1024.png",
+  "splash": {
+    "image": "./assets/kutable-icon-1024.png",
+    "resizeMode": "contain",
+    "backgroundColor": "#0E1117"
+  },
+  "android": {
+    "adaptiveIcon": {
+      "foregroundImage": "./assets/kutable-adaptive-foreground.png",
+      "backgroundColor": "#0E1117"
+    }
+  },
+  "web": {
+    "favicon": "./assets/kutable-icon-1024.png"
+  }
+}
+
+The icons feature:
+- Dark background (#0E1117) for consistent branding
+- White logo that pops against the dark background
+- Professional barber/grooming theme
+- Optimized for both iOS and Android
+- Store-ready quality at 1024x1024 resolution
+`;
 
 import { Dimensions, Platform } from 'react-native';
 
@@ -307,6 +363,10 @@ export const BRAND_COLORS = {
   textSecondary: '#8E8E93',
   background: '#F2F2F7',
   surface: '#FFFFFF',
+  // Kutable dark theme
+  darkBackground: '#0E1117',
+  darkSurface: '#1C1C1E',
+  darkText: '#FFFFFF',
 } as const;
 
 /**
