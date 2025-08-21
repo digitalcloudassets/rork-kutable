@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Search, Calendar, Settings, User } from "lucide-react-native";
+import { Search, Calendar, Settings, User, BarChart3 } from "lucide-react-native";
 import React from "react";
 import { useAuth } from "@/providers/AuthProvider";
 import { Tokens } from "@/theme/tokens";
@@ -7,6 +7,7 @@ import { Tokens } from "@/theme/tokens";
 export default function TabLayout() {
   const { user } = useAuth();
   const isBarber = user?.role === "barber";
+  const isClient = user?.role === "client";
 
   return (
     <Tabs
@@ -40,6 +41,16 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <Calendar size={24} color={color} />,
         }}
       />
+      {isClient && (
+        <Tabs.Screen
+          name="client-dashboard"
+          options={{
+            title: "Dashboard",
+            headerShown: false,
+            tabBarIcon: ({ color }) => <BarChart3 size={24} color={color} />,
+          }}
+        />
+      )}
       {isBarber && (
         <Tabs.Screen
           name="manage"
