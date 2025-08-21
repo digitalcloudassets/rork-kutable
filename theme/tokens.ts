@@ -18,6 +18,7 @@ export const NavTheme: Theme = {
 export const Tokens = {
   bg: BRAND.BG_DARK,
   surface: BRAND.SURFACE_DARK,
+  cardBg: BRAND.SURFACE_DARK,
   text: BRAND.TEXT_PRIMARY,
   textMuted: BRAND.TEXT_SECONDARY,
   border: BRAND.BORDER,
