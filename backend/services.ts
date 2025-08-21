@@ -8,6 +8,8 @@ app.post('/api/services/list', async c => {
   if (!barberId) return c.json({ error: 'barberId required' }, 400);
   
   const supa = getAdminClient();
+  if (!supa) return c.json({ error: 'Database not configured' }, 500);
+  
   const { data, error } = await supa.from('services')
     .select('*')
     .eq('barber_id', barberId)
@@ -24,6 +26,8 @@ app.post('/api/services/create', async c => {
   }
   
   const supa = getAdminClient();
+  if (!supa) return c.json({ error: 'Database not configured' }, 500);
+  
   const { data, error } = await supa.from('services').insert({
     barber_id: barberId,
     name,
@@ -42,6 +46,8 @@ app.post('/api/services/update', async c => {
   if (!id || !barberId) return c.json({ error: 'id and barberId required' }, 400);
   
   const supa = getAdminClient();
+  if (!supa) return c.json({ error: 'Database not configured' }, 500);
+  
   const updateData: any = {};
   
   if (rest.name) updateData.name = rest.name;
@@ -65,6 +71,8 @@ app.post('/api/services/toggle', async c => {
   }
   
   const supa = getAdminClient();
+  if (!supa) return c.json({ error: 'Database not configured' }, 500);
+  
   const { error } = await supa.from('services')
     .update({ active })
     .eq('id', id)
