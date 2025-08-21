@@ -9,6 +9,7 @@ import Toast from 'react-native-toast-message';
 import { AuthProvider } from "@/providers/AuthProvider";
 import { BookingProvider } from "@/providers/BookingProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { PushNotificationManager } from "@/components/PushNotificationManager";
 import { NavTheme, Tokens } from "@/theme/tokens";
 
 SplashScreen.preventAutoHideAsync();
@@ -60,6 +61,7 @@ export default function RootLayout() {
           <GestureHandlerRootView style={{ flex: 1, backgroundColor: Tokens.bg }}>
             <StatusBar style="light" backgroundColor={Tokens.bg} translucent={false} />
             <AuthProvider>
+              <PushNotificationManager />
               <BookingProvider>
                 <RootLayoutNav />
                 <Toast />

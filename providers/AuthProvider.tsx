@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useMe
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "@/lib/supabaseClient";
 import { ensureProfiles } from "@/lib/profileBootstrap";
-import { usePushNotifications } from "@/utils/usePushNotifications";
+
 import type { User } from "@/types/models";
 
 interface AuthContextType {
@@ -18,8 +18,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Initialize push notifications
-  const { expoPushToken, isRegistering } = usePushNotifications();
+
 
   const saveUser = useCallback(async (userData: User | null) => {
     try {

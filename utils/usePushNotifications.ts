@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
-import { useAuth } from '@/providers/AuthProvider';
+
 import { env } from '@/config/env';
 
 // Configure notification behavior
@@ -23,11 +23,10 @@ interface NotificationData {
   message: string;
 }
 
-export function usePushNotifications() {
+export function usePushNotifications(user?: { id: string } | null) {
   const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
   const [isRegistering, setIsRegistering] = useState(false);
   const [notification, setNotification] = useState<Notifications.Notification | null>(null);
-  const { user } = useAuth();
   const notificationListener = useRef<Notifications.Subscription | null>(null);
   const responseListener = useRef<Notifications.Subscription | null>(null);
 
