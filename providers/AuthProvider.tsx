@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 import { ensureProfiles } from "@/lib/profileBootstrap";
-import { env } from "@/config/env";
 
 import type { User } from "@/types/models";
 
@@ -37,7 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadUserFromSession = useCallback(async (authUser: any) => {
     try {
       // Check if Supabase is properly configured
-      if (!env.SUPABASE_URL || !env.SUPABASE_ANON) {
+      if (!isSupabaseConfigured()) {
         console.log('Supabase not configured, creating fallback user profile');
         const fallbackUser: User = {
           id: authUser.id,
@@ -237,7 +236,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     try {
       // Only attempt Supabase signout if properly configured
-      if (env.SUPABASE_URL && env.SUPABASE_ANON) {
+      if (isSupabaseConfigured()) {
         await supabase.auth.signOut();
       }
       await saveUser(null);
@@ -254,7 +253,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const initializeAuth = async () => {
       try {
         // Check if Supabase is properly configured
-        if (!env.SUPABASE_URL || !env.SUPABASE_ANON) {
+        if (!isSupabaseConfigured()) {
           console.log('Supabase not configured, using offline mode');
           // Just load stored user and skip Supabase operations
           if (mounted) {

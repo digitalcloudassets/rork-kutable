@@ -1,34 +1,38 @@
 import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { env } from '@/config/env';
 
-const url  = process.env.EXPO_PUBLIC_SUPABASE_URL;
-const anon = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+const url = env.SUPABASE_URL;
+const anon = env.SUPABASE_ANON;
 
 if (!url || !anon) {
-  console.warn('Supabase configuration missing:', {
+  console.log('Supabase configuration missing - app will run in offline mode:', {
     hasUrl: !!url,
     hasAnon: !!anon,
-    url: url ? `${url.substring(0, 20)}...` : 'undefined'
+    dataMode: env.DATA_MODE
   });
 }
 
 // Create a fallback client if configuration is missing
 const fallbackUrl = 'https://placeholder.supabase.co';
-const fallbackAnon = 'placeholder-anon-key';
+const fallbackAnon = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsYWNlaG9sZGVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NDUxOTI4MDAsImV4cCI6MTk2MDc2ODgwMH0.M9jrxyvPLkUxWgOYSf5dNdJ8v_eRrZqCK8LUqzZqQwA';
 
 export const supabase = createClient(url || fallbackUrl, anon || fallbackAnon, {
   auth: { 
-    autoRefreshToken: true, 
+    autoRefreshToken: !!url && !!anon, // Only auto-refresh if properly configured
     persistSession: true, 
     detectSessionInUrl: false, 
     storage: AsyncStorage 
   },
 });
 
+// Helper to check if Supabase is properly configured
+export const isSupabaseConfigured = () => !!url && !!anon;
+
 // Add error handling for invalid configuration
 if (!url || !anon) {
-  console.warn('Supabase client created with fallback configuration. Database operations will fail.');
+  console.log('Supabase client created with fallback configuration. App will use mock data.');
 }
 
 export default supabase;
