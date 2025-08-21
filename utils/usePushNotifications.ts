@@ -35,6 +35,8 @@ export function usePushNotifications(user?: { id: string } | null) {
     console.log('Push notifications disabled in development environment');
     return;
     
+    // This code is currently disabled but kept for future use
+    /*
     if (isRegistering || !user || Platform.OS === 'web') return;
     
     setIsRegistering(true);
@@ -62,7 +64,7 @@ export function usePushNotifications(user?: { id: string } | null) {
       console.log('Push token obtained:', token);
 
       // Store token on server
-      if (token && user.id) {
+      if (token && user && user.id) {
         await storePushToken(user.id, token);
       }
     } catch (error) {
@@ -70,7 +72,8 @@ export function usePushNotifications(user?: { id: string } | null) {
     } finally {
       setIsRegistering(false);
     }
-  }, [isRegistering, user]);
+    */
+  }, []);
 
   const storePushToken = async (userId: string, token: string) => {
     try {
