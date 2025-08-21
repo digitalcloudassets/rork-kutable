@@ -54,8 +54,25 @@ export default function ServicesScreen() {
   const loadServices = useCallback(async () => {
     try {
       setLoading(true);
+      console.log('Loading services...');
+      console.log('apiClient:', apiClient);
+      console.log('apiClient.services:', apiClient?.services);
+      
+      // Test the apiClient
+      try {
+        const testResult = apiClient.test();
+        console.log('API Client test result:', testResult);
+      } catch (testError) {
+        console.error('API Client test failed:', testError);
+      }
+      
       const uid = await getUserId();
       if (!uid) throw new Error('Not signed in');
+      
+      if (!apiClient || !apiClient.services) {
+        throw new Error('API client not properly initialized');
+      }
+      
       const servicesList = await apiClient.services.list({ barberId: uid });
       setServices(servicesList);
     } catch (error) {

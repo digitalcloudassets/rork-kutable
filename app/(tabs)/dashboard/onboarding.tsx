@@ -24,12 +24,32 @@ export default function OnboardingScreen() {
 
   const { data: accountStatus, isLoading: statusLoading, refetch } = useQuery({
     queryKey: ["stripe-status", user?.id],
-    queryFn: () => apiClient.stripe.getAccountStatus({ barberId: user?.id || "" }),
+    queryFn: () => {
+      console.log('Querying stripe status...');
+      console.log('apiClient:', apiClient);
+      console.log('apiClient.stripe:', apiClient?.stripe);
+      
+      if (!apiClient || !apiClient.stripe) {
+        throw new Error('API client not properly initialized');
+      }
+      
+      return apiClient.stripe.getAccountStatus({ barberId: user?.id || "" });
+    },
     enabled: !!user,
   });
 
   const createAccountMutation = useMutation({
-    mutationFn: apiClient.stripe.createOrFetchAccount,
+    mutationFn: (data: { barberId: string }) => {
+      console.log('Creating account mutation...');
+      console.log('apiClient:', apiClient);
+      console.log('apiClient.stripe:', apiClient?.stripe);
+      
+      if (!apiClient || !apiClient.stripe || !apiClient.stripe.createOrFetchAccount) {
+        throw new Error('API client stripe methods not available');
+      }
+      
+      return apiClient.stripe.createOrFetchAccount(data);
+    },
     onSuccess: async (data) => {
       console.log("Account created/fetched:", data.accountId);
       await handleAccountLink(data.accountId);
@@ -43,7 +63,17 @@ export default function OnboardingScreen() {
   });
 
   const accountLinkMutation = useMutation({
-    mutationFn: apiClient.stripe.createAccountLink,
+    mutationFn: (data: any) => {
+      console.log('Creating account link mutation...');
+      console.log('apiClient:', apiClient);
+      console.log('apiClient.stripe:', apiClient?.stripe);
+      
+      if (!apiClient || !apiClient.stripe || !apiClient.stripe.createAccountLink) {
+        throw new Error('API client stripe createAccountLink method not available');
+      }
+      
+      return apiClient.stripe.createAccountLink(data);
+    },
     onSuccess: async (data) => {
       console.log("Opening account link:", data.url);
       try {

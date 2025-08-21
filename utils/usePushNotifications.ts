@@ -64,7 +64,7 @@ export function usePushNotifications(user?: { id: string } | null) {
       console.log('Push token obtained:', token);
 
       // Store token on server
-      if (token && user && user.id) {
+      if (token && user?.id) {
         await storePushToken(user.id, token);
       }
     } catch (error) {
