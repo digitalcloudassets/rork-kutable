@@ -31,6 +31,10 @@ export function usePushNotifications(user?: { id: string } | null) {
   const responseListener = useRef<Notifications.Subscription | null>(null);
 
   const registerForPushNotifications = useCallback(async () => {
+    // Disable push notifications in development to avoid project ID errors
+    console.log('Push notifications disabled in development environment');
+    return;
+    
     if (isRegistering || !user || Platform.OS === 'web') return;
     
     setIsRegistering(true);
@@ -50,10 +54,8 @@ export function usePushNotifications(user?: { id: string } | null) {
         return;
       }
 
-      // Get push token with explicit projectId
-      const tokenData = await Notifications.getExpoPushTokenAsync({
-        projectId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479'
-      });
+      // Get push token - remove hardcoded projectId to use app.json config
+      const tokenData = await Notifications.getExpoPushTokenAsync();
       
       const token = tokenData.data;
       setExpoPushToken(token);
