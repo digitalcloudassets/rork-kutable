@@ -1,11 +1,9 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { getAdminClient } from './lib/supabase';
+import stripe from './stripe';
 
 // Import API handlers (only those with default exports)
-import stripeCreateOrFetchAccount from './api/stripe/create-or-fetch-account';
-import stripeAccountLink from './api/stripe/account-link';
-import stripeAccountStatus from './api/stripe/account-status';
 import servicesList from './api/services/list';
 import servicesUpsert from './api/services/upsert';
 import servicesDelete from './api/services/delete';
@@ -182,42 +180,8 @@ app.get('/api/health/snapshot', async (c) => {
   return c.json(snapshot);
 });
 
-// Stripe endpoints
-app.post('/api/stripe/create-or-fetch-account', async (c) => {
-  try {
-    const response = await stripeCreateOrFetchAccount(c.req.raw);
-    const data = await response.json();
-    c.status(response.status as any);
-    return c.json(data);
-  } catch (error: any) {
-    console.error('Error in stripe create-or-fetch-account:', error);
-    return c.json({ error: 'Internal server error' }, 500);
-  }
-});
-
-app.post('/api/stripe/account-link', async (c) => {
-  try {
-    const response = await stripeAccountLink(c.req.raw);
-    const data = await response.json();
-    c.status(response.status as any);
-    return c.json(data);
-  } catch (error: any) {
-    console.error('Error in stripe account-link:', error);
-    return c.json({ error: 'Internal server error' }, 500);
-  }
-});
-
-app.get('/api/stripe/account-status', async (c) => {
-  try {
-    const response = await stripeAccountStatus(c.req.raw);
-    const data = await response.json();
-    c.status(response.status as any);
-    return c.json(data);
-  } catch (error: any) {
-    console.error('Error in stripe account-status:', error);
-    return c.json({ error: 'Internal server error' }, 500);
-  }
-});
+// Mount Stripe module
+app.route('/', stripe);
 
 // Services endpoints
 app.post('/api/services/list', async (c) => {
@@ -376,13 +340,6 @@ app.post('/api/gallery/upload', async (c) => {
 // Reviews endpoints
 app.route('/api/reviews', reviewsApi);
 
-// Stripe onboarding landing pages
-app.get('/api/stripe/onboarding/return', (c) => {
-  return c.text('Onboarding complete. You can close this window and return to the app.');
-});
 
-app.get('/api/stripe/onboarding/refresh', (c) => {
-  return c.text('Please retry onboarding from the app.');
-});
 
 export default app;
