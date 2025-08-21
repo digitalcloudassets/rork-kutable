@@ -11,6 +11,7 @@ import { BookingProvider } from "@/providers/BookingProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { PushNotificationManager } from "@/components/PushNotificationManager";
 import { NavTheme, Tokens } from "@/theme/tokens";
+import { validateEnv } from "@/config/env";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -51,6 +52,8 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   useEffect(() => {
+    // Validate environment configuration on app start
+    validateEnv();
     SplashScreen.hideAsync();
   }, []);
 

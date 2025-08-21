@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useMe
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "@/lib/supabaseClient";
 import { ensureProfiles } from "@/lib/profileBootstrap";
+import { env } from "@/config/env";
 
 import type { User } from "@/types/models";
 
@@ -35,6 +36,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadUserFromSession = useCallback(async (authUser: any) => {
     try {
+      // Check if Supabase is properly configured
+      if (!env.SUPABASE_URL || !env.SUPABASE_ANON) {
+        console.log('Supabase not configured, creating fallback user profile');
+        const fallbackUser: User = {
+          id: authUser.id,
+          role: authUser.user_metadata?.role || 'client',
+          name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
+          phone: authUser.user_metadata?.phone || '',
+          email: authUser.email || '',
+        };
+        await saveUser(fallbackUser);
+        return;
+      }
+      
       // Ensure profiles exist in database
       await ensureProfiles();
       
@@ -221,7 +236,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     try {
-      await supabase.auth.signOut();
+      // Only attempt Supabase signout if properly configured
+      if (env.SUPABASE_URL && env.SUPABASE_ANON) {
+        await supabase.auth.signOut();
+      }
       await saveUser(null);
     } catch (error) {
       console.error('Failed to sign out:', error);
@@ -235,6 +253,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     const initializeAuth = async () => {
       try {
+        // Check if Supabase is properly configured
+        if (!env.SUPABASE_URL || !env.SUPABASE_ANON) {
+          console.log('Supabase not configured, using offline mode');
+          // Just load stored user and skip Supabase operations
+          if (mounted) {
+            await loadStoredUser();
+          }
+          return;
+        }
+        
         // Check for existing session
         const { data: { session } } = await supabase.auth.getSession();
         
@@ -270,6 +298,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           error,
           message: error instanceof Error ? error.message : 'Unknown error'
         });
+        // Fallback to stored user on any error
+        if (mounted) {
+          await loadStoredUser();
+        }
       } finally {
         if (mounted) {
           setIsLoading(false);
