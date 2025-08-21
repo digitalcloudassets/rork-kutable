@@ -30,6 +30,7 @@ import paymentsWebhook from './api/payments/webhook';
 import galleryList from './api/gallery/list';
 import galleryDelete from './api/gallery/delete';
 import galleryUpload from './api/gallery/upload';
+import reviewsApi from './api/reviews/index';
 
 const app = new Hono();
 
@@ -367,6 +368,9 @@ app.post('/api/gallery/delete', async (c) => {
 app.post('/api/gallery/upload', async (c) => {
   return galleryUpload(c.req.raw);
 });
+
+// Reviews endpoints
+app.route('/api/reviews', reviewsApi);
 
 // Stripe onboarding landing pages
 app.get('/api/stripe/onboarding/return', (c) => {

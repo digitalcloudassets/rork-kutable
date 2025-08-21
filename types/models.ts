@@ -77,3 +77,27 @@ export interface GalleryItem {
   createdAtISO: string;
   path: string;
 }
+
+export interface Review {
+  id: string;
+  bookingId: string;
+  barberId: string;
+  clientId: string;
+  clientName: string;
+  rating: number; // 1-5 stars
+  comment?: string;
+  createdAtISO: string;
+  serviceName?: string;
+}
+
+export interface ReviewStats {
+  averageRating: number;
+  totalReviews: number;
+  ratingDistribution: {
+    1: number;
+    2: number;
+    3: number;
+    4: number;
+    5: number;
+  };
+}

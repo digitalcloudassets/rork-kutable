@@ -178,3 +178,39 @@ export interface TopService {
   bookingsCount: number;
   grossCents: number;
 }
+
+export interface Review {
+  id: string;
+  bookingId: string;
+  barberId: string;
+  clientId: string;
+  clientName: string;
+  rating: number;
+  comment?: string;
+  createdAtISO: string;
+  serviceName?: string;
+}
+
+export interface ReviewRow {
+  id: string;
+  booking_id: string;
+  barber_id: string;
+  client_id: string;
+  client_name: string;
+  rating: number;
+  comment?: string;
+  created_at: string;
+  service_name?: string;
+}
+
+export interface ReviewStats {
+  averageRating: number;
+  totalReviews: number;
+  ratingDistribution: {
+    1: number;
+    2: number;
+    3: number;
+    4: number;
+    5: number;
+  };
+}
