@@ -22,7 +22,7 @@ export default function IndexScreen() {
     return <Redirect href="/(tabs)/dashboard" />;
   }
 
-  return <Redirect href="/(tabs)" />;
+  return <Redirect href="/(tabs)/explore" />;
 }
 
 const styles = StyleSheet.create({

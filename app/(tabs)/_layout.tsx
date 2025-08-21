@@ -29,6 +29,12 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
+          href: null, // Hide the index redirect from tabs
+        }}
+      />
+      <Tabs.Screen
+        name="explore"
+        options={{
           title: "Explore",
           headerTitle: "Kutable",
           tabBarIcon: ({ color }) => <Search size={24} color={color} />,
