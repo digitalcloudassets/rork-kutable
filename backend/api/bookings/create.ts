@@ -69,6 +69,62 @@ export default async function handler(req: any, res: any) {
       createdAtISO: booking.created_at,
     };
 
+    // Send notifications (fire and forget)
+    try {
+      // Get barber and service details for notifications
+      const [barberResult, serviceResult] = await Promise.all([
+        supabase.from('barbers').select('name').eq('id', barberId).single(),
+        supabase.from('services').select('name').eq('id', serviceId).single()
+      ]);
+
+      const barberName = barberResult.data?.name || 'Your barber';
+      const serviceName = serviceResult.data?.name || 'your service';
+      const dateTime = new Date(startISO).toLocaleString();
+
+      // Notify barber about new booking
+      if (barberId) {
+        fetch(`${process.env.API_URL || ''}/api/notifications/send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: barberId,
+            notification: {
+              title: 'New Booking!',
+              body: `${clientName} booked ${serviceName} for ${dateTime}`,
+              data: {
+                type: 'new_booking',
+                bookingId: booking.id,
+                message: 'New booking received',
+              },
+            },
+          }),
+        }).catch(err => console.error('Failed to send barber notification:', err));
+      }
+
+      // Notify client about booking confirmation (if they have a user account)
+      if (clientUserId) {
+        fetch(`${process.env.API_URL || ''}/api/notifications/send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: clientUserId,
+            notification: {
+              title: 'Booking Confirmed!',
+              body: `Your ${serviceName} appointment with ${barberName} is confirmed for ${dateTime}`,
+              data: {
+                type: 'booking_confirmed',
+                bookingId: booking.id,
+                message: 'Booking confirmed successfully',
+              },
+            },
+          }),
+        }).catch(err => console.error('Failed to send client notification:', err));
+      }
+    } catch (notificationError) {
+      console.error('Error sending notifications:', notificationError);
+      // Don't fail the booking creation if notifications fail
+    }
+
     return res.status(200).json({ booking: transformedBooking });
   } catch (error) {
     console.error('Error in bookings/create:', error);

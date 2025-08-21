@@ -1,7 +1,8 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { useAuth } from '@/providers/AuthProvider';
+import { env } from '@/config/env';
 
 // Configure notification behavior
 Notifications.setNotificationHandler({
@@ -14,13 +15,24 @@ Notifications.setNotificationHandler({
   }),
 });
 
+interface NotificationData {
+  type: 'booking_confirmed' | 'booking_reminder' | 'booking_cancelled' | 'payment_received' | 'new_booking';
+  bookingId?: string;
+  barberId?: string;
+  clientId?: string;
+  message: string;
+}
+
 export function usePushNotifications() {
   const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [notification, setNotification] = useState<Notifications.Notification | null>(null);
   const { user } = useAuth();
+  const notificationListener = useRef<Notifications.Subscription | null>(null);
+  const responseListener = useRef<Notifications.Subscription | null>(null);
 
   const registerForPushNotifications = useCallback(async () => {
-    if (isRegistering || !user) return;
+    if (isRegistering || !user || Platform.OS === 'web') return;
     
     setIsRegistering(true);
     
@@ -41,11 +53,12 @@ export function usePushNotifications() {
 
       // Get push token
       const tokenData = await Notifications.getExpoPushTokenAsync({
-        projectId: 'your-project-id', // Replace with your actual project ID
+        projectId: 'kgmwpa0f7ayzrt4j175h4', // Kutable project ID
       });
       
       const token = tokenData.data;
       setExpoPushToken(token);
+      console.log('Push token obtained:', token);
 
       // Store token on server
       if (token && user.id) {
@@ -60,7 +73,8 @@ export function usePushNotifications() {
 
   const storePushToken = async (userId: string, token: string) => {
     try {
-      const response = await fetch('/api/users/push-token', {
+      const apiUrl = env.API_URL || '';
+      const response = await fetch(`${apiUrl}/api/users/push-token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -69,7 +83,7 @@ export function usePushNotifications() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to store push token');
+        throw new Error(`Failed to store push token: ${response.status}`);
       }
 
       console.log('Push token stored successfully');
@@ -77,6 +91,80 @@ export function usePushNotifications() {
       console.error('Error storing push token:', error);
     }
   };
+
+  const sendPushNotification = useCallback(async ({
+    to,
+    title,
+    body,
+    data,
+  }: {
+    to: string;
+    title: string;
+    body: string;
+    data?: NotificationData;
+  }) => {
+    try {
+      const message = {
+        to,
+        sound: 'default',
+        title,
+        body,
+        data,
+      };
+
+      const response = await fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Accept-encoding': 'gzip, deflate',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(message),
+      });
+
+      const result = await response.json();
+      console.log('Push notification sent:', result);
+      return result;
+    } catch (error) {
+      console.error('Error sending push notification:', error);
+      throw error;
+    }
+  }, []);
+
+  // Set up notification listeners
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+
+    // Listen for notifications received while app is running
+    notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
+      console.log('Notification received:', notification);
+      setNotification(notification);
+    });
+
+    // Listen for user interactions with notifications
+    responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
+      console.log('Notification response:', response);
+      const data = response.notification.request.content.data as unknown as NotificationData;
+      
+      // Handle notification tap based on type
+      if (data?.type === 'new_booking' && data.bookingId) {
+        // Navigate to booking details
+        console.log('Navigate to booking:', data.bookingId);
+      } else if (data?.type === 'booking_reminder' && data.bookingId) {
+        // Navigate to booking details
+        console.log('Navigate to booking reminder:', data.bookingId);
+      }
+    });
+
+    return () => {
+      if (notificationListener.current) {
+        Notifications.removeNotificationSubscription(notificationListener.current);
+      }
+      if (responseListener.current) {
+        Notifications.removeNotificationSubscription(responseListener.current);
+      }
+    };
+  }, []);
 
   // Auto-register when user is available
   useEffect(() => {
@@ -88,6 +176,8 @@ export function usePushNotifications() {
   return {
     expoPushToken,
     isRegistering,
+    notification,
     registerForPushNotifications,
+    sendPushNotification,
   };
 }
