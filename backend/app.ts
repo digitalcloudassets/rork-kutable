@@ -16,7 +16,7 @@ import availabilityList from './api/availability/list';
 import availabilityBlock from './api/availability/block';
 import availabilityUnblock from './api/availability/unblock';
 import availabilityOpenSlots from './api/availability/open-slots';
-import { blockAvailability, unblockAvailability, getOpenSlots, deleteAvailabilityBlock } from './availability';
+import { deleteAvailabilityBlock } from './availability';
 import { POST as barbersSearch } from './api/barbers/search';
 import { GET as barbersProfile } from './api/barbers/profile';
 import earningsSummary from './api/earnings/summary';
@@ -96,16 +96,20 @@ app.get('/api/health/snapshot', async (c) => {
   // Supabase connectivity + counts
   try {
     const supabase = getAdminClient();
-    const { error } = await supabase.from('barbers').select('id').limit(1);
-    if (error && (error as any).code === '42P01') {
-      snapshot.supabase = { ok: true, message: 'Connected (tables may not exist)' };
-    } else if (error) {
-      snapshot.supabase = { ok: false, message: error.message };
+    if (!supabase) {
+      snapshot.supabase = { ok: false, message: 'Supabase client not configured' };
     } else {
-      snapshot.supabase = { ok: true, message: undefined };
+      const { error } = await supabase.from('barbers').select('id').limit(1);
+      if (error && (error as any).code === '42P01') {
+        snapshot.supabase = { ok: true, message: 'Connected (tables may not exist)' };
+      } else if (error) {
+        snapshot.supabase = { ok: false, message: error.message };
+      } else {
+        snapshot.supabase = { ok: true, message: undefined };
+      }
     }
 
-    if (snapshot.supabase.ok) {
+    if (snapshot.supabase.ok && supabase) {
       const tables = ['barbers', 'services', 'bookings', 'availability_blocks', 'gallery_items'] as const;
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 

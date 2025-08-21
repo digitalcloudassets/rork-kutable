@@ -1,3 +1,4 @@
+import { Hono } from 'hono';
 import { getAdminClient } from './lib/supabase';
 import { mapAvailabilityBlockRowToAvailabilityBlock, mapAvailabilityBlockToAvailabilityBlockRow } from './adapters';
 import { AvailabilityBlockRow } from './types';
@@ -416,3 +417,29 @@ export async function getOpenSlots(request: Request): Promise<Response> {
     );
   }
 }
+
+// Hono app for availability endpoints
+const app = new Hono();
+
+app.post('/api/availability/list', async (c) => {
+  return await listAvailabilityBlocks(c.req.raw);
+});
+
+app.post('/api/availability/block', async (c) => {
+  return await blockAvailability(c.req.raw);
+});
+
+app.post('/api/availability/unblock', async (c) => {
+  return await unblockAvailability(c.req.raw);
+});
+
+app.get('/api/availability/open-slots', async (c) => {
+  return await getOpenSlots(c.req.raw);
+});
+
+app.delete('/api/availability/block/:id', async (c) => {
+  const blockId = c.req.param('id');
+  return await deleteAvailabilityBlock(c.req.raw, blockId);
+});
+
+export default app;
