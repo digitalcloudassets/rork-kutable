@@ -50,8 +50,10 @@ export function usePushNotifications(user?: { id: string } | null) {
         return;
       }
 
-      // Get push token
-      const tokenData = await Notifications.getExpoPushTokenAsync();
+      // Get push token with explicit projectId
+      const tokenData = await Notifications.getExpoPushTokenAsync({
+        projectId: 'f47ac10b-58cc-4372-a567-0e02b2c3d479'
+      });
       
       const token = tokenData.data;
       setExpoPushToken(token);
