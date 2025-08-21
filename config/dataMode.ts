@@ -8,7 +8,8 @@ export const isMockMode = () => DATA_MODE === 'mock';
 // Helper to log data mode fallbacks
 export const logFallback = (endpoint: string, error?: any) => {
   if (isLiveMode()) {
-    console.warn(`API ${endpoint} failed, falling back to mock data:`, error?.message || error);
+    console.warn(`Network error - falling back to mock data`);
+    console.log(`API ${endpoint} failed:`, error?.message || error);
   } else {
     console.log(`Using mock data for ${endpoint} (mock mode enabled)`);
   }

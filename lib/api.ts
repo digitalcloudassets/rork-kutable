@@ -36,7 +36,9 @@ export async function apiRequest(path: string, init?: RequestInit) {
 const getBackendUrl = () => {
   const backendUrl = env.API_URL;
   if (!backendUrl) {
-    console.warn('EXPO_PUBLIC_API_URL not configured, using fallback data');
+    if (DATA_MODE === 'live') {
+      console.warn('EXPO_PUBLIC_API_URL not configured, using fallback data');
+    }
     return null;
   }
   return backendUrl;
@@ -1197,7 +1199,11 @@ export const apiClient = {
     createOrFetchAccount: async ({ barberId }: { barberId: string }) => {
       const backendUrl = getBackendUrl();
       if (!backendUrl || DATA_MODE === 'mock') {
-        console.log('No backend URL configured or in mock mode, using mock Stripe account creation');
+        if (DATA_MODE === 'mock') {
+          console.log('Using mock Stripe account creation (mock mode enabled)');
+        } else {
+          console.log('No backend URL configured, using mock Stripe account creation');
+        }
         await delay(800);
         return {
           accountId: `acct_mock_${barberId}_${Date.now()}`
@@ -1206,10 +1212,9 @@ export const apiClient = {
 
       try {
         console.log(`Creating/fetching Stripe account for barber: ${barberId}`);
-        console.log(`API URL: ${backendUrl}/api/stripe/create-or-fetch-account`);
         
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
         
         const response = await fetch(`${backendUrl}/api/stripe/create-or-fetch-account`, {
           method: 'POST',
@@ -1235,32 +1240,17 @@ export const apiClient = {
           } catch {
             errorData = { error: `HTTP ${response.status}: ${errorText}` };
           }
-          console.error('Failed to create/fetch Stripe account:', errorData);
           throw new Error(errorData.error || 'Failed to create/fetch account');
         }
       } catch (error: any) {
-        console.error('Error creating/fetching Stripe account:', error);
-        
         if (error.name === 'AbortError') {
-          console.error('Request timed out, falling back to mock data');
-          logFallback('/api/stripe/create-or-fetch-account', error);
-          await delay(800);
-          return {
-            accountId: `acct_mock_${barberId}_${Date.now()}`
-          };
+          logFallback('/api/stripe/create-or-fetch-account', 'Request timed out');
+        } else if (error.message === 'Failed to fetch' || error.message.includes('Network request failed') || error.message.includes('Load failed')) {
+          logFallback('/api/stripe/create-or-fetch-account', 'Network error');
+        } else {
+          logFallback('/api/stripe/create-or-fetch-account', error.message);
         }
         
-        if (error.message === 'Failed to fetch' || error.message.includes('Network request failed') || error.message.includes('Load failed')) {
-          console.error('Network error - falling back to mock data');
-          logFallback('/api/stripe/create-or-fetch-account', error);
-          await delay(800);
-          return {
-            accountId: `acct_mock_${barberId}_${Date.now()}`
-          };
-        }
-        
-        // For other errors, also fallback to mock data
-        logFallback('/api/stripe/create-or-fetch-account', error);
         await delay(800);
         return {
           accountId: `acct_mock_${barberId}_${Date.now()}`
@@ -1275,7 +1265,11 @@ export const apiClient = {
     }) => {
       const backendUrl = getBackendUrl();
       if (!backendUrl || DATA_MODE === 'mock') {
-        console.log('No backend URL configured or in mock mode, using mock Stripe account link');
+        if (DATA_MODE === 'mock') {
+          console.log('Using mock Stripe account link (mock mode enabled)');
+        } else {
+          console.log('No backend URL configured, using mock Stripe account link');
+        }
         await delay(500);
         return {
           url: `https://connect.stripe.com/express/oauth/authorize?client_id=mock&state=${barberId}&redirect_uri=${encodeURIComponent(returnUrl || '')}`
@@ -1284,7 +1278,6 @@ export const apiClient = {
 
       try {
         console.log(`Creating Stripe account link for barber: ${barberId}`);
-        console.log(`API URL: ${backendUrl}/api/stripe/account-link`);
         
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -1313,32 +1306,17 @@ export const apiClient = {
           } catch {
             errorData = { error: `HTTP ${response.status}: ${errorText}` };
           }
-          console.error('Failed to create Stripe account link:', errorData);
           throw new Error(errorData.error || 'Failed to create account link');
         }
       } catch (error: any) {
-        console.error('Error creating account link:', error);
-        
         if (error.name === 'AbortError') {
-          console.error('Request timed out, falling back to mock data');
-          logFallback('/api/stripe/account-link', error);
-          await delay(500);
-          return {
-            url: `https://connect.stripe.com/express/oauth/authorize?client_id=mock&state=${barberId}&redirect_uri=${encodeURIComponent(returnUrl || '')}`
-          };
+          logFallback('/api/stripe/account-link', 'Request timed out');
+        } else if (error.message === 'Failed to fetch' || error.message.includes('Network request failed') || error.message.includes('Load failed')) {
+          logFallback('/api/stripe/account-link', 'Network error');
+        } else {
+          logFallback('/api/stripe/account-link', error.message);
         }
         
-        if (error.message === 'Failed to fetch' || error.message.includes('Network request failed') || error.message.includes('Load failed')) {
-          console.error('Network error - falling back to mock data');
-          logFallback('/api/stripe/account-link', error);
-          await delay(500);
-          return {
-            url: `https://connect.stripe.com/express/oauth/authorize?client_id=mock&state=${barberId}&redirect_uri=${encodeURIComponent(returnUrl || '')}`
-          };
-        }
-        
-        // For other errors, also fallback to mock data
-        logFallback('/api/stripe/account-link', error);
         await delay(500);
         return {
           url: `https://connect.stripe.com/express/oauth/authorize?client_id=mock&state=${barberId}&redirect_uri=${encodeURIComponent(returnUrl || '')}`
@@ -1349,7 +1327,11 @@ export const apiClient = {
     getAccountStatus: async ({ barberId }: { barberId: string }) => {
       const backendUrl = getBackendUrl();
       if (!backendUrl || DATA_MODE === 'mock') {
-        console.log('No backend URL configured or in mock mode, using mock Stripe account status');
+        if (DATA_MODE === 'mock') {
+          console.log('Using mock Stripe account status (mock mode enabled)');
+        } else {
+          console.log('No backend URL configured, using mock Stripe account status');
+        }
         await delay(300);
         return {
           chargesEnabled: false,
@@ -1359,7 +1341,6 @@ export const apiClient = {
 
       try {
         console.log(`Checking Stripe account status for barber: ${barberId}`);
-        console.log(`API URL: ${backendUrl}/api/stripe/account-status?barberId=${barberId}`);
         
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -1387,34 +1368,17 @@ export const apiClient = {
           } catch {
             errorData = { error: `HTTP ${response.status}: ${errorText}` };
           }
-          console.error('Failed to get Stripe account status:', errorData);
           throw new Error(errorData.error || 'Failed to get account status');
         }
       } catch (error: any) {
-        console.error('Error getting account status:', error);
-        
         if (error.name === 'AbortError') {
-          console.error('Request timed out, falling back to mock data');
-          logFallback('/api/stripe/account-status', error);
-          await delay(300);
-          return {
-            chargesEnabled: false,
-            payoutsEnabled: false
-          };
+          logFallback('/api/stripe/account-status', 'Request timed out');
+        } else if (error.message === 'Failed to fetch' || error.message.includes('Network request failed') || error.message.includes('Load failed')) {
+          logFallback('/api/stripe/account-status', 'Network error');
+        } else {
+          logFallback('/api/stripe/account-status', error.message);
         }
         
-        if (error.message === 'Failed to fetch' || error.message.includes('Network request failed') || error.message.includes('Load failed')) {
-          console.error('Network error - falling back to mock data');
-          logFallback('/api/stripe/account-status', error);
-          await delay(300);
-          return {
-            chargesEnabled: false,
-            payoutsEnabled: false
-          };
-        }
-        
-        // For other errors, also fallback to mock data
-        logFallback('/api/stripe/account-status', error);
         await delay(300);
         return {
           chargesEnabled: false,

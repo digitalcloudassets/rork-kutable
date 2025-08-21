@@ -14,7 +14,7 @@ import { useQuery } from "@tanstack/react-query";
 import { brandColors, BRAND } from "@/config/brand";
 import { Tokens } from "@/theme/tokens";
 import { ScrollScreen, Screen } from "@/components/Screen";
-import { api } from "@/lib/api";
+import { apiClient } from "@/lib/api";
 import { useAuth } from "@/providers/AuthProvider";
 import type { Booking } from "@/types/models";
 import { formatTime } from "@/utils/dateHelpers";
@@ -28,19 +28,19 @@ export default function DashboardScreen() {
 
   const { data: todayBookings, isLoading, refetch } = useQuery({
     queryKey: ["barber-bookings", user?.id, today],
-    queryFn: () => api.bookings.list({ barberId: user?.id }),
+    queryFn: () => apiClient.bookings.list({ barberId: user?.id }),
     enabled: !!user && user.role === "barber",
   });
 
   const { data: earnings } = useQuery({
     queryKey: ["earnings", user?.id],
-    queryFn: () => api.earnings.summary({ barberId: user?.id || "", range: "month" }),
+    queryFn: () => apiClient.earnings.summary({ barberId: user?.id || "", range: "month" }),
     enabled: !!user && user.role === "barber",
   });
 
   const { data: stripeStatus, isLoading: stripeLoading } = useQuery({
     queryKey: ["stripe-status", user?.id],
-    queryFn: () => api.stripe.getAccountStatus({ barberId: user?.id || "" }),
+    queryFn: () => apiClient.stripe.getAccountStatus({ barberId: user?.id || "" }),
     enabled: !!user && user.role === "barber",
   });
 
