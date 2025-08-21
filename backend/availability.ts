@@ -20,6 +20,13 @@ export async function listAvailabilityBlocks(request: Request): Promise<Response
 
     const supabase = getAdminClient();
     
+    if (!supabase) {
+      return new Response(
+        JSON.stringify({ error: 'Database connection not available' }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    
     const { data: blocks, error } = await supabase
       .from('availability_blocks')
       .select('*')
@@ -87,6 +94,13 @@ export async function blockAvailability(request: Request): Promise<Response> {
     }
 
     const supabase = getAdminClient();
+    
+    if (!supabase) {
+      return new Response(
+        JSON.stringify({ error: 'Database connection not available' }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
     
     // Check for overlapping bookings (exclude cancelled/refunded)
     const { data: bookingOverlaps, error: bookingError } = await supabase
@@ -188,6 +202,13 @@ export async function unblockAvailability(request: Request): Promise<Response> {
 
     const supabase = getAdminClient();
     
+    if (!supabase) {
+      return new Response(
+        JSON.stringify({ error: 'Database connection not available' }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    
     // Verify the block belongs to the barber and delete it
     const { error } = await supabase
       .from('availability_blocks')
@@ -233,6 +254,13 @@ export async function deleteAvailabilityBlock(request: Request, blockId: string)
     }
 
     const supabase = getAdminClient();
+    
+    if (!supabase) {
+      return new Response(
+        JSON.stringify({ error: 'Database connection not available' }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
     
     // Verify the block exists and belongs to the barber
     const { data: block, error: fetchError } = await supabase
@@ -304,6 +332,13 @@ export async function getOpenSlots(request: Request): Promise<Response> {
     }
 
     const supabase = getAdminClient();
+    
+    if (!supabase) {
+      return new Response(
+        JSON.stringify({ error: 'Database connection not available' }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
     
     // Get service duration
     const { data: service, error: serviceError } = await supabase
