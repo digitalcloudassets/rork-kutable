@@ -51,9 +51,7 @@ export function usePushNotifications(user?: { id: string } | null) {
       }
 
       // Get push token
-      const tokenData = await Notifications.getExpoPushTokenAsync({
-        projectId: 'kgmwpa0f7ayzrt4j175h4', // Kutable project ID
-      });
+      const tokenData = await Notifications.getExpoPushTokenAsync();
       
       const token = tokenData.data;
       setExpoPushToken(token);
