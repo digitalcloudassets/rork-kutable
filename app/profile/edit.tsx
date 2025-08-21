@@ -17,6 +17,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { supabase } from "@/lib/supabaseClient";
 import { Tokens } from "@/theme/tokens";
 import { formatToE164 } from "@/utils/phoneHelpers";
+import { httpsify } from "@/lib/url";
 
 interface BarberProfile {
   id: string;
@@ -220,7 +221,7 @@ export default function EditProfileScreen() {
           <View style={styles.avatarContainer}>
             <Image
               source={{
-                uri: profile.photo_url || "https://via.placeholder.com/120",
+                uri: httpsify(profile.photo_url) || "https://via.placeholder.com/120",
               }}
               style={styles.avatar}
             />

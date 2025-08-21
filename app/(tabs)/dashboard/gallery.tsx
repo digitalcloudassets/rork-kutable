@@ -17,6 +17,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { BRAND } from '../../../config/brand';
 import { useAuth } from '@/providers/AuthProvider';
 import { api } from '@/lib/api';
+import { httpsify } from '@/lib/url';
 import type { GalleryItem } from '@/types/models';
 
 const { width } = Dimensions.get('window');
@@ -29,12 +30,18 @@ export default function GalleryScreen() {
 
   const { data: galleryItems = [], isLoading } = useQuery({
     queryKey: ['gallery', user?.id],
-    queryFn: () => api.gallery.list({ barberId: user?.id || '' }),
+    queryFn: () => api('/api/gallery/list', {
+      method: 'POST',
+      body: JSON.stringify({ barberId: user?.id || '' })
+    }),
     enabled: !!user?.id,
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (path: string) => api.gallery.delete({ barberId: user?.id || '', path }),
+    mutationFn: (path: string) => api('/api/gallery/delete', {
+      method: 'POST',
+      body: JSON.stringify({ barberId: user?.id || '', path })
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gallery', user?.id] });
     },
@@ -118,10 +125,15 @@ export default function GalleryScreen() {
       } as any;
 
       // Upload using API
-      const data = await api.gallery.upload({ 
-        barberId: user?.id || '', 
-        file, 
-        path 
+      const formData = new FormData();
+      formData.append('barberId', user?.id || '');
+      formData.append('path', path);
+      formData.append('file', file as any);
+      
+      const data = await api('/api/gallery/upload', {
+        method: 'POST',
+        headers: {},
+        body: formData
       });
       
       // Update local cache
@@ -159,7 +171,7 @@ export default function GalleryScreen() {
       style={styles.galleryItem}
       onLongPress={() => handleDeletePhoto(item)}
     >
-      <Image source={{ uri: item.url }} style={styles.galleryImage} />
+      <Image source={{ uri: httpsify(item.url) }} style={styles.galleryImage} />
       <TouchableOpacity
         style={styles.deleteButton}
         onPress={() => handleDeletePhoto(item)}

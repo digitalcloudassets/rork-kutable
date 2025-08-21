@@ -28,6 +28,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { BRAND } from "@/config/brand";
 import { Tokens } from "@/theme/tokens";
 import { ScrollScreen } from "@/components/Screen";
+import { httpsify } from "@/lib/url";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -108,7 +109,7 @@ export default function ProfileScreen() {
     <ScrollScreen>
       <View style={styles.header}>
         <Image 
-          source={{ uri: user?.photoUrl || "https://via.placeholder.com/100" }} 
+          source={{ uri: httpsify(user?.photoUrl) || "https://via.placeholder.com/100" }} 
           style={styles.avatar}
         />
         <Text style={styles.name}>{user.name}</Text>

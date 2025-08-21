@@ -12,8 +12,9 @@ import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { MapPin, Phone, Star, Clock, DollarSign, User } from "lucide-react-native";
 import { useQuery } from "@tanstack/react-query";
 import { Tokens } from "@/theme/tokens";
-import { apiClient } from "@/lib/api";
+import { api } from "@/lib/api";
 import { useBooking } from "@/providers/BookingProvider";
+import { httpsify } from "@/lib/url";
 import type { Service, GalleryItem } from "@/types/models";
 
 export default function BarberProfileScreen() {
@@ -23,7 +24,10 @@ export default function BarberProfileScreen() {
 
   const { data: barber, isLoading } = useQuery({
     queryKey: ["barber", id],
-    queryFn: () => apiClient.barbers.profile({ barberId: id as string }),
+    queryFn: () => api('/api/barbers/profile', {
+      method: 'POST',
+      body: JSON.stringify({ barberId: id as string })
+    }),
   });
 
   const galleryItems = barber?.galleryTop || [];
@@ -64,7 +68,7 @@ export default function BarberProfileScreen() {
     <>
       <Stack.Screen options={{ title: barber.name }} />
       <ScrollView style={styles.container}>
-        <Image source={{ uri: barber.photoUrl }} style={styles.coverPhoto} />
+        <Image source={{ uri: httpsify(barber.photoUrl) }} style={styles.coverPhoto} />
         
         <View style={styles.profileSection}>
           <Text style={styles.barberName}>{barber.name}</Text>
@@ -141,7 +145,7 @@ export default function BarberProfileScreen() {
                 {galleryItems.map((item: GalleryItem, index: number) => (
                   <Image
                     key={item.path}
-                    source={{ uri: item.url }}
+                    source={{ uri: httpsify(item.url) }}
                     style={styles.galleryImage}
                   />
                 ))}
