@@ -36,17 +36,43 @@ export async function assertSameSupabaseProject() {
     const clientHost = clientUrl ? new URL(clientUrl).host : 'unknown';
     const apiBase = resolveApiBase();
 
-    const res = await fetch(`${apiBase}/api/health/supabase`, { cache: 'no-store' });
+    console.log('Checking API health:', { clientHost, apiBase });
+
+    // First try a simple ping
+    try {
+      const pingRes = await fetch(`${apiBase}/api/ping`, { cache: 'no-store' });
+      console.log('Ping response:', { status: pingRes.status, ok: pingRes.ok });
+      if (!pingRes.ok) {
+        const pingText = await pingRes.text().catch(() => '');
+        console.error('Ping failed:', { status: pingRes.status, text: pingText?.slice(0, 120) });
+      }
+    } catch (pingError) {
+      console.error('Ping fetch error:', pingError);
+    }
+
+    const res = await fetch(`${apiBase}/api/health/supabase`, { 
+      cache: 'no-store',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
+    
     if (!res.ok) {
       const text = await res.text().catch(() => '');
       console.error('API health failed', { status: res.status, apiBase, text: text?.slice(0, 120) });
       return; // don't throw a fake mismatch when server isn't up
     }
+    
     const j = await res.json().catch(() => ({}));
     const serverHost = j?.serverHost || 'unknown';
+    
+    console.log('API health response:', { serverHost, canQueryBarbers: j?.canQueryBarbers });
 
     if (clientHost !== serverHost) {
       console.error('ERROR Supabase project mismatch', { clientHost, serverHost });
+    } else {
+      console.log('✅ Supabase project match confirmed');
     }
   } catch (e) {
     console.error('API health fetch error', e);
