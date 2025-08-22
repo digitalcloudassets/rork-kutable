@@ -17,12 +17,16 @@ ALTER TABLE public.availability_blocks
 ADD CONSTRAINT check_start_before_end 
 CHECK (start_utc < end_utc);
 
--- Optional: Enable RLS if you're using it
--- ALTER TABLE public.availability_blocks ENABLE ROW LEVEL SECURITY;
+-- Enable RLS
+ALTER TABLE public.availability_blocks ENABLE ROW LEVEL SECURITY;
 
--- Optional: Create RLS policies if needed
--- CREATE POLICY "Barbers can manage their own availability blocks" ON public.availability_blocks
---   FOR ALL USING (auth.uid() = barber_id);
+-- RLS policies
+CREATE POLICY "Barbers can manage their own availability blocks" ON public.availability_blocks
+  FOR ALL USING (auth.uid() = barber_id);
+
+-- Allow public read access for availability checking (needed for booking system)
+CREATE POLICY "Public can read availability blocks" ON public.availability_blocks
+  FOR SELECT USING (true);
 
 COMMENT ON TABLE public.availability_blocks IS 'Stores time blocks when barbers are unavailable';
 COMMENT ON COLUMN public.availability_blocks.barber_id IS 'Reference to the barber who owns this availability block';

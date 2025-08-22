@@ -39,7 +39,7 @@ CREATE POLICY "Clients can create reviews" ON reviews
     EXISTS (
       SELECT 1 FROM bookings 
       WHERE id = booking_id 
-      AND client_user_id = auth.uid() 
+      AND client_id = auth.uid() 
       AND status = 'completed'
     )
   );

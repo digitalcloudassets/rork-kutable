@@ -7,6 +7,17 @@ CREATE TABLE IF NOT EXISTS gallery_items (
   created_at timestamptz DEFAULT now()
 );
 
+-- Enable RLS
+ALTER TABLE gallery_items ENABLE ROW LEVEL SECURITY;
+
+-- RLS policies
+CREATE POLICY "Barbers can manage their own gallery items" ON gallery_items
+  FOR ALL USING (auth.uid() = barber_id);
+
+-- Allow public read access for gallery viewing
+CREATE POLICY "Public can view gallery items" ON gallery_items
+  FOR SELECT USING (true);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_gallery_barber_id ON gallery_items(barber_id);
 CREATE INDEX IF NOT EXISTS idx_gallery_created_at ON gallery_items(created_at DESC);
