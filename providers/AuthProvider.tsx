@@ -5,6 +5,7 @@ import { ensureProfiles } from "@/lib/profileBootstrap";
 import { apiClient } from "@/lib/api";
 import { useRouter, usePathname } from "expo-router";
 import { assertSameSupabaseProject } from "@/lib/envCheck";
+import { getRole } from "@/lib/role";
 
 import type { User } from "@/types/models";
 
@@ -26,6 +27,7 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [ready, setReady] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   
@@ -327,32 +329,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (mounted && session?.user) {
           await loadUserFromSession(session.user);
           
-          // Route guard: if logged-in barber, ensure profile and push to onboarding if needed
-          const role = session.user.user_metadata?.role === 'barber' ? 'barber' : 'client';
-          if (role === 'barber') {
-            try {
-              await ensureProfiles('barber', session.user);
-            } catch (error) {
-              console.error('Failed to ensure barber profile:', error);
-            }
+          // Role-based routing after successful auth
+          const role = getRole(session.user);
+          await ensureProfiles(role, session.user);
 
-            // Check if Stripe is connected
+          if (role === 'barber') {
             try {
               const status = await apiClient.stripe.getAccountStatus({ barberId: session.user.id });
               const needsOnboarding = !(status?.chargesEnabled && status?.payoutsEnabled);
-              const onOnboarding = pathname?.startsWith('/onboarding');
-              const onAuth = pathname?.startsWith('/auth');
-              
-              if (needsOnboarding && !onOnboarding && !onAuth) {
+              if (needsOnboarding && !pathname?.startsWith('/onboarding')) {
                 router.replace('/onboarding/barber');
               }
             } catch {
-              // If status fails, still go to onboarding wizard to attempt connect
-              const onOnboarding = pathname?.startsWith('/onboarding');
-              const onAuth = pathname?.startsWith('/auth');
-              if (!onOnboarding && !onAuth) {
+              if (!pathname?.startsWith('/onboarding')) {
                 router.replace('/onboarding/barber');
               }
+            }
+          } else {
+            // Client: redirect away from onboarding if they somehow got there
+            if (pathname?.startsWith('/onboarding')) {
+              router.replace('/');
             }
           }
         } else if (mounted) {
@@ -366,32 +362,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           
           if (mounted) {
             if (session?.user) {
-              // Handle profile creation for new signups
-              if (event === 'SIGNED_IN') {
-                console.log('User signed in, loading user profile');
-                const role = session.user.user_metadata?.role === 'barber' ? 'barber' : 'client';
-                
-                // For barber signups, ensure profile exists with a delay to allow auth propagation
-                if (role === 'barber') {
-                  setTimeout(async () => {
-                    try {
-                      console.log('Ensuring barber profile exists for user:', session.user.id);
-                      await ensureProfiles('barber', session.user);
-                      // Reload user data after profile creation
-                      await loadUserFromSession(session.user);
-                    } catch (error) {
-                      console.error('Failed to ensure barber profile on sign in:', error);
-                      // Still load user data even if profile creation fails
-                      await loadUserFromSession(session.user);
-                    }
-                  }, 1000); // Increased delay for better reliability
-                } else {
-                  await loadUserFromSession(session.user);
-                }
-              } else {
-                // For other events, just load user data
-                await loadUserFromSession(session.user);
-              }
+              await loadUserFromSession(session.user);
             } else if (event === 'SIGNED_OUT') {
               console.log('User signed out');
               await saveUser(null);
@@ -431,6 +402,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } finally {
         if (mounted) {
           setIsLoading(false);
+          setReady(true);
         }
       }
     };
@@ -448,6 +420,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut,
     isLoading,
   }), [user, saveUser, signOut, isLoading]);
+
+  // Don't render children until auth is ready to prevent routing loops
+  if (!ready) {
+    return null;
+  }
 
   return (
     <AuthContext.Provider value={contextValue}>

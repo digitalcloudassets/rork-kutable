@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import {
 import { Stack, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabaseClient';
+import { ensureProfiles } from '@/lib/profileBootstrap';
 
 import { brandConfig, BRAND } from '../../config/brand';
 
@@ -27,20 +28,7 @@ export default function BarberSignUpScreen() {
   const [isLoading, setIsLoading] = useState(false);
 
 
-  // If already logged in, skip signup immediately
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          console.log('User already logged in, redirecting to onboarding');
-          router.replace('/onboarding/barber');
-        }
-      } catch (error) {
-        console.error('Error checking existing session:', error);
-      }
-    })();
-  }, []);
+
 
   const handleSignUp = async () => {
     if (!name.trim() || !email.trim() || !phone.trim() || !shopName.trim() || !password.trim()) {
@@ -63,55 +51,34 @@ export default function BarberSignUpScreen() {
     try {
       console.log('Starting barber signup process...');
       
-      // 1) Sign up with role=barber metadata
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
+            role: 'barber',
             name,
             phone,
             shopName,
-            role: 'barber',
           },
         },
       });
 
-      if (authError) {
-        throw authError;
-      }
+      if (error) throw error;
 
-      console.log('Signup successful, user created:', authData.user?.id);
-
-      // 2) With confirm OFF, session should be available immediately
       // Reinforce metadata to ensure it's set properly
-      if (authData.user) {
-        console.log('Updating user metadata...');
-        await supabase.auth.updateUser({ 
-          data: { role: 'barber', name, phone, shopName } 
-        });
-
-        console.log('Redirecting to onboarding...');
-        // 3) Go straight to onboarding - let AuthProvider handle profile creation
-        router.replace('/onboarding/barber');
-      } else {
-        throw new Error('No user returned from signup');
-      }
+      await supabase.auth.updateUser({ 
+        data: { role: 'barber', name, phone, shopName } 
+      });
+      
+      // Ensure profile exists
+      await ensureProfiles('barber');
+      
+      // Navigate to onboarding - AuthProvider will handle routing logic
+      router.replace('/onboarding/barber');
     } catch (error: any) {
       console.error('Sign up error:', error);
-      let errorMessage = 'Failed to create account';
-      
-      if (error?.message) {
-        errorMessage = error.message;
-      } else if (typeof error === 'string') {
-        errorMessage = error;
-      } else if (error?.error_description) {
-        errorMessage = error.error_description;
-      } else if (error?.details) {
-        errorMessage = error.details;
-      }
-      
-      Alert.alert('Sign up failed', errorMessage);
+      Alert.alert('Sign up failed', error?.message || 'Failed to create account');
     } finally {
       setIsLoading(false);
     }

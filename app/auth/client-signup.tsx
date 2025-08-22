@@ -14,10 +14,9 @@ import {
 import { Stack, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabaseClient';
-import { useAuth } from '@/providers/AuthProvider';
+import { ensureProfiles } from '@/lib/profileBootstrap';
 import { brandConfig, BRAND } from '../../config/brand';
-import type { User } from '@/types/models';
-import { formatToE164, isValidPhoneNumber } from '@/utils/phoneHelpers';
+import { isValidPhoneNumber } from '@/utils/phoneHelpers';
 
 export default function ClientSignUpScreen() {
   const [name, setName] = useState('');
@@ -26,7 +25,7 @@ export default function ClientSignUpScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { setUser } = useAuth();
+
 
   const handleSignUp = async () => {
     if (!name.trim() || !email.trim() || !phone.trim() || !password.trim()) {
@@ -52,81 +51,33 @@ export default function ClientSignUpScreen() {
     setIsLoading(true);
 
     try {
-      // Sign up with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
+            role: 'client',
             name,
             phone,
-            role: 'client',
           },
         },
       });
 
-      if (authError) {
-        throw authError;
-      }
+      if (error) throw error;
 
-      if (authData.user) {
-        // Format phone number to E.164
-        const phoneE164 = formatToE164(phone.trim());
-        
-        // Create client record in database
-        const { error: clientError } = await supabase
-          .from('clients')
-          .upsert({
-            id: authData.user.id,
-            name: name.trim(),
-            email: email.trim().toLowerCase(),
-            phone_e164: phoneE164,
-          }, { onConflict: 'id' });
-
-        if (clientError) {
-          console.error('Error creating client record:', clientError);
-          throw new Error(clientError.message || 'Failed to create client profile');
-        }
-
-        console.log('Client profile created successfully:', {
-          id: authData.user.id,
-          name: name.trim(),
-          email: email.trim().toLowerCase(),
-          phone_e164: phoneE164
-        });
-
-        // Create user object for local state (keeping existing User interface for compatibility)
-        const user: User = {
-          id: authData.user.id,
-          role: 'client',
-          name: name.trim(),
-          phone: phone.trim(),
-          email: email.trim().toLowerCase(),
-        };
-
-        setUser(user);
-        
-        Alert.alert(
-          'Success',
-          'Account created successfully! Please check your email to verify your account.',
-          [{ text: 'OK', onPress: () => router.replace('/(tabs)') }]
-        );
-      }
+      // Reinforce metadata to ensure it's set properly
+      await supabase.auth.updateUser({ 
+        data: { role: 'client', name, phone } 
+      });
+      
+      // Ensure profile exists
+      await ensureProfiles('client');
+      
+      // Navigate to home - AuthProvider will handle routing logic
+      router.replace('/');
     } catch (error: any) {
       console.error('Sign up error:', error);
-      let errorMessage = 'Failed to create account';
-      
-      if (error?.message) {
-        errorMessage = error.message;
-      } else if (typeof error === 'string') {
-        errorMessage = error;
-      } else if (error?.error_description) {
-        errorMessage = error.error_description;
-      } else if (error?.details) {
-        errorMessage = error.details;
-      }
-      
-      Alert.alert('Error', errorMessage);
+      Alert.alert('Sign up failed', error?.message || 'Failed to create account');
     } finally {
       setIsLoading(false);
     }
