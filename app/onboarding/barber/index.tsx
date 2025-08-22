@@ -97,17 +97,24 @@ export default function BarberOnboarding() {
       setLoading(true);
 
       await apiClient.stripe.createOrFetchAccount({ barberId });
-      const { url } = await apiClient.stripe.createAccountLink({ barberId });
+      const { url, fallback } = await apiClient.stripe.createAccountLink({ barberId });
+
+      if (Platform.OS === 'web') {
+        // Web: deep links won't close the tab — use web fallback and poll when returning
+        window.location.href = fallback?.return || url;
+        return;
+      }
 
       const redirectUrl = Linking.createURL('/onboarding/stripe/return'); // kutable://onboarding/stripe/return
-
       await WebBrowser.openAuthSessionAsync(url, redirectUrl, {
         preferEphemeralSession: Platform.OS === 'ios',
         showInRecents: true,
       });
 
-      // After close/return, poll status to unlock the app
+      // Regardless of type, poll after close/return
       await pollStripeStatus(barberId);
+    } catch (e: any) {
+      Alert.alert('Stripe', e?.message || 'Could not open Stripe');
     } finally {
       setLoading(false);
     }
