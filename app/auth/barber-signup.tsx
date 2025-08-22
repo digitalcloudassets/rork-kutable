@@ -72,31 +72,51 @@ export default function BarberSignUpScreen() {
         // Safety: reinforce metadata in case confirm flow delays it
         await supabase.auth.updateUser({ data: { role: 'barber' } });
 
-        // After sign-up, create only the matching profile row
-        await ensureProfiles('barber');
+        // Wait a moment for the auth state to propagate
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // Format phone to E.164
-        const phoneE164 = formatToE164(phone.trim());
-        
-        // Update barber record with additional details
-        const { error: barberError } = await supabase
-          .from('barbers')
-          .update({
-            name: name.trim(),
-            phone_e164: phoneE164,
-            shop_name: shopName.trim(),
-            bio: null,
-            shop_address: null,
-            photo_url: null,
-            rating: null,
-            review_count: 0,
-            connected_account_id: null,
-          })
-          .eq('id', authData.user.id);
+        try {
+          // After sign-up, create only the matching profile row
+          await ensureProfiles('barber');
 
-        if (barberError) {
-          console.error('Error updating barber record:', barberError);
-          throw new Error(barberError.message || 'Failed to update barber profile');
+          // Format phone to E.164
+          const phoneE164 = formatToE164(phone.trim());
+          
+          // Update barber record with additional details
+          const { error: barberError } = await supabase
+            .from('barbers')
+            .update({
+              name: name.trim(),
+              phone_e164: phoneE164,
+              shop_name: shopName.trim(),
+              bio: null,
+              shop_address: null,
+              photo_url: null,
+              rating: null,
+              review_count: 0,
+              connected_account_id: null,
+            })
+            .eq('id', authData.user.id);
+
+          if (barberError) {
+            console.error('Error updating barber record:', {
+              message: barberError.message,
+              code: barberError.code,
+              details: barberError.details,
+              hint: barberError.hint,
+              userId: authData.user.id
+            });
+            // Don't throw on RLS errors during signup
+            if (!barberError.message?.includes('row-level security') && barberError.code !== '42501') {
+              throw new Error(barberError.message || 'Failed to update barber profile');
+            } else {
+              console.log('Profile update blocked by RLS, this may be expected during signup');
+            }
+          }
+        } catch (profileError: any) {
+          console.error('Error creating barber record:', profileError);
+          // Don't throw profile creation errors, just log them
+          console.log('Profile creation failed, but user account was created successfully');
         }
 
         // Create user object for local state

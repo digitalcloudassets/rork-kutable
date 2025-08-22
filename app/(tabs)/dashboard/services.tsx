@@ -55,8 +55,8 @@ export default function ServicesScreen() {
     try {
       setLoading(true);
       console.log('Loading services...');
-      console.log('apiClient:', apiClient);
-      console.log('apiClient.services:', apiClient?.services);
+      console.log('apiClient:', typeof apiClient, Object.keys(apiClient || {}));
+      console.log('apiClient.services:', typeof apiClient?.services, Object.keys(apiClient?.services || {}));
       
       // Test the apiClient
       try {
@@ -69,17 +69,35 @@ export default function ServicesScreen() {
       const uid = await getUserId();
       if (!uid) throw new Error('Not signed in');
       
-      if (!apiClient || !apiClient.services) {
-        throw new Error('API client not properly initialized');
+      if (!apiClient) {
+        throw new Error('API client is undefined');
       }
       
+      if (!apiClient.services) {
+        throw new Error('API client services is undefined');
+      }
+      
+      if (!apiClient.services.list) {
+        throw new Error('API client services.list is undefined');
+      }
+      
+      console.log('Calling services.list with barberId:', uid);
       const response = await apiClient.services.list({ barberId: uid });
       console.log('Services API response:', response);
+      
+      if (!response) {
+        throw new Error('No response from services API');
+      }
+      
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      
       setServices(response.services || []);
     } catch (error) {
       console.error('Failed to load services:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to load services';
-      Alert.alert('Error', errorMessage);
+      Alert.alert('Error', `Failed to load services: ${errorMessage}`);
     } finally {
       setLoading(false);
     }

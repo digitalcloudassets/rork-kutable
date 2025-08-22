@@ -25,8 +25,14 @@ DROP POLICY IF EXISTS "Users can insert their own barber profile" ON public.barb
 DROP POLICY IF EXISTS "Public can view barber profiles" ON public.barbers;
 
 -- Policies
-CREATE POLICY "Barbers can manage their own profile" ON public.barbers
-  FOR ALL USING (auth.uid() = id);
+CREATE POLICY "Users can view their own barber profile" ON public.barbers
+  FOR SELECT USING (auth.uid() = id);
+
+CREATE POLICY "Users can update their own barber profile" ON public.barbers
+  FOR UPDATE USING (auth.uid() = id);
+
+CREATE POLICY "Users can insert their own barber profile" ON public.barbers
+  FOR INSERT WITH CHECK (auth.uid() = id);
 
 CREATE POLICY "Public can view barber profiles" ON public.barbers
   FOR SELECT USING (true);
