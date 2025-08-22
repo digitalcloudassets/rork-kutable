@@ -24,8 +24,9 @@ function fromProcess(name: string): string | undefined {
 
 export function resolveEnv(bindings?: Bindings): EnvVals {
   const pick = (...names: string[]) =>
-    names.map(n => (bindings?.[n as keyof Bindings] as string | undefined) ?? fromProcess(n))
-         .find(v => v && String(v).trim())?.trim();
+    names
+      .map(n => (bindings?.[n as keyof Bindings] as string | undefined) ?? fromProcess(n))
+      .find(v => v && String(v).trim())?.trim();
 
   const supabaseUrl =
     pick('SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_URL') || '';
