@@ -5,5 +5,7 @@ const raw =
   (globalThis as any)?.process?.env?.API_URL ||
   'https://kutable.rork.app';
 
-// force https, strip trailing slash
 export const API_BASE = /^https?:\/\//i.test(raw) ? raw.replace(/\/+$/,'') : 'https://kutable.rork.app';
+
+// one-time debug
+if (typeof console !== 'undefined') console.log('[API_BASE]', API_BASE);
