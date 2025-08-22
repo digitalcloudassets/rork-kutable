@@ -103,35 +103,36 @@ app.post('/api/stripe/account-link', async c => {
 });
 
 app.get('/api/stripe/account-status', async c => {
+  c.header('Content-Type', 'application/json; charset=utf-8');
+  c.header('Cache-Control', 'no-store');
+
   const barberId = c.req.query('barberId');
   if (!barberId) return c.json({ error: 'barberId required' }, 400);
 
   const supa = getAdminClient();
-  if (!supa) return c.json({ error: 'Database not configured' }, 500);
+  if (!supa) return c.json({ chargesEnabled:false, payoutsEnabled:false });
 
-  const { data } = await supa.from('barbers')
-    .select('connected_account_id').eq('id', barberId).single();
-  const accountId = data?.connected_account_id;
-  
-  if (!accountId?.startsWith('acct_')) {
-    return c.json({ 
-      accountId: null, 
-      chargesEnabled: false, 
-      payoutsEnabled: false, 
-      requirementsDue: true 
+  const { data } = await supa
+    .from('barbers')
+    .select('connected_account_id')
+    .eq('id', barberId)
+    .single();
+
+  const acc = data?.connected_account_id;
+  if (!acc?.startsWith('acct_')) return c.json({ chargesEnabled:false, payoutsEnabled:false });
+
+  const stripe = getStripe();
+  if (!stripe) return c.json({ chargesEnabled:false, payoutsEnabled:false });
+
+  try {
+    const a = await stripe.accounts.retrieve(acc);
+    return c.json({
+      chargesEnabled: !!a.charges_enabled,
+      payoutsEnabled: !!a.payouts_enabled,
     });
+  } catch {
+    return c.json({ chargesEnabled:false, payoutsEnabled:false });
   }
-
-  const stripe = getStripe(); 
-  if (!stripe) return c.json({ error: 'Stripe not configured' }, 500);
-  
-  const acct = await stripe.accounts.retrieve(accountId);
-  return c.json({
-    accountId,
-    chargesEnabled: acct.charges_enabled,
-    payoutsEnabled: acct.payouts_enabled,
-    requirementsDue: (acct.requirements?.currently_due?.length ?? 0) > 0,
-  });
 });
 
 app.get('/api/stripe/onboarding/return', c => {
