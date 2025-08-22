@@ -47,12 +47,20 @@ app.get('/api/health/ping', (c) => c.json({ ok: true, time: new Date().toISOStri
 app.get('/api/health/env', (c) => {
   return c.json({
     appBaseUrl: !!process.env.APP_BASE_URL,
-    supabaseUrl: !!process.env.SUPABASE_URL,
-    serviceRole: !!process.env.SUPABASE_SERVICE_ROLE || !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    supabaseUrl: !!(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL),
+    serviceRole: !!(process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY),
     stripeSecret: !!process.env.STRIPE_SECRET_KEY,
     webhookSecret: !!process.env.STRIPE_WEBHOOK_SECRET,
     platformFeeBps: !!process.env.PLATFORM_FEE_BPS,
     platformFeeFlatCents: !!process.env.PLATFORM_FEE_FLAT_CENTS,
+    envDetails: {
+      SUPABASE_URL: !!process.env.SUPABASE_URL,
+      NEXT_PUBLIC_SUPABASE_URL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      EXPO_PUBLIC_SUPABASE_URL: !!process.env.EXPO_PUBLIC_SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE: !!process.env.SUPABASE_SERVICE_ROLE,
+      SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      SUPABASE_SERVICE_KEY: !!process.env.SUPABASE_SERVICE_KEY,
+    }
   });
 });
 
