@@ -4,14 +4,17 @@ export type Bindings = {
   SUPABASE_SERVICE_ROLE_KEY?: string;
   SUPABASE_SERVICE_KEY?: string;
   STRIPE_SECRET_KEY?: string;
-  APP_BASE_URL?: string;   // e.g. https://kutable.rork.app
-  APP_SCHEME?: string;     // e.g. kutable
-  APP_HOST?: string;       // e.g. kutable.rork.app
+  APP_BASE_URL?: string;
+  APP_SCHEME?: string;
+  APP_HOST?: string;
 };
+
+// Optional: set your project URL as a non-secret fallback (to kill "unknown")
+const HARD_FALLBACK_SUPABASE_URL = 'https://wktxbpmwbyddmwmfymlh.supabase.co';
 
 type EnvVals = {
   supabaseUrl: string;
-  supabaseServiceKey: string;
+  supabaseServiceKey: string | null;
   stripeSecret: string | null;
   appBaseUrl: string;
   appScheme: string;
@@ -29,10 +32,11 @@ export function resolveEnv(bindings?: Bindings): EnvVals {
       .find(v => v && String(v).trim())?.trim();
 
   const supabaseUrl =
-    pick('SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_URL') || '';
+    pick('SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_URL') ||
+    HARD_FALLBACK_SUPABASE_URL; // <- ensures serverHost is never "unknown"
 
   const supabaseServiceKey =
-    pick('SUPABASE_SERVICE_ROLE', 'SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SERVICE_KEY') || '';
+    pick('SUPABASE_SERVICE_ROLE', 'SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SERVICE_KEY') || null;
 
   const stripeSecret = pick('STRIPE_SECRET_KEY') || null;
 
