@@ -95,7 +95,7 @@ export default function BarberOnboarding() {
       const { url, fallback } = await apiClient.stripe.createAccountLink({ barberId });
 
       // Build the redirectUrl (must match your scheme)
-      const redirectUrl = Linking.createURL('/onboarding/stripe/return'); // kutable://onboarding/stripe/return
+      const redirectUrl = 'myapp://onboarding/stripe/return';
 
       // Use Auth Session so the browser closes and returns to app automatically
       const res = await WebBrowser.openAuthSessionAsync(url, redirectUrl, {
