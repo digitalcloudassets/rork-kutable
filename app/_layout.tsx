@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { trpc, trpcClient } from "@/lib/trpc";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
@@ -59,7 +60,8 @@ export default function RootLayout() {
 
   return (
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
+      <trpc.Provider client={trpcClient} queryClient={queryClient}>
+        <QueryClientProvider client={queryClient}>
         <ThemeProvider value={NavTheme}>
           <GestureHandlerRootView style={{ flex: 1, backgroundColor: Tokens.bg }}>
             <StatusBar style="light" backgroundColor={Tokens.bg} translucent={false} />
@@ -72,7 +74,8 @@ export default function RootLayout() {
             </AuthProvider>
           </GestureHandlerRootView>
         </ThemeProvider>
-      </QueryClientProvider>
+        </QueryClientProvider>
+      </trpc.Provider>
     </ErrorBoundary>
   );
 }
