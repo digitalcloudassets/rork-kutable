@@ -303,13 +303,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           
           if (mounted) {
             if (session?.user) {
-              // Ensure profiles exist after sign-in/sign-up
-              if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+              // Only ensure profiles exist after successful sign-in/sign-up, not on token refresh
+              if (event === 'SIGNED_IN') {
+                console.log('User signed in, ensuring profiles exist');
                 const role = session.user.user_metadata?.role === 'barber' ? 'barber' : 'client';
-                await ensureProfiles(role, session.user);
+                // Add a small delay to ensure auth state is fully propagated
+                setTimeout(async () => {
+                  await ensureProfiles(role, session.user);
+                }, 500);
               }
               await loadUserFromSession(session.user);
-            } else {
+            } else if (event === 'SIGNED_OUT') {
+              console.log('User signed out');
               await saveUser(null);
             }
           }

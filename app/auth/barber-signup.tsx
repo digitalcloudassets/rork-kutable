@@ -15,10 +15,8 @@ import { Stack, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/providers/AuthProvider';
-import { ensureProfiles } from '@/lib/profileBootstrap';
 import { brandConfig, BRAND } from '../../config/brand';
 import type { User } from '@/types/models';
-import { formatToE164 } from '@/utils/phoneHelpers';
 
 export default function BarberSignUpScreen() {
   const [name, setName] = useState('');
@@ -75,49 +73,9 @@ export default function BarberSignUpScreen() {
         // Wait a moment for the auth state to propagate
         await new Promise(resolve => setTimeout(resolve, 1000));
 
-        try {
-          // After sign-up, create only the matching profile row
-          await ensureProfiles('barber', authData.user);
-
-          // Format phone to E.164
-          const phoneE164 = formatToE164(phone.trim());
-          
-          // Update barber record with additional details
-          const { error: barberError } = await supabase
-            .from('barbers')
-            .update({
-              name: name.trim(),
-              phone_e164: phoneE164,
-              shop_name: shopName.trim(),
-              bio: null,
-              shop_address: null,
-              photo_url: null,
-              rating: null,
-              review_count: 0,
-              connected_account_id: null,
-            })
-            .eq('id', authData.user.id);
-
-          if (barberError) {
-            console.error('Error updating barber record:', {
-              message: barberError.message,
-              code: barberError.code,
-              details: barberError.details,
-              hint: barberError.hint,
-              userId: authData.user.id
-            });
-            // Don't throw on RLS errors during signup
-            if (!barberError.message?.includes('row-level security') && barberError.code !== '42501') {
-              throw new Error(barberError.message || 'Failed to update barber profile');
-            } else {
-              console.log('Profile update blocked by RLS, this may be expected during signup');
-            }
-          }
-        } catch (profileError: any) {
-          console.error('Error creating barber record:', profileError);
-          // Don't throw profile creation errors, just log them
-          console.log('Profile creation failed, but user account was created successfully');
-        }
+        // Profile creation will be handled by the AuthProvider's onAuthStateChange
+        // when the SIGNED_IN event is triggered, so we don't need to call ensureProfiles here
+        console.log('User account created, profile creation will be handled by auth state change');
 
         // Create user object for local state
         const user: User = {
@@ -132,12 +90,12 @@ export default function BarberSignUpScreen() {
         
         Alert.alert(
           'Success',
-          'Account created successfully! Please check your email to verify your account. You will be redirected to complete your Stripe Connect setup.',
+          'Account created successfully! Please check your email to verify your account.',
           [{ 
             text: 'OK', 
             onPress: () => {
-              // Route to Stripe Connect onboarding
-              router.replace('/(tabs)/dashboard/onboarding');
+              // Route to dashboard - the auth provider will handle profile creation
+              router.replace('/(tabs)/dashboard');
             }
           }]
         );
