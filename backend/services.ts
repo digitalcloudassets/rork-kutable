@@ -82,4 +82,22 @@ app.post('/api/services/toggle', async c => {
   return c.json({ ok: true });
 });
 
+app.delete('/api/services/delete', async c => {
+  const { barberId, serviceId } = await c.req.json();
+  if (!barberId || !serviceId) {
+    return c.json({ error: 'barberId and serviceId required' }, 400);
+  }
+  
+  const supa = getAdminClient();
+  if (!supa) return c.json({ error: 'Database not configured' }, 500);
+  
+  const { error } = await supa.from('services')
+    .delete()
+    .eq('id', serviceId)
+    .eq('barber_id', barberId);
+  
+  if (error) return c.json({ error: error.message }, 500);
+  return c.json({ ok: true });
+});
+
 export default app;
