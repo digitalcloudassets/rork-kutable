@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { getAdminClient, getSupabaseHost } from './lib/supabase';
-import { resolveEnv } from './lib/env';
+import { getAdminClient } from './lib/supabase';
+import { resolveEnv, supabaseHost, Bindings } from './lib/env';
 import stripe from './stripe';
 import availability from './availability';
 import services from './services';
@@ -20,7 +20,7 @@ import galleryDelete from './api/gallery/delete';
 import galleryUpload from './api/gallery/upload';
 import reviewsApi from './api/reviews/index';
 
-const app = new Hono();
+const app = new Hono<{ Bindings: Bindings }>();
 
 // Allow mobile app to call API
 app.use('/*', cors({
@@ -30,8 +30,8 @@ app.use('/*', cors({
 }));
 
 // helper: base URL
-function getBaseUrl(req: Request) {
-  const { appBaseUrl } = resolveEnv();
+function getBaseUrl(req: Request, bindings?: Bindings) {
+  const { appBaseUrl } = resolveEnv(bindings);
   if (appBaseUrl && appBaseUrl !== 'https://kutable.rork.app') {
     return appBaseUrl.replace(/\/$/, '');
   }
@@ -48,23 +48,25 @@ app.get('/api/health/ping', (c) => c.json({ ok: true, time: new Date().toISOStri
 
 // GET /api/health/supabase
 app.get('/api/health/supabase', async c => {
-  const supa = getAdminClient();
+  const env = resolveEnv(c.env);
+  const supa = getAdminClient(c.env);
   let canQuery = false;
   try {
     if (supa) {
       const { error } = await supa.from('barbers').select('id').limit(1);
-      canQuery = !error || (error as any)?.code === 'PGRST116'; // no rows is fine
+      // No rows is fine; only a DB/permission error means false
+      canQuery = !error || (error as any)?.code === 'PGRST116';
     }
   } catch {}
   return c.json({
-    serverHost: getSupabaseHost(),
+    serverHost: supabaseHost(env.supabaseUrl),
     canQueryBarbers: canQuery,
   });
 });
 
 // GET /api/health/env
 app.get('/api/health/env', (c) => {
-  const env = resolveEnv();
+  const env = resolveEnv(c.env);
   return c.json({
     appBaseUrl: !!env.appBaseUrl,
     supabaseUrl: !!env.supabaseUrl,
@@ -96,7 +98,7 @@ app.get('/api/health/snapshot', async (c) => {
       gallery: null as number | null,
     },
     stripe: {
-      keysLoaded: !!resolveEnv().stripeSecret,
+      keysLoaded: !!resolveEnv(c.env).stripeSecret,
       connectedAccounts: 0,
       exampleConnected: null as string | null,
     },
@@ -110,7 +112,7 @@ app.get('/api/health/snapshot', async (c) => {
 
   // Supabase connectivity + counts
   try {
-    const supabase = getAdminClient();
+    const supabase = getAdminClient(c.env);
     if (!supabase) {
       snapshot.supabase = { ok: false, message: 'Supabase client not configured' };
     } else {
@@ -151,7 +153,7 @@ app.get('/api/health/snapshot', async (c) => {
       }
 
       // Stripe connected accounts via DB
-      if (resolveEnv().stripeSecret) {
+      if (resolveEnv(c.env).stripeSecret) {
         try {
           const { data: rows } = await supabase
             .from('barbers')
@@ -178,7 +180,7 @@ app.get('/api/health/snapshot', async (c) => {
     } catch { return false; }
   };
 
-  const BASE = getBaseUrl(c.req.raw);
+  const BASE = getBaseUrl(c.req.raw, c.env);
   if (BASE) {
     snapshot.endpoints.services_list = await testEndpoint(`${BASE}/api/services/list`, {
       method: 'POST',
@@ -199,8 +201,8 @@ app.get('/api/health/snapshot', async (c) => {
 
 // GET /api/health/integration
 app.get('/api/health/integration', async (c) => {
-  const supa = getAdminClient();
-  const { stripeSecret } = resolveEnv();
+  const supa = getAdminClient(c.env);
+  const { stripeSecret } = resolveEnv(c.env);
   let canQueryBarbers = false;
   try {
     if (supa) {
@@ -209,7 +211,7 @@ app.get('/api/health/integration', async (c) => {
     }
   } catch {}
   return c.json({
-    base: getBaseUrl(c.req.raw),
+    base: getBaseUrl(c.req.raw, c.env),
     supabaseConfigured: !!supa,
     stripeConfigured: !!stripeSecret,
     canQueryBarbers,
