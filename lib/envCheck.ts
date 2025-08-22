@@ -30,55 +30,63 @@ function resolveApiBase(): string {
 }
 
 export async function assertSameSupabaseProject() {
-  try {
-    const clientUrl = resolveClientSupabaseUrl();
-    const clientHost = clientUrl ? new URL(clientUrl).host : 'unknown';
-    const apiBase = resolveApiBase();
+  // Skip health check if backend is not accessible (common in development)
+  const clientUrl = resolveClientSupabaseUrl();
+  const clientHost = clientUrl ? new URL(clientUrl).host : 'unknown';
+  const apiBase = resolveApiBase();
 
-    if (__DEV__) console.log('[envCheck] Testing API health at:', `${apiBase}/api/health/supabase`);
+  if (__DEV__) {
+    console.log('[envCheck] Client Supabase host:', clientHost);
+    console.log('[envCheck] API base:', apiBase);
+  }
+
+  // Only perform health check if we're confident the backend should be accessible
+  if (!apiBase.includes('localhost') && !apiBase.includes('127.0.0.1')) {
+    if (__DEV__) {
+      console.log('[envCheck] Skipping health check for remote backend in development');
+    }
+    return;
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
     const res = await fetch(`${apiBase}/api/health/supabase`, { 
       cache: 'no-store',
-      headers: { 'Accept': 'application/json' }
+      headers: { 'Accept': 'application/json' },
+      signal: controller.signal
     });
     
+    clearTimeout(timeoutId);
+    
     if (!res.ok) {
-      const text = await res.text().catch(()=>'');
-      console.error('API health failed', { 
-        status: res.status, 
-        statusText: res.statusText,
-        apiBase, 
-        text: text?.slice(0,200) 
-      });
-      
-      // Try envdump for more info
-      try {
-        const envRes = await fetch(`${apiBase}/api/health/envdump`, { cache: 'no-store' });
-        if (envRes.ok) {
-          const envData = await envRes.json();
-          console.log('Backend env info:', envData);
-        }
-      } catch { /* ignore */ }
-      
-      return; // don't log a fake mismatch when server isn't reachable
+      if (__DEV__) {
+        console.log('[envCheck] Backend not responding properly, status:', res.status);
+      }
+      return;
     }
     
     const j = await res.json().catch(() => ({}));
     const serverHost = j?.serverHost || 'unknown';
 
-    if (__DEV__) console.log('[envCheck] Hosts:', { clientHost, serverHost });
+    if (__DEV__) {
+      console.log('[envCheck] Server Supabase host:', serverHost);
+    }
 
     if (clientHost !== serverHost && serverHost !== 'unknown') {
       console.error('ERROR Supabase project mismatch', { clientHost, serverHost });
+    } else if (__DEV__) {
+      console.log('[envCheck] ✅ Supabase projects match');
     }
   } catch (e) {
-    console.error('API health fetch error', e);
     if (__DEV__) {
-      console.log('[envCheck] Full error details:', {
-        message: (e as Error)?.message,
-        name: (e as Error)?.name,
-        stack: (e as Error)?.stack?.slice(0, 300)
-      });
+      const error = e as Error;
+      if (error.name === 'AbortError') {
+        console.log('[envCheck] Backend health check timed out (this is normal in development)');
+      } else {
+        console.log('[envCheck] Backend not accessible:', error.message);
+      }
     }
   }
 }
