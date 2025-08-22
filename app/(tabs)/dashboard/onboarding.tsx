@@ -73,15 +73,8 @@ export default function OnboardingScreen() {
   });
 
   const handleAccountLink = async (accountId: string) => {
-    // Use environment variable or fallback URLs
-    const baseUrl = process.env.EXPO_PUBLIC_APP_BASE_URL || "exp://localhost:8081";
-    const refreshUrl = `${baseUrl}/(tabs)/dashboard/onboarding`;
-    const returnUrl = `${baseUrl}/(tabs)/dashboard`;
-    
     accountLinkMutation.mutate({
       barberId: user?.id || "",
-      refreshUrl,
-      returnUrl,
     });
   };
 
