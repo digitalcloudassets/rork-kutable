@@ -114,13 +114,14 @@ export async function ensureProfiles(desiredRole?: Role, sessionUser?: any) {
         });
         
         if (regularError) {
-          console.error('ensureProfiles: insert barber error', {
+          console.error('ensureProfiles: insert barber error', regularError);
+          console.error('Detailed barber error:', {
             message: regularError.message,
             code: regularError.code,
             details: regularError.details,
             hint: regularError.hint,
             userId: user.id,
-            serviceRoleError: insertError?.message
+            serviceRoleError: insertError ? JSON.stringify(insertError) : null
           });
           
           // Don't throw on RLS errors, just log them
@@ -209,13 +210,14 @@ export async function ensureProfiles(desiredRole?: Role, sessionUser?: any) {
       });
       
       if (regularError) {
-        console.error('ensureProfiles: insert client error', {
+        console.error('ensureProfiles: insert client error', regularError);
+        console.error('Detailed client error:', {
           message: regularError.message,
           code: regularError.code,
           details: regularError.details,
           hint: regularError.hint,
           userId: user.id,
-          serviceRoleError: insertError?.message
+          serviceRoleError: insertError ? JSON.stringify(insertError) : null
         });
         
         // Don't throw on RLS errors, just log them
@@ -237,6 +239,7 @@ export async function ensureProfiles(desiredRole?: Role, sessionUser?: any) {
     }
   } catch (error) {
     console.error('ensureProfiles fatal:', error);
+    console.error('Fatal error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
     // Don't re-throw the error to prevent app crashes
     console.log('Profile creation failed, but continuing with app initialization');
   }
