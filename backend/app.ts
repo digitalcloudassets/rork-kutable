@@ -28,8 +28,16 @@ function getBaseUrl(req: Request, bindings?: Bindings) {
 
 app.get('/api/ping', c => c.text('ok'));
 
+// ✅ NEW: show which env *names* exist on the server runtime (no values)
+app.get('/api/health/envkeys', c => {
+  const names = Object.keys((c as any).env || {});
+  return c.json({ keys: names });
+});
+
+// ✅ NEW: show exactly what the server *thinks* its Supabase host is
 app.get('/api/health/supabase', async c => {
   const env = resolveEnv(c.env);
+  const serverHost = supabaseHost(env.supabaseUrl);
   const supa = getAdminClient(c.env);
   let canQuery = false;
   try {
@@ -38,7 +46,13 @@ app.get('/api/health/supabase', async c => {
       canQuery = !error || (error as any)?.code === 'PGRST116';
     }
   } catch {}
-  return c.json({ serverHost: supabaseHost(env.supabaseUrl), canQueryBarbers: canQuery });
+  return c.json({
+    serverHost,
+    // helpful breadcrumbs:
+    urlSeen: env.supabaseUrl?.slice(0, 60),
+    hasServiceKey: !!env.supabaseServiceKey,
+    queryOK: canQuery
+  });
 });
 
 // GET /api/health/env
