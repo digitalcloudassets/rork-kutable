@@ -4,6 +4,7 @@ import { getAdminClient } from './lib/supabase';
 import stripe from './stripe';
 import availability from './availability';
 import services from './services';
+import diag from './diag';
 
 // Import API handlers (only those with default exports)
 import { POST as barbersSearch } from './api/barbers/search';
@@ -179,6 +180,9 @@ app.route('/', services);
 
 // Mount bookings module
 app.route('/', bookings);
+
+// Mount diagnostics module
+app.route('/', diag);
 
 // Services endpoints are now handled by the mounted services module
 

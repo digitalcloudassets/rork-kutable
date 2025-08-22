@@ -33,7 +33,13 @@ export const apiClient = {
     },
     update: async (data: any) => {
       return api('/api/services/update', {
-        method: 'PUT',
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+    toggle: async (data: any) => {
+      return api('/api/services/toggle', {
+        method: 'POST',
         body: JSON.stringify(data),
       });
     },
@@ -148,6 +154,16 @@ export const apiClient = {
         method: 'POST',
         body: JSON.stringify(params),
       });
+    },
+  },
+
+  // Health/Diagnostics endpoints
+  health: {
+    ping: async () => {
+      return api('/api/health/ping');
+    },
+    dbDiag: async () => {
+      return api('/api/diag/db');
     },
   },
 };
