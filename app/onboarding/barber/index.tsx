@@ -191,8 +191,8 @@ export default function BarberOnboarding() {
             </View>
             <Text style={styles.title}>Connect payouts with Stripe</Text>
             <Text style={styles.subtitle}>
-              Stripe Connect is how you get paid. We&apos;ll take you to Stripe to verify your identity and
-              set your payout bank. It&apos;s secure and takes a few minutes.
+              Stripe Connect is how you get paid. You&apos;ll verify your identity and add a bank account in Stripe.
+              When you finish, we&apos;ll enable payouts and return you to the app automatically.
             </Text>
           </View>
           
@@ -223,7 +223,7 @@ export default function BarberOnboarding() {
               ) : (
                 <>
                   <ExternalLink size={20} color="#fff" />
-                  <Text style={styles.primaryButtonText}>Connect with Stripe</Text>
+                  <Text style={styles.primaryButtonText}>{loading ? 'Opening Stripe…' : 'Connect with Stripe'}</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -238,7 +238,7 @@ export default function BarberOnboarding() {
           </View>
           
           <Text style={styles.disclaimer}>
-            You can come back here anytime to finish. We&apos;ll enable payments after you complete onboarding.
+            If the page doesn&apos;t return automatically, close it and come back — we&apos;ll pick up where you left off.
           </Text>
         </View>
       </SafeAreaView>
