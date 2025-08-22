@@ -18,15 +18,15 @@ CREATE TABLE IF NOT EXISTS public.barbers (
 -- Enable RLS
 ALTER TABLE public.barbers ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can view their own barber profile" ON public.barbers;
+DROP POLICY IF EXISTS "Users can update their own barber profile" ON public.barbers;
+DROP POLICY IF EXISTS "Users can insert their own barber profile" ON public.barbers;
+DROP POLICY IF EXISTS "Public can view barber profiles" ON public.barbers;
+
 -- Policies
-CREATE POLICY "Users can view their own barber profile" ON public.barbers
-  FOR SELECT USING (auth.uid() = id);
-
-CREATE POLICY "Users can update their own barber profile" ON public.barbers
-  FOR UPDATE USING (auth.uid() = id);
-
-CREATE POLICY "Users can insert their own barber profile" ON public.barbers
-  FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "Barbers can manage their own profile" ON public.barbers
+  FOR ALL USING (auth.uid() = id);
 
 CREATE POLICY "Public can view barber profiles" ON public.barbers
   FOR SELECT USING (true);

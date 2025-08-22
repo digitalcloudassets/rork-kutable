@@ -167,3 +167,6 @@ export const apiClient = {
     },
   },
 };
+
+// Export the apiClient as default as well for compatibility
+export default apiClient;

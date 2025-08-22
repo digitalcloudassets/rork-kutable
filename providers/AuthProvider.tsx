@@ -56,11 +56,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       // Ensure profiles exist in database
-      await ensureProfiles();
+      const userRole = authUser.user_metadata?.role === 'barber' ? 'barber' : 'client';
+      await ensureProfiles(userRole);
       
-      const role = authUser.user_metadata?.role || 'client';
-      
-      if (role === 'barber') {
+      if (userRole === 'barber') {
         const { data: barberData, error: barberError } = await supabase
           .from('barbers')
           .select('*')
@@ -306,7 +305,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (session?.user) {
               // Ensure profiles exist after sign-in/sign-up
               if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-                await ensureProfiles();
+                const role = session.user.user_metadata?.role === 'barber' ? 'barber' : 'client';
+                await ensureProfiles(role);
               }
               await loadUserFromSession(session.user);
             } else {

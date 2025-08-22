@@ -15,6 +15,7 @@ import { Stack, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/providers/AuthProvider';
+import { ensureProfiles } from '@/lib/profileBootstrap';
 import { brandConfig, BRAND } from '../../config/brand';
 import type { User } from '@/types/models';
 import { formatToE164 } from '@/utils/phoneHelpers';
@@ -59,6 +60,7 @@ export default function BarberSignUpScreen() {
             shopName,
             role: 'barber',
           },
+          emailRedirectTo: Platform.OS === 'web' ? `${window.location.origin}/auth/callback` : undefined,
         },
       });
 
@@ -67,16 +69,20 @@ export default function BarberSignUpScreen() {
       }
 
       if (authData.user) {
+        // Safety: reinforce metadata in case confirm flow delays it
+        await supabase.auth.updateUser({ data: { role: 'barber' } });
+
+        // After sign-up, create only the matching profile row
+        await ensureProfiles('barber');
+
         // Format phone to E.164
         const phoneE164 = formatToE164(phone.trim());
         
-        // Create barber record in database
+        // Update barber record with additional details
         const { error: barberError } = await supabase
           .from('barbers')
-          .upsert({
-            id: authData.user.id,
+          .update({
             name: name.trim(),
-            email: authData.user.email ?? null,
             phone_e164: phoneE164,
             shop_name: shopName.trim(),
             bio: null,
@@ -85,11 +91,12 @@ export default function BarberSignUpScreen() {
             rating: null,
             review_count: 0,
             connected_account_id: null,
-          }, { onConflict: 'id' });
+          })
+          .eq('id', authData.user.id);
 
         if (barberError) {
-          console.error('Error creating barber record:', barberError);
-          throw new Error(barberError.message || 'Failed to create barber profile');
+          console.error('Error updating barber record:', barberError);
+          throw new Error(barberError.message || 'Failed to update barber profile');
         }
 
         // Create user object for local state
