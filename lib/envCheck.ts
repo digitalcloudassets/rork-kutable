@@ -34,19 +34,21 @@ export async function assertSameSupabaseProject() {
   try {
     const clientUrl = resolveClientSupabaseUrl();
     const clientHost = clientUrl ? new URL(clientUrl).host : 'unknown';
-
     const apiBase = resolveApiBase();
+
     const res = await fetch(`${apiBase}/api/health/supabase`, { cache: 'no-store' });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      console.error('API health failed', { status: res.status, apiBase, text: text?.slice(0, 120) });
+      return; // don't throw a fake mismatch when server isn't up
+    }
     const j = await res.json().catch(() => ({}));
-    const serverHost: string = j?.serverHost || 'unknown';
+    const serverHost = j?.serverHost || 'unknown';
 
     if (clientHost !== serverHost) {
-      // Only log in development to avoid noise in production
-      if (__DEV__) {
-        console.error('ERROR Supabase project mismatch', { clientHost, serverHost });
-      }
+      console.error('ERROR Supabase project mismatch', { clientHost, serverHost });
     }
-  } catch {
-    console.warn('Supabase health check failed');
+  } catch (e) {
+    console.error('API health fetch error', e);
   }
 }
