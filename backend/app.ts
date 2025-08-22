@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { getAdminClient, SUPABASE_URL } from './lib/supabase';
+import { getAdminClient, getSupabaseHost } from './lib/supabase';
 import stripe from './stripe';
 import availability from './availability';
 import services from './services';
@@ -46,22 +46,16 @@ app.get('/api/health/ping', (c) => c.json({ ok: true, time: new Date().toISOStri
 // GET /api/health/supabase
 app.get('/api/health/supabase', async c => {
   const supa = getAdminClient();
-  let canSelectBarbers = false;
+  let canQuery = false;
   try {
     if (supa) {
-      // Try a harmless select (no rows is OK)
       const { error } = await supa.from('barbers').select('id').limit(1);
-      canSelectBarbers = !error;
+      canQuery = !error || (error as any)?.code === 'PGRST116'; // no rows is fine
     }
   } catch {}
-  const url = SUPABASE_URL;
-  const host = (() => {
-    try { return new URL(url).host; } catch { return url; }
-  })();
   return c.json({
-    serverSupabaseHost: host,
-    serverSupabaseUrlPrefix: url?.slice(0, 32) || null,
-    canSelectBarbers,
+    serverHost: getSupabaseHost(),
+    canQueryBarbers: canQuery,
   });
 });
 
