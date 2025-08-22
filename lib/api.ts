@@ -6,7 +6,10 @@ export async function api(path: string, init?: RequestInit) {
     headers: { 'Content-Type':'application/json', ...(init?.headers||{}) },
     ...init,
   });
-  if (!res.ok) throw new Error(`API ${path} ${res.status}`);
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`API ${path} ${res.status} ${body || ''}`.trim());
+  }
   return res.json();
 }
 
@@ -59,14 +62,14 @@ export const apiClient = {
         body: JSON.stringify({ barberId }),
       });
     },
-    createAccountLink: async (data: any) => {
+    createAccountLink: async ({ barberId }: { barberId: string }) => {
       return api('/api/stripe/account-link', {
         method: 'POST',
-        body: JSON.stringify(data),
+        body: JSON.stringify({ barberId }),
       });
     },
     getAccountStatus: async ({ barberId }: { barberId: string }) => {
-      return api(`/api/stripe/account-status?barberId=${barberId}`);
+      return api(`/api/stripe/account-status?barberId=${encodeURIComponent(barberId)}`, { method: 'GET' });
     },
   },
 
