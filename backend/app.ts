@@ -3,14 +3,9 @@ import { cors } from 'hono/cors';
 import { getAdminClient } from './lib/supabase';
 import stripe from './stripe';
 import availability from './availability';
+import services from './services';
 
 // Import API handlers (only those with default exports)
-import servicesList from './api/services/list';
-import servicesUpsert from './api/services/upsert';
-import servicesDelete from './api/services/delete';
-import servicesCreate from './api/services/create';
-import servicesUpdate from './api/services/update';
-import servicesToggle from './api/services/toggle';
 import { POST as barbersSearch } from './api/barbers/search';
 import { GET as barbersProfile } from './api/barbers/profile';
 import earningsSummary from './api/earnings/summary';
@@ -182,48 +177,10 @@ app.route('/', stripe);
 // Mount availability module
 app.route('/', availability);
 
-// Services endpoints
-app.post('/api/services/list', async (c) => {
-  const response = await servicesList(c.req.raw);
-  const data = await response.json();
-  c.status(response.status as any);
-  return c.json(data);
-});
+// Mount services module
+app.route('/', services);
 
-app.post('/api/services/upsert', async (c) => {
-  const response = await servicesUpsert(c.req.raw);
-  const data = await response.json();
-  c.status(response.status as any);
-  return c.json(data);
-});
-
-app.post('/api/services/delete', async (c) => {
-  const response = await servicesDelete(c.req.raw);
-  const data = await response.json();
-  c.status(response.status as any);
-  return c.json(data);
-});
-
-app.post('/api/services/create', async (c) => {
-  const response = await servicesCreate(c.req.raw);
-  const data = await response.json();
-  c.status(response.status as any);
-  return c.json(data);
-});
-
-app.post('/api/services/update', async (c) => {
-  const response = await servicesUpdate(c.req.raw);
-  const data = await response.json();
-  c.status(response.status as any);
-  return c.json(data);
-});
-
-app.post('/api/services/toggle', async (c) => {
-  const response = await servicesToggle(c.req.raw);
-  const data = await response.json();
-  c.status(response.status as any);
-  return c.json(data);
-});
+// Services endpoints are now handled by the mounted services module
 
 // Availability endpoints are now handled by the mounted availability module
 
