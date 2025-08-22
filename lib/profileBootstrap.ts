@@ -3,6 +3,14 @@ import { createClient } from '@supabase/supabase-js';
 
 type Role = 'barber' | 'client';
 
+// Helper to log errors properly (no more [object Object])
+function logErr(label: string, err: any) {
+  const plain =
+    err?.message ? { message: err.message, name: err.name, stack: err.stack, code: err.code, details: err.details, hint: err.hint } :
+    typeof err === 'object' ? err : { error: String(err) };
+  console.error(label, JSON.stringify(plain, Object.getOwnPropertyNames(plain)));
+}
+
 function safeString(v: any, fallback: string) {
   if (typeof v === 'string' && v.trim().length) return v.trim();
   return fallback;
@@ -29,14 +37,14 @@ export async function ensureProfiles(desiredRole?: Role, sessionUser?: any) {
       try {
         const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
         if (sessionErr) {
-          console.error('ensureProfiles: session error', sessionErr);
+          logErr('ensureProfiles: session error', sessionErr);
           return;
         }
         if (session?.user) {
           user = session.user;
         }
       } catch (error) {
-        console.error('ensureProfiles: failed to get session', error);
+        logErr('ensureProfiles: failed to get session', error);
         return;
       }
     }
@@ -75,7 +83,7 @@ export async function ensureProfiles(desiredRole?: Role, sessionUser?: any) {
             console.log(`User not found in auth.users table, attempt ${attempt}/3. Waiting...`);
             await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
           } else {
-            console.error('User still not found in auth.users table after all attempts:', authError);
+            logErr('User still not found in auth.users table after all attempts', authError);
           }
         }
       } else {
@@ -83,7 +91,7 @@ export async function ensureProfiles(desiredRole?: Role, sessionUser?: any) {
         userVerified = true; // Assume verified if we can't check
       }
     } catch (e) {
-      console.warn('Could not verify user in auth.users table:', e);
+      logErr('Could not verify user in auth.users table', e);
       userVerified = true; // Continue anyway
     }
     
@@ -138,7 +146,7 @@ export async function ensureProfiles(desiredRole?: Role, sessionUser?: any) {
             const { error } = await admin.from('barbers').insert(payload);
             if (error) {
               insertErr = error;
-              console.log(`Barber insert attempt ${retryCount + 1} failed (service role):`, error.code, error.message);
+              logErr(`Barber insert attempt ${retryCount + 1} failed (service role)`, error);
             } else {
               insertErr = null;
               console.log('✅ Barber profile created successfully (service role)');
@@ -146,14 +154,14 @@ export async function ensureProfiles(desiredRole?: Role, sessionUser?: any) {
             }
           } catch (e) {
             insertErr = e;
-            console.log(`Barber insert attempt ${retryCount + 1} exception (service role):`, e);
+            logErr(`Barber insert attempt ${retryCount + 1} exception (service role)`, e);
           }
         } else {
           try {
             const { error } = await supabase.from('barbers').insert(payload);
             if (error) {
               insertErr = error;
-              console.log(`Barber insert attempt ${retryCount + 1} failed (regular client):`, error.code, error.message);
+              logErr(`Barber insert attempt ${retryCount + 1} failed (regular client)`, error);
             } else {
               insertErr = null;
               console.log('✅ Barber profile created successfully (regular client)');
@@ -161,7 +169,7 @@ export async function ensureProfiles(desiredRole?: Role, sessionUser?: any) {
             }
           } catch (e) {
             insertErr = e;
-            console.log(`Barber insert attempt ${retryCount + 1} exception (regular client):`, e);
+            logErr(`Barber insert attempt ${retryCount + 1} exception (regular client)`, e);
           }
         }
 
@@ -177,11 +185,8 @@ export async function ensureProfiles(desiredRole?: Role, sessionUser?: any) {
       }
 
       if (insertErr) {
-        console.error('❌ ensureProfiles: insert barber error after all retries', {
-          code: insertErr?.code,
-          message: insertErr?.message,
-          details: insertErr?.details,
-          hint: insertErr?.hint,
+        logErr('❌ ensureProfiles: insert barber error after all retries', {
+          ...insertErr,
           userId: user.id,
           attempts: retryCount + 1
         });
@@ -232,7 +237,7 @@ export async function ensureProfiles(desiredRole?: Role, sessionUser?: any) {
           const { error } = await admin.from('clients').insert(clientPayload);
           if (error) {
             insertErr = error;
-            console.log(`Client insert attempt ${retryCount + 1} failed (service role):`, error.code, error.message);
+            logErr(`Client insert attempt ${retryCount + 1} failed (service role)`, error);
           } else {
             insertErr = null;
             console.log('✅ Client profile created successfully (service role)');
@@ -240,14 +245,14 @@ export async function ensureProfiles(desiredRole?: Role, sessionUser?: any) {
           }
         } catch (e) {
           insertErr = e;
-          console.log(`Client insert attempt ${retryCount + 1} exception (service role):`, e);
+          logErr(`Client insert attempt ${retryCount + 1} exception (service role)`, e);
         }
       } else {
         try {
           const { error } = await supabase.from('clients').insert(clientPayload);
           if (error) {
             insertErr = error;
-            console.log(`Client insert attempt ${retryCount + 1} failed (regular client):`, error.code, error.message);
+            logErr(`Client insert attempt ${retryCount + 1} failed (regular client)`, error);
           } else {
             insertErr = null;
             console.log('✅ Client profile created successfully (regular client)');
@@ -255,7 +260,7 @@ export async function ensureProfiles(desiredRole?: Role, sessionUser?: any) {
           }
         } catch (e) {
           insertErr = e;
-          console.log(`Client insert attempt ${retryCount + 1} exception (regular client):`, e);
+          logErr(`Client insert attempt ${retryCount + 1} exception (regular client)`, e);
         }
       }
 
@@ -271,17 +276,14 @@ export async function ensureProfiles(desiredRole?: Role, sessionUser?: any) {
     }
 
     if (insertErr) {
-      console.error('❌ ensureProfiles: insert client error after all retries', {
-        code: insertErr?.code,
-        message: insertErr?.message,
-        details: insertErr?.details,
-        hint: insertErr?.hint,
+      logErr('❌ ensureProfiles: insert client error after all retries', {
+        ...insertErr,
         userId: user.id,
         attempts: retryCount + 1
       });
       return;
     }
   } catch (e) {
-    console.error('ensureProfiles fatal:', e);
+    logErr('ensureProfiles fatal', e);
   }
 }
