@@ -24,21 +24,20 @@ export async function ensureProfiles(desiredRole?: Role, sessionUser?: any) {
 
     let user = sessionUser;
 
+    // If no user provided, try to get from current session
     if (!user) {
-      const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
-      if (sessionErr) {
-        console.error('ensureProfiles: session error', sessionErr);
-        return;
-      }
-      if (session?.user) {
-        user = session.user;
-      } else {
-        const { data: { user: currentUser }, error: userErr } = await supabase.auth.getUser();
-        if (userErr) {
-          console.error('ensureProfiles: getUser error', userErr);
+      try {
+        const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
+        if (sessionErr) {
+          console.error('ensureProfiles: session error', sessionErr);
           return;
         }
-        user = currentUser;
+        if (session?.user) {
+          user = session.user;
+        }
+      } catch (error) {
+        console.error('ensureProfiles: failed to get session', error);
+        return;
       }
     }
 

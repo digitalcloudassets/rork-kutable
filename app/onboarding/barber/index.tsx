@@ -32,13 +32,24 @@ export default function BarberOnboarding() {
 
   useEffect(() => {
     (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const u = session?.user;
-      setBarberId(u?.id ?? null);
-      setName(String(u?.user_metadata?.name ?? u?.email?.split('@')[0] ?? ''));
-      setEmail(u?.email ?? '');
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const u = session?.user;
+        if (u) {
+          setBarberId(u.id);
+          setName(String(u.user_metadata?.name ?? u.email?.split('@')[0] ?? ''));
+          setEmail(u.email ?? '');
+        } else {
+          console.log('No user session found in onboarding');
+          // Redirect to auth if no session
+          router.replace('/auth/barber-signup');
+        }
+      } catch (error) {
+        console.error('Error getting session in onboarding:', error);
+        router.replace('/auth/barber-signup');
+      }
     })();
-  }, []);
+  }, [router]);
 
   const saveProfile = async () => {
     try {

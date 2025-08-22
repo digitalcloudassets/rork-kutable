@@ -14,10 +14,8 @@ import {
 import { Stack, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabaseClient';
-import { useAuth } from '@/providers/AuthProvider';
 import { ensureProfiles } from '@/lib/profileBootstrap';
 import { brandConfig, BRAND } from '../../config/brand';
-import type { User } from '@/types/models';
 
 export default function BarberSignUpScreen() {
   const [name, setName] = useState('');
@@ -27,17 +25,24 @@ export default function BarberSignUpScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { setUser } = useAuth();
+
 
   useEffect(() => {
     // If already logged in, do NOT prompt again; go to onboarding.
     (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        // Ensure barber profile exists if role says barber
-        const role = session.user.user_metadata?.role === 'barber' ? 'barber' : 'client';
-        if (role === 'barber') await ensureProfiles('barber', session.user);
-        router.replace('/onboarding/barber'); // <- go straight to wizard
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          // Ensure barber profile exists if role says barber
+          const role = session.user.user_metadata?.role === 'barber' ? 'barber' : 'client';
+          if (role === 'barber') {
+            // Pass the session user to avoid auth errors
+            await ensureProfiles('barber', session.user);
+          }
+          router.replace('/onboarding/barber'); // <- go straight to wizard
+        }
+      } catch (error) {
+        console.error('Error checking existing session:', error);
       }
     })();
   }, []);
@@ -87,8 +92,8 @@ export default function BarberSignUpScreen() {
         // Double-set metadata just to be safe on confirm flows
         await supabase.auth.updateUser({ data: { role: 'barber', name } });
 
-        // Create barber row now to avoid race later
-        await ensureProfiles('barber');
+        // Create barber row now to avoid race later - pass the user data
+        await ensureProfiles('barber', authData.user);
 
         // Move into the onboarding wizard; no re-signup loop
         router.replace('/onboarding/barber');

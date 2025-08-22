@@ -325,7 +325,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Route guard: if logged-in barber, ensure profile and push to onboarding if needed
           const role = session.user.user_metadata?.role === 'barber' ? 'barber' : 'client';
           if (role === 'barber') {
-            await ensureProfiles('barber', session.user);
+            try {
+              await ensureProfiles('barber', session.user);
+            } catch (error) {
+              console.error('Failed to ensure barber profile:', error);
+            }
 
             // Check if Stripe is connected
             try {
@@ -363,7 +367,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 const role = session.user.user_metadata?.role === 'barber' ? 'barber' : 'client';
                 // Add a small delay to ensure auth state is fully propagated
                 setTimeout(async () => {
-                  await ensureProfiles(role, session.user);
+                  try {
+                    await ensureProfiles(role, session.user);
+                  } catch (error) {
+                    console.error('Failed to ensure profiles on sign in:', error);
+                  }
                 }, 500);
               }
               await loadUserFromSession(session.user);
