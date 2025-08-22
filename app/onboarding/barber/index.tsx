@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   Linking,
+  Platform,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -71,37 +72,50 @@ export default function BarberOnboarding() {
     }
   };
 
+  const pollStripeStatus = async (barberId: string) => {
+    const start = Date.now();
+    while (Date.now() - start < 90000) {
+      const st = await apiClient.stripe.getAccountStatus({ barberId });
+      if (st?.chargesEnabled && st?.payoutsEnabled) {
+        setStep('done');
+        Alert.alert('Connected', 'Payouts enabled. You\'re ready to accept payments.');
+        return;
+      }
+      await new Promise(r => setTimeout(r, 3000));
+    }
+    Alert.alert('Still connecting', 'Finish Stripe onboarding to enable payouts.');
+  };
+
   const openStripeOnboarding = useCallback(async () => {
     try {
       if (!barberId) throw new Error('Not signed in');
       setLoading(true);
 
-      // Create/fetch account then get onboarding link
       await apiClient.stripe.createOrFetchAccount({ barberId });
-      const { url } = await apiClient.stripe.createAccountLink({ barberId });
+      const { url, fallback } = await apiClient.stripe.createAccountLink({ barberId });
 
-      // Prefer in-app browser; fallback to system browser if needed
-      await WebBrowser.openBrowserAsync(url, {
-        enableBarCollapsing: true,
-        showTitle: true,
-        dismissButtonStyle: 'done',
+      // Build the redirectUrl (must match your scheme)
+      const redirectUrl = Linking.createURL('/onboarding/stripe/return'); // kutable://onboarding/stripe/return
+
+      // Use Auth Session so the browser closes and returns to app automatically
+      const res = await WebBrowser.openAuthSessionAsync(url, redirectUrl, {
+        preferEphemeralSession: Platform.OS === 'ios',
+        showInRecents: true,
       });
 
-      // Poll until payouts are enabled (no deep-link dependency)
-      const start = Date.now();
-      while (Date.now() - start < 90000) {
-        const st = await apiClient.stripe.getAccountStatus({ barberId });
-        if (st?.chargesEnabled && st?.payoutsEnabled) {
-          setStep('done');
-          Alert.alert('Connected', 'Payouts enabled. You\'re ready to accept payments.');
-          return;
-        }
-        await new Promise(r => setTimeout(r, 3000));
+      // Possible results: "success" (returned via deep link), "cancel", "dismiss"
+      if (res.type === 'success' || res.type === 'dismiss') {
+        // On iOS "success" includes a url; on Android you may get "dismiss"
+        await pollStripeStatus(barberId);
+      } else if (res.type === 'cancel') {
+        // User closed early — still attempt a quick status check
+        await pollStripeStatus(barberId);
+      } else {
+        // Fallback: open in system browser
+        await Linking.openURL(fallback?.return || url);
       }
-      Alert.alert('Still connecting', 'Finish Stripe onboarding to enable payouts.');
     } catch (e: any) {
-      try { await Linking.openURL(e?.url || 'about:blank'); }
-      catch { Alert.alert('Connection Error', e?.message || 'Could not open Stripe onboarding'); }
+      Alert.alert('Stripe', e?.message || 'Could not open Stripe');
     } finally {
       setLoading(false);
     }
