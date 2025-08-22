@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { getAdminClient } from './lib/supabase';
+import { getAdminClient, SUPABASE_URL } from './lib/supabase';
 import stripe from './stripe';
 import availability from './availability';
 import services from './services';
@@ -42,6 +42,28 @@ function getBaseUrl(req: Request) {
 
 // GET /api/health/ping
 app.get('/api/health/ping', (c) => c.json({ ok: true, time: new Date().toISOString() }));
+
+// GET /api/health/supabase
+app.get('/api/health/supabase', async c => {
+  const supa = getAdminClient();
+  let canSelectBarbers = false;
+  try {
+    if (supa) {
+      // Try a harmless select (no rows is OK)
+      const { error } = await supa.from('barbers').select('id').limit(1);
+      canSelectBarbers = !error;
+    }
+  } catch {}
+  const url = SUPABASE_URL;
+  const host = (() => {
+    try { return new URL(url).host; } catch { return url; }
+  })();
+  return c.json({
+    serverSupabaseHost: host,
+    serverSupabaseUrlPrefix: url?.slice(0, 32) || null,
+    canSelectBarbers,
+  });
+});
 
 // GET /api/health/env
 app.get('/api/health/env', (c) => {

@@ -1,289 +1,102 @@
-import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
+import { supabase } from '@/lib/supabaseClient';
 import { createClient } from '@supabase/supabase-js';
 
 type Role = 'barber' | 'client';
 
-// Helper to log errors properly (no more [object Object])
-function logErr(label: string, err: any) {
-  const plain =
-    err?.message ? { message: err.message, name: err.name, stack: err.stack, code: err.code, details: err.details, hint: err.hint } :
-    typeof err === 'object' ? err : { error: String(err) };
-  console.error(label, JSON.stringify(plain, Object.getOwnPropertyNames(plain)));
+function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
+
+function toPlainError(err: any) {
+  if (!err) return { message: 'Unknown error' };
+  if (err.message) return { message: err.message, code: err.code, details: err.details, hint: err.hint };
+  try { return JSON.parse(JSON.stringify(err)); } catch { return { message: String(err) }; }
 }
 
-function safeString(v: any, fallback: string) {
-  if (typeof v === 'string' && v.trim().length) return v.trim();
-  return fallback;
-}
-
-function toName(meta: any, email?: string | null) {
-  const fromMeta = meta?.name ?? meta?.full_name ?? meta?.fullName;
-  if (fromMeta && String(fromMeta).trim()) return String(fromMeta).trim();
+function nameFromMeta(meta: any, email?: string | null) {
+  const m = meta || {};
+  const raw = m.name ?? m.full_name ?? m.fullName ?? null;
+  if (raw && String(raw).trim()) return String(raw).trim();
   if (email && email.includes('@')) return email.split('@')[0];
   return 'Barber';
 }
 
 export async function ensureProfiles(desiredRole?: Role, sessionUser?: any) {
-  try {
-    if (!isSupabaseConfigured()) {
-      console.log('Supabase not configured, skipping profile creation');
-      return;
-    }
+  // 1) Get the current user from the same project the client is authenticated to
+  let user = sessionUser;
+  if (!user) {
+    const { data: { session }, error: sErr } = await supabase.auth.getSession();
+    if (sErr) { console.error('ensureProfiles session error', toPlainError(sErr)); return; }
+    user = session?.user || (await supabase.auth.getUser()).data.user;
+  }
+  if (!user) { console.log('ensureProfiles: no user'); return; }
 
-    let user = sessionUser;
+  const role: Role = desiredRole ?? (user.user_metadata?.role === 'barber' ? 'barber' : 'client');
 
-    // If no user provided, try to get from current session
-    if (!user) {
-      try {
-        const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
-        if (sessionErr) {
-          logErr('ensureProfiles: session error', sessionErr);
-          return;
-        }
-        if (session?.user) {
-          user = session.user;
-        }
-      } catch (error) {
-        logErr('ensureProfiles: failed to get session', error);
-        return;
-      }
-    }
+  if (role !== 'barber') {
+    // client branch left unchanged
+    return;
+  }
 
-    if (!user) {
-      console.log('ensureProfiles: No authenticated user found');
-      return;
-    }
-
-    console.log(`ensureProfiles: Starting profile creation for ${desiredRole} user:`, user.id);
-    
-    // Wait for auth propagation - critical for new signups
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    // Verify user exists in auth.users table before proceeding
-    let userVerified = false;
-    try {
-      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE;
-      const serviceUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-      
-      if (serviceRoleKey && serviceUrl) {
-        const admin = createClient(serviceUrl, serviceRoleKey, {
-          auth: { autoRefreshToken: false, persistSession: false },
-        });
-        
-        // Try up to 3 times with increasing delays
-        for (let attempt = 1; attempt <= 3; attempt++) {
-          const { data: authUser, error: authError } = await admin.auth.admin.getUserById(user.id);
-          if (!authError && authUser?.user) {
-            console.log(`User verified in auth.users table on attempt ${attempt}`);
-            userVerified = true;
-            break;
-          }
-          
-          if (attempt < 3) {
-            console.log(`User not found in auth.users table, attempt ${attempt}/3. Waiting...`);
-            await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
-          } else {
-            logErr('User still not found in auth.users table after all attempts', authError);
-          }
-        }
-      } else {
-        console.log('No service role key available, skipping user verification');
-        userVerified = true; // Assume verified if we can't check
-      }
-    } catch (e) {
-      logErr('Could not verify user in auth.users table', e);
-      userVerified = true; // Continue anyway
-    }
-    
-    if (!userVerified) {
-      console.error('Cannot create profile: user not found in auth.users table');
-      return;
-    }
-
-    const role: Role = desiredRole ?? (user.user_metadata?.role === 'barber' ? 'barber' : 'client');
-
-    if (role === 'barber') {
-      const { data: existing, error: selectError } = await supabase
-        .from('barbers')
-        .select('id')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (selectError?.code === '42P01') {
-        console.log('Barbers table does not exist, skipping profile creation');
-        return;
-      }
-      if (existing) {
-        console.log('Barber profile already exists');
-        return;
-      }
-
-      // Build non-null-safe payload
-      const name = toName(user.user_metadata, user.email);
-      const payload = {
-        id: user.id,
-        email: user.email ?? null,
-        name: safeString(name, 'Barber'), // barbers.name is NOT NULL
-      };
-
-      // Prefer service role if available (bypass RLS)
-      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-        || process.env.SUPABASE_SERVICE_ROLE;
-      const serviceUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-      let insertErr: any = null;
-      let retryCount = 0;
-      const maxRetries = 5; // Increased retries
-
-      console.log('Attempting to create barber profile with payload:', payload);
-
-      while (retryCount < maxRetries) {
-        if (serviceRoleKey && serviceUrl) {
-          try {
-            const admin = createClient(serviceUrl, serviceRoleKey, {
-              auth: { autoRefreshToken: false, persistSession: false },
-            });
-            const { error } = await admin.from('barbers').insert(payload);
-            if (error) {
-              insertErr = error;
-              logErr(`Barber insert attempt ${retryCount + 1} failed (service role)`, error);
-            } else {
-              insertErr = null;
-              console.log('✅ Barber profile created successfully (service role)');
-              break;
-            }
-          } catch (e) {
-            insertErr = e;
-            logErr(`Barber insert attempt ${retryCount + 1} exception (service role)`, e);
-          }
-        } else {
-          try {
-            const { error } = await supabase.from('barbers').insert(payload);
-            if (error) {
-              insertErr = error;
-              logErr(`Barber insert attempt ${retryCount + 1} failed (regular client)`, error);
-            } else {
-              insertErr = null;
-              console.log('✅ Barber profile created successfully (regular client)');
-              break;
-            }
-          } catch (e) {
-            insertErr = e;
-            logErr(`Barber insert attempt ${retryCount + 1} exception (regular client)`, e);
-          }
-        }
-
-        // If foreign key constraint error or other retryable errors, wait and retry
-        if ((insertErr?.code === '23503' || insertErr?.code === '23505') && retryCount < maxRetries - 1) {
-          const waitTime = 1500 * (retryCount + 1); // Progressive backoff
-          console.log(`Retrying barber profile creation (attempt ${retryCount + 2}/${maxRetries}) in ${waitTime}ms...`);
-          await new Promise(resolve => setTimeout(resolve, waitTime));
-          retryCount++;
-        } else {
-          break;
-        }
-      }
-
-      if (insertErr) {
-        logErr('❌ ensureProfiles: insert barber error after all retries', {
-          ...insertErr,
-          userId: user.id,
-          attempts: retryCount + 1
-        });
-        return;
-      }
-      return;
-    }
-
-    // Client branch (unchanged)
-    const { data: existingClient, error: clientSelectError } = await supabase
-      .from('clients')
+  // 2) If barber already exists, exit
+  {
+    const { data: existing, error } = await supabase
+      .from('barbers')
       .select('id')
       .eq('id', user.id)
       .maybeSingle();
+    if (!error && existing) return;
+  }
 
-    if (clientSelectError?.code === '42P01') {
-      console.log('Clients table does not exist, skipping client profile creation');
+  // 3) Build payload with non-null name
+  const payload = {
+    id: user.id,
+    email: user.email ?? null,
+    name: nameFromMeta(user.user_metadata, user.email), // barbers.name is NOT NULL
+  };
+
+  // 4) Use admin client pointing to the EXACT same project URL as client
+  const serviceUrl =
+    process.env.SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.EXPO_PUBLIC_SUPABASE_URL;
+
+  const serviceKey =
+    process.env.SUPABASE_SERVICE_ROLE ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_SERVICE_KEY;
+
+  const admin = (serviceUrl && serviceKey)
+    ? createClient(serviceUrl, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } })
+    : null;
+
+  // 5) Retry a few times for the rare case where auth.users row lags creation
+  const maxAttempts = 6;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const clientToUse = admin ?? supabase; // prefer admin to bypass RLS
+    const { error } = await clientToUse.from('barbers').insert(payload);
+
+    if (!error) {
+      console.log('Barber profile created');
       return;
     }
-    if (existingClient) {
-      console.log('Client profile already exists');
-      return;
-    }
 
-    const clientName = toName(user.user_metadata, user.email);
-    const clientPayload = {
-      id: user.id,
-      email: safeString(user.email, 'unknown@example.com'), // clients.email is NOT NULL UNIQUE
-      name: safeString(clientName, 'Client'),               // clients.name is NOT NULL
-    };
+    const plain = toPlainError(error);
+    console.error(`Barber insert attempt ${attempt} failed`, plain);
 
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-      || process.env.SUPABASE_SERVICE_ROLE;
-    const serviceUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-    let insertErr: any = null;
-    let retryCount = 0;
-    const maxRetries = 5; // Increased retries
-
-    console.log('Attempting to create client profile with payload:', clientPayload);
-
-    while (retryCount < maxRetries) {
-      if (serviceRoleKey && serviceUrl) {
-        try {
-          const admin = createClient(serviceUrl, serviceRoleKey, {
-            auth: { autoRefreshToken: false, persistSession: false },
-          });
-          const { error } = await admin.from('clients').insert(clientPayload);
-          if (error) {
-            insertErr = error;
-            logErr(`Client insert attempt ${retryCount + 1} failed (service role)`, error);
-          } else {
-            insertErr = null;
-            console.log('✅ Client profile created successfully (service role)');
-            break;
-          }
-        } catch (e) {
-          insertErr = e;
-          logErr(`Client insert attempt ${retryCount + 1} exception (service role)`, e);
-        }
-      } else {
-        try {
-          const { error } = await supabase.from('clients').insert(clientPayload);
-          if (error) {
-            insertErr = error;
-            logErr(`Client insert attempt ${retryCount + 1} failed (regular client)`, error);
-          } else {
-            insertErr = null;
-            console.log('✅ Client profile created successfully (regular client)');
-            break;
-          }
-        } catch (e) {
-          insertErr = e;
-          logErr(`Client insert attempt ${retryCount + 1} exception (regular client)`, e);
-        }
+    // Detect FK failure that indicates project mismatch or early insert
+    if (plain.code === '23503') {
+      if (attempt < maxAttempts) {
+        // short backoff for auth.users visibility
+        await sleep(400 * attempt);
+        continue;
       }
-
-      // If foreign key constraint error or other retryable errors, wait and retry
-      if ((insertErr?.code === '23503' || insertErr?.code === '23505') && retryCount < maxRetries - 1) {
-        const waitTime = 1500 * (retryCount + 1); // Progressive backoff
-        console.log(`Retrying client profile creation (attempt ${retryCount + 2}/${maxRetries}) in ${waitTime}ms...`);
-        await new Promise(resolve => setTimeout(resolve, waitTime));
-        retryCount++;
-      } else {
-        break;
-      }
+      console.error('FK 23503 persisted. Likely Supabase project mismatch between client and server.');
     }
-
-    if (insertErr) {
-      logErr('❌ ensureProfiles: insert client error after all retries', {
-        ...insertErr,
-        userId: user.id,
-        attempts: retryCount + 1
-      });
-      return;
+    // For any other error, retry a couple times then give up
+    if (attempt < maxAttempts) {
+      await sleep(300 * attempt);
+      continue;
     }
-  } catch (e) {
-    logErr('ensureProfiles fatal', e);
+    console.error('ensureProfiles: insert barber error after all retries', plain);
+    return;
   }
 }

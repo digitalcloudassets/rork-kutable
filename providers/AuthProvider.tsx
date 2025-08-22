@@ -4,6 +4,7 @@ import { supabase, isSupabaseConfigured, clearAuthStorage } from "@/lib/supabase
 import { ensureProfiles } from "@/lib/profileBootstrap";
 import { apiClient } from "@/lib/api";
 import { useRouter, usePathname } from "expo-router";
+import { assertSameSupabaseProject } from "@/lib/envCheck";
 
 import type { User } from "@/types/models";
 
@@ -261,6 +262,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     const initializeAuth = async () => {
       console.log('🔄 Starting auth initialization...');
+      
+      // Call the env check once on mount so you immediately see mismatches in logs
+      assertSameSupabaseProject();
+      
       try {
         // Check if Supabase is properly configured
         console.log('🔍 Checking Supabase configuration...');
