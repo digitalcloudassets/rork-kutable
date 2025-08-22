@@ -10,10 +10,7 @@ import { POST as barbersSearch } from './api/barbers/search';
 import { GET as barbersProfile } from './api/barbers/profile';
 import earningsSummary from './api/earnings/summary';
 import payoutsList from './api/payouts/list';
-import bookingsCreate from './api/bookings/create';
-import bookingsList from './api/bookings/list';
-import bookingsCancel from './api/bookings/cancel';
-import bookingsReschedule from './api/bookings/reschedule';
+import bookings from './bookings';
 import paymentsCreateIntent from './api/payments/create-intent';
 import paymentsWebhook from './api/payments/webhook';
 import galleryList from './api/gallery/list';
@@ -180,9 +177,14 @@ app.route('/', availability);
 // Mount services module
 app.route('/', services);
 
+// Mount bookings module
+app.route('/', bookings);
+
 // Services endpoints are now handled by the mounted services module
 
 // Availability endpoints are now handled by the mounted availability module
+
+// Bookings endpoints are now handled by the mounted bookings module
 
 // Barbers endpoints
 app.post('/api/barbers/search', async (c) => {
@@ -211,22 +213,7 @@ app.get('/api/payouts/list', async (c) => {
 
 
 
-// Bookings endpoints
-app.post('/api/bookings/create', async (c) => {
-  return await bookingsCreate(c.req.raw, null);
-});
-
-app.post('/api/bookings/list', async (c) => {
-  return await bookingsList(c.req.raw, null);
-});
-
-app.post('/api/bookings/cancel', async (c) => {
-  return await bookingsCancel(c.req.raw, null);
-});
-
-app.post('/api/bookings/reschedule', async (c) => {
-  return await bookingsReschedule(c.req.raw, null);
-});
+// Bookings endpoints are now handled by the mounted bookings module
 
 // Payments endpoints
 app.post('/api/payments/create-intent', async (c) => {
