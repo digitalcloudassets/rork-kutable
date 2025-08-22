@@ -7,8 +7,7 @@ const stripeApp = new Hono<{ Bindings: Bindings }>();
 
 function getStripe(c: any) {
   const { stripeSecret } = resolveEnv(c.env);
-  if (!stripeSecret) return null;
-  return new Stripe(stripeSecret);
+  return stripeSecret ? new Stripe(stripeSecret) : null;
 }
 
 
@@ -24,11 +23,8 @@ stripeApp.post('/api/stripe/create-or-fetch-account', async c => {
   const supa = getAdminClient(c.env);
   if (!supa) return c.json({ error: 'Database not configured' }, 500);
 
-  // fetch barber
   const { data: b, error } = await supa
-    .from('barbers')
-    .select('id,email,connected_account_id')
-    .eq('id', barberId).single();
+    .from('barbers').select('id,email,connected_account_id').eq('id', barberId).single();
   if (error || !b) return c.json({ error: 'barber not found' }, 404);
 
   let accountId = b.connected_account_id as string | null;
@@ -60,10 +56,7 @@ stripeApp.post('/api/stripe/account-link', async c => {
   const supa = getAdminClient(c.env);
   if (!supa) return c.json({ error: 'Database not configured' }, 500);
 
-  const { data } = await supa
-    .from('barbers')
-    .select('connected_account_id')
-    .eq('id', barberId).single();
+  const { data } = await supa.from('barbers').select('connected_account_id').eq('id', barberId).single();
   const accountId = data?.connected_account_id;
   if (!accountId) return c.json({ error: 'no connected account' }, 400);
 
@@ -101,23 +94,16 @@ stripeApp.get('/api/stripe/account-status', async c => {
   const supa = getAdminClient(c.env);
   if (!supa) return c.json({ chargesEnabled:false, payoutsEnabled:false });
 
-  const { data } = await supa
-    .from('barbers')
-    .select('connected_account_id')
-    .eq('id', barberId).single();
-
-  const accountId = data?.connected_account_id;
-  if (!accountId) return c.json({ chargesEnabled:false, payoutsEnabled:false });
+  const { data } = await supa.from('barbers').select('connected_account_id').eq('id', barberId).single();
+  const acc = data?.connected_account_id;
+  if (!acc) return c.json({ chargesEnabled:false, payoutsEnabled:false });
 
   const stripe = getStripe(c);
   if (!stripe) return c.json({ chargesEnabled:false, payoutsEnabled:false });
 
   try {
-    const acc = await stripe.accounts.retrieve(accountId);
-    return c.json({
-      chargesEnabled: !!acc.charges_enabled,
-      payoutsEnabled: !!acc.payouts_enabled,
-    });
+    const a = await stripe.accounts.retrieve(acc);
+    return c.json({ chargesEnabled: !!a.charges_enabled, payoutsEnabled: !!a.payouts_enabled });
   } catch {
     return c.json({ chargesEnabled:false, payoutsEnabled:false });
   }
