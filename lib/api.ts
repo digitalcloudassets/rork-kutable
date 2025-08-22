@@ -45,7 +45,7 @@ async function postJson<T>(path: string, payload: unknown): Promise<T> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...hdrs },
     body: JSON.stringify(payload),
-  }).then(toJson);
+  }).then((res) => toJson<T>(res));
 }
 
 async function getJson<T>(path: string): Promise<T> {
@@ -53,7 +53,7 @@ async function getJson<T>(path: string): Promise<T> {
   return fetch(`${API_BASE}${path}`, {
     headers: { ...hdrs },
     cache: 'no-store',
-  }).then(toJson);
+  }).then((res) => toJson<T>(res));
 }
 
 // ===== Public API =====
