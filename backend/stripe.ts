@@ -5,10 +5,10 @@ import { resolveEnv, Bindings } from './lib/env';
 
 const stripeApp = new Hono<{ Bindings: Bindings }>();
 
-function getStripe(c: any) {
+const getStripe = (c: any) => {
   const { stripeSecret } = resolveEnv(c.env);
-  return stripeSecret ? new Stripe(stripeSecret) : null;
-}
+  return stripeSecret ? new Stripe(stripeSecret, { apiVersion: '2024-06-20' }) : null;
+};
 
 
 
