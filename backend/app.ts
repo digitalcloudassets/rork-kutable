@@ -86,6 +86,19 @@ app.get('/api/health/env', (c) => {
   });
 });
 
+// GET /api/health/envdump - see exactly which names resolved (safe; secrets redacted)
+app.get('/api/health/envdump', c => {
+  const env = resolveEnv(c.env);
+  return c.json({
+    supabaseUrlPrefix: env.supabaseUrl.slice(0, 36),
+    appBaseUrl: env.appBaseUrl,
+    appScheme: env.appScheme,
+    appHost: env.appHost,
+    hasServiceKey: !!env.supabaseServiceKey,
+    hasStripeKey: !!env.stripeSecret,
+  });
+});
+
 // GET /api/health/snapshot
 app.get('/api/health/snapshot', async (c) => {
   const snapshot = {
