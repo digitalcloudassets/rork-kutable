@@ -52,6 +52,16 @@ const createSupabaseClient = () => {
       },
     });
     
+    // Set up auth state change listener to handle refresh token errors
+    client.auth.onAuthStateChange((event, session) => {
+      if (event === 'TOKEN_REFRESHED' && !session) {
+        console.log('Token refresh failed, clearing session');
+        // Clear any stale session data
+        AsyncStorage.removeItem('supabase.auth.token').catch(() => {});
+        AsyncStorage.removeItem('@supabase/auth-token').catch(() => {});
+      }
+    });
+    
     return client;
   } catch (error) {
     console.error('Error creating Supabase client:', error);
@@ -103,6 +113,28 @@ try {
       update: () => Promise.resolve({ data: null, error: { code: 'INIT_ERROR' } }),
     }),
   };
+}
+
+// Utility function to clear all auth-related storage
+export async function clearAuthStorage() {
+  try {
+    const keysToRemove = [
+      'supabase.auth.token',
+      '@supabase/auth-token',
+      'sb-auth-token',
+      'user'
+    ];
+    
+    await Promise.all(
+      keysToRemove.map(key => 
+        AsyncStorage.removeItem(key).catch(() => {})
+      )
+    );
+    
+    console.log('🧹 Cleared all auth storage');
+  } catch (error) {
+    console.log('Error clearing auth storage:', error);
+  }
 }
 
 export const supabase = supabaseInstance;

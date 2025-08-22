@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
+import { supabase, isSupabaseConfigured, clearAuthStorage } from "@/lib/supabaseClient";
 import { ensureProfiles } from "@/lib/profileBootstrap";
 
 import type { User } from "@/types/models";
@@ -262,6 +262,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('🔍 Checking Supabase configuration...');
         if (!isSupabaseConfigured()) {
           console.log('✅ Supabase not configured, using offline mode');
+          // Clear any stale Supabase session data that might cause refresh token errors
+          await clearAuthStorage();
+          
           // Just load stored user and skip Supabase operations
           if (mounted) {
             console.log('📱 Loading stored user...');
@@ -287,8 +290,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
         
-        // Check for existing session
-        const { data: { session } } = await supabase.auth.getSession();
+        // Check for existing session with error handling for invalid refresh tokens
+        let session = null;
+        try {
+          const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+          if (sessionError) {
+            console.log('Session error detected:', sessionError.message);
+            // If it's a refresh token error, clear the session and continue
+            if (sessionError.message.includes('refresh') || sessionError.message.includes('token')) {
+              console.log('🧹 Clearing invalid session due to token error');
+              await supabase.auth.signOut();
+              await clearAuthStorage();
+            }
+          } else {
+            session = sessionData.session;
+          }
+        } catch (sessionError) {
+          console.log('Failed to get session, clearing auth state:', sessionError);
+          try {
+            await supabase.auth.signOut();
+            await clearAuthStorage();
+          } catch (clearError) {
+            console.log('Error clearing auth state:', clearError);
+          }
+        }
         
         if (mounted && session?.user) {
           await loadUserFromSession(session.user);
@@ -313,9 +338,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 }, 500);
               }
               await loadUserFromSession(session.user);
-            } else if (event === 'SIGNED_OUT') {
-              console.log('User signed out');
-              await saveUser(null);
+            } else if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+              console.log('User signed out or token refresh failed');
+              if (event === 'SIGNED_OUT') {
+                await saveUser(null);
+              }
             }
           }
         });
@@ -330,6 +357,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           stack: error instanceof Error ? error.stack : undefined,
           name: error instanceof Error ? error.name : undefined
         });
+        
+        // If it's a refresh token error, clear all auth state
+        if (error instanceof Error && error.message.includes('refresh')) {
+          console.log('🧹 Clearing auth state due to refresh token error');
+          try {
+            await clearAuthStorage();
+          } catch (clearError) {
+            console.log('Error clearing auth state:', clearError);
+          }
+        }
+        
         // Fallback to stored user on any error
         if (mounted) {
           try {
