@@ -73,8 +73,9 @@ export default function ServicesScreen() {
         throw new Error('API client not properly initialized');
       }
       
-      const servicesList = await apiClient.services.list({ barberId: uid });
-      setServices(servicesList);
+      const response = await apiClient.services.list({ barberId: uid });
+      console.log('Services API response:', response);
+      setServices(response.services || []);
     } catch (error) {
       console.error('Failed to load services:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to load services';
@@ -124,11 +125,9 @@ export default function ServicesScreen() {
       const uid = await getUserId();
       if (!uid) throw new Error('Not signed in');
 
-      let savedService: Service;
-      
       if (editingService) {
         // Update existing service
-        savedService = await apiClient.services.update({
+        const updateResponse = await apiClient.services.update({
           id: editingService.id,
           barberId: uid,
           name: formData.name.trim(),
@@ -137,17 +136,20 @@ export default function ServicesScreen() {
           description: formData.description.trim() || undefined,
           active: formData.active,
         });
-        setServices(prev => prev.map(s => s.id === savedService.id ? savedService : s));
+        // Reload services after update since backend returns { ok: true }
+        await loadServices();
       } else {
         // Create new service
-        savedService = await apiClient.services.create({
+        const createResponse = await apiClient.services.create({
           barberId: uid,
           name: formData.name.trim(),
           durationMinutes: parseInt(formData.durationMinutes),
           priceCents: Math.round(parseFloat(formData.priceCents) * 100), // Convert dollars to cents
           description: formData.description.trim() || undefined,
         });
-        setServices(prev => [savedService, ...prev]);
+        console.log('Create service response:', createResponse);
+        // Reload services after create
+        await loadServices();
       }
 
       handleCloseModal();
