@@ -3,9 +3,28 @@ import { getAdminClient } from './lib/supabase';
 import { getStripe } from './lib/stripe';
 
 const app = new Hono();
-const base = (req: Request) => process.env.APP_BASE_URL || new URL(req.url).origin;
+
+// Read deep-link scheme/host from env (set these in Rork)
+const APP_SCHEME = process.env.APP_SCHEME || 'kutable';
+const APP_HOST   = process.env.APP_HOST   || 'kutable.rork.app'; // optional, for universal links
+const APP_BASE   = process.env.APP_BASE_URL || `https://${APP_HOST}`;
+
+// Helper: prefer deep link (scheme://path) for mobile return/refresh
+function deepLink(path: string) {
+  // e.g., kutable://onboarding/stripe/return
+  return `${APP_SCHEME}://${path.replace(/^\//,'')}`;
+}
+// Fallback web URL if needed
+function webUrl(path: string) {
+  return `${APP_BASE}${path.startsWith('/') ? path : `/${path}`}`;
+}
+
+
 
 app.post('/api/stripe/create-or-fetch-account', async c => {
+  c.header('Content-Type', 'application/json; charset=utf-8');
+  c.header('Cache-Control', 'no-store');
+
   const { barberId } = await c.req.json();
   if (!barberId) return c.json({ error: 'barberId required' }, 400);
 
@@ -44,30 +63,43 @@ app.post('/api/stripe/create-or-fetch-account', async c => {
 });
 
 app.post('/api/stripe/account-link', async c => {
+  c.header('Content-Type', 'application/json; charset=utf-8');
+  c.header('Cache-Control', 'no-store');
+
   const { barberId } = await c.req.json();
   if (!barberId) return c.json({ error: 'barberId required' }, 400);
 
   const supa = getAdminClient();
   if (!supa) return c.json({ error: 'Database not configured' }, 500);
 
-  const { data } = await supa.from('barbers')
-    .select('connected_account_id').eq('id', barberId).single();
-  const accountId = data?.connected_account_id;
-  if (!accountId?.startsWith('acct_')) {
-    return c.json({ error: 'no connected account' }, 400);
-  }
+  const { data, error } = await supa
+    .from('barbers')
+    .select('connected_account_id')
+    .eq('id', barberId)
+    .single();
+  if (error || !data?.connected_account_id) return c.json({ error: 'no connected account' }, 400);
 
-  const stripe = getStripe(); 
+  const stripe = getStripe();
   if (!stripe) return c.json({ error: 'Stripe not configured' }, 500);
-  
+
+  // Build both deep link and web fallbacks
+  const refresh_url = deepLink('/onboarding/stripe/refresh');
+  const return_url  = deepLink('/onboarding/stripe/return');
+  // Some Android devices ignore custom schemes; include web fallbacks in metadata
+  const fallback_refresh = webUrl('/onboarding/stripe?status=refresh');
+  const fallback_return  = webUrl('/onboarding/stripe?status=return');
+
   const link = await stripe.accountLinks.create({
-    account: accountId,
+    account: data.connected_account_id,
     type: 'account_onboarding',
-    refresh_url: `${base(c.req.raw)}/api/stripe/onboarding/refresh?barberId=${barberId}`,
-    return_url:  `${base(c.req.raw)}/api/stripe/onboarding/return?barberId=${barberId}`,
+    refresh_url,
+    return_url,
   });
-  
-  return c.json({ url: link.url });
+
+  return c.json({
+    url: link.url,
+    fallback: { refresh: fallback_refresh, return: fallback_return }
+  });
 });
 
 app.get('/api/stripe/account-status', async c => {
