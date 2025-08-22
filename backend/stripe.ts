@@ -7,7 +7,7 @@ const stripeApp = new Hono<{ Bindings: Bindings }>();
 
 const getStripe = (c: any) => {
   const { stripeSecret } = resolveEnv(c.env);
-  return stripeSecret ? new Stripe(stripeSecret, { apiVersion: '2024-06-20' }) : null;
+  return stripeSecret ? new Stripe(stripeSecret) : null;
 };
 
 
