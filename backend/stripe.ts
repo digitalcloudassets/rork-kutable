@@ -5,6 +5,9 @@ import { resolveEnv, Bindings } from './lib/env';
 
 const stripeApp = new Hono<{ Bindings: Bindings }>();
 
+// Add ping route so we can verify mounting
+stripeApp.get('/ping', c => c.text('stripe ok'));
+
 const getStripe = (c: any) => {
   const { stripeSecret } = resolveEnv(c.env);
   return stripeSecret ? new Stripe(stripeSecret) : null;

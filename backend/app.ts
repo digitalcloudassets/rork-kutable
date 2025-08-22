@@ -2,15 +2,14 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { getAdminClient } from './lib/supabase';
 import { resolveEnv, supabaseHost, Bindings } from './lib/env';
-import stripe from './stripe';
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-// Allow mobile app to call API
-app.use('/*', cors({
+// CORS for web
+app.use('/api/*', cors({
   origin: '*',
-  allowMethods: ['GET','POST','PUT','DELETE','OPTIONS'],
-  allowHeaders: ['Content-Type','Authorization'],
+  allowMethods: ['GET', 'POST', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'Authorization'],
 }));
 
 // helper: base URL
@@ -211,10 +210,5 @@ app.get('/api/health/integration', async (c) => {
     canQueryBarbers,
   });
 });
-
-// Mount Stripe module under /api/stripe
-app.route('/api/stripe', stripe);
-
-
 
 export default app;
