@@ -68,12 +68,15 @@ app.get('/api/health/env', (c) => {
 app.get('/api/health/envdump', c => {
   const env = resolveEnv(c.env);
   return c.json({
+    serverHostPreview: (() => { try { return new URL(env.supabaseUrl).host; } catch { return 'unknown'; } })(),
     supabaseUrlPrefix: env.supabaseUrl.slice(0, 36),
     appBaseUrl: env.appBaseUrl,
     appScheme: env.appScheme,
     appHost: env.appHost,
     hasServiceKey: !!env.supabaseServiceKey,
     hasStripeKey: !!env.stripeSecret,
+    serviceKeyLength: env.supabaseServiceKey ? env.supabaseServiceKey.length : 0,
+    stripeKeyLength: env.stripeSecret ? env.stripeSecret.length : 0,
   });
 });
 

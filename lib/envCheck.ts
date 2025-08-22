@@ -35,19 +35,50 @@ export async function assertSameSupabaseProject() {
     const clientHost = clientUrl ? new URL(clientUrl).host : 'unknown';
     const apiBase = resolveApiBase();
 
-    const res = await fetch(`${apiBase}/api/health/supabase`, { cache: 'no-store' });
+    if (__DEV__) console.log('[envCheck] Testing API health at:', `${apiBase}/api/health/supabase`);
+
+    const res = await fetch(`${apiBase}/api/health/supabase`, { 
+      cache: 'no-store',
+      headers: { 'Accept': 'application/json' }
+    });
+    
     if (!res.ok) {
       const text = await res.text().catch(()=>'');
-      console.error('API health failed', { status: res.status, apiBase, text: text?.slice(0,200) });
+      console.error('API health failed', { 
+        status: res.status, 
+        statusText: res.statusText,
+        apiBase, 
+        text: text?.slice(0,200) 
+      });
+      
+      // Try envdump for more info
+      try {
+        const envRes = await fetch(`${apiBase}/api/health/envdump`, { cache: 'no-store' });
+        if (envRes.ok) {
+          const envData = await envRes.json();
+          console.log('Backend env info:', envData);
+        }
+      } catch { /* ignore */ }
+      
       return; // don't log a fake mismatch when server isn't reachable
     }
+    
     const j = await res.json().catch(() => ({}));
     const serverHost = j?.serverHost || 'unknown';
 
-    if (clientHost !== serverHost) {
+    if (__DEV__) console.log('[envCheck] Hosts:', { clientHost, serverHost });
+
+    if (clientHost !== serverHost && serverHost !== 'unknown') {
       console.error('ERROR Supabase project mismatch', { clientHost, serverHost });
     }
   } catch (e) {
     console.error('API health fetch error', e);
+    if (__DEV__) {
+      console.log('[envCheck] Full error details:', {
+        message: (e as Error)?.message,
+        name: (e as Error)?.name,
+        stack: (e as Error)?.stack?.slice(0, 300)
+      });
+    }
   }
 }

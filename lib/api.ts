@@ -42,6 +42,9 @@ export const apiClient = {
     supabase: async () => {
       return api('/api/health/supabase');
     },
+    envdump: async () => {
+      return api('/api/health/envdump');
+    },
   },
 };
 
