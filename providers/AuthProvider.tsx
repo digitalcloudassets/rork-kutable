@@ -361,25 +361,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           
           if (mounted) {
             if (session?.user) {
-              // Only ensure profiles exist after successful sign-in/sign-up, not on token refresh
+              // Handle profile creation for new signups
               if (event === 'SIGNED_IN') {
-                console.log('User signed in, ensuring profiles exist');
+                console.log('User signed in, loading user profile');
                 const role = session.user.user_metadata?.role === 'barber' ? 'barber' : 'client';
-                // Add a small delay to ensure auth state is fully propagated
-                setTimeout(async () => {
-                  try {
-                    await ensureProfiles(role, session.user);
-                  } catch (error) {
-                    console.error('Failed to ensure profiles on sign in:', error);
-                  }
-                }, 500);
+                
+                // For barber signups, ensure profile exists with a delay to allow auth propagation
+                if (role === 'barber') {
+                  setTimeout(async () => {
+                    try {
+                      console.log('Ensuring barber profile exists for user:', session.user.id);
+                      await ensureProfiles('barber', session.user);
+                      // Reload user data after profile creation
+                      await loadUserFromSession(session.user);
+                    } catch (error) {
+                      console.error('Failed to ensure barber profile on sign in:', error);
+                      // Still load user data even if profile creation fails
+                      await loadUserFromSession(session.user);
+                    }
+                  }, 1000); // Increased delay for better reliability
+                } else {
+                  await loadUserFromSession(session.user);
+                }
+              } else {
+                // For other events, just load user data
+                await loadUserFromSession(session.user);
               }
-              await loadUserFromSession(session.user);
-            } else if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
-              console.log('User signed out or token refresh failed');
-              if (event === 'SIGNED_OUT') {
-                await saveUser(null);
-              }
+            } else if (event === 'SIGNED_OUT') {
+              console.log('User signed out');
+              await saveUser(null);
             }
           }
         });

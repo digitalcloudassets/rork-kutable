@@ -46,10 +46,13 @@ export async function ensureProfiles(desiredRole?: Role, sessionUser?: any) {
       return;
     }
 
-    // Wait a bit to ensure user is fully created in auth.users table
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    console.log(`ensureProfiles: Starting profile creation for ${desiredRole} user:`, user.id);
+    
+    // Wait for auth propagation - critical for new signups
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
     // Verify user exists in auth.users table before proceeding
+    let userVerified = false;
     try {
       const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE;
       const serviceUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -59,20 +62,34 @@ export async function ensureProfiles(desiredRole?: Role, sessionUser?: any) {
           auth: { autoRefreshToken: false, persistSession: false },
         });
         
-        const { data: authUser, error: authError } = await admin.auth.admin.getUserById(user.id);
-        if (authError || !authUser?.user) {
-          console.error('User not found in auth.users table:', authError);
-          // Wait longer and try once more
-          await new Promise(resolve => setTimeout(resolve, 3000));
-          const { data: authUser2, error: authError2 } = await admin.auth.admin.getUserById(user.id);
-          if (authError2 || !authUser2?.user) {
-            console.error('User still not found in auth.users table after retry:', authError2);
-            return;
+        // Try up to 3 times with increasing delays
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          const { data: authUser, error: authError } = await admin.auth.admin.getUserById(user.id);
+          if (!authError && authUser?.user) {
+            console.log(`User verified in auth.users table on attempt ${attempt}`);
+            userVerified = true;
+            break;
+          }
+          
+          if (attempt < 3) {
+            console.log(`User not found in auth.users table, attempt ${attempt}/3. Waiting...`);
+            await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+          } else {
+            console.error('User still not found in auth.users table after all attempts:', authError);
           }
         }
+      } else {
+        console.log('No service role key available, skipping user verification');
+        userVerified = true; // Assume verified if we can't check
       }
     } catch (e) {
       console.warn('Could not verify user in auth.users table:', e);
+      userVerified = true; // Continue anyway
+    }
+    
+    if (!userVerified) {
+      console.error('Cannot create profile: user not found in auth.users table');
+      return;
     }
 
     const role: Role = desiredRole ?? (user.user_metadata?.role === 'barber' ? 'barber' : 'client');
@@ -108,7 +125,9 @@ export async function ensureProfiles(desiredRole?: Role, sessionUser?: any) {
 
       let insertErr: any = null;
       let retryCount = 0;
-      const maxRetries = 3;
+      const maxRetries = 5; // Increased retries
+
+      console.log('Attempting to create barber profile with payload:', payload);
 
       while (retryCount < maxRetries) {
         if (serviceRoleKey && serviceUrl) {
@@ -119,29 +138,38 @@ export async function ensureProfiles(desiredRole?: Role, sessionUser?: any) {
             const { error } = await admin.from('barbers').insert(payload);
             if (error) {
               insertErr = error;
+              console.log(`Barber insert attempt ${retryCount + 1} failed (service role):`, error.code, error.message);
             } else {
               insertErr = null;
-              console.log('Barber profile created successfully (service role)');
+              console.log('✅ Barber profile created successfully (service role)');
               break;
             }
           } catch (e) {
             insertErr = e;
+            console.log(`Barber insert attempt ${retryCount + 1} exception (service role):`, e);
           }
         } else {
-          const { error } = await supabase.from('barbers').insert(payload);
-          if (error) {
-            insertErr = error;
-          } else {
-            insertErr = null;
-            console.log('Barber profile created successfully');
-            break;
+          try {
+            const { error } = await supabase.from('barbers').insert(payload);
+            if (error) {
+              insertErr = error;
+              console.log(`Barber insert attempt ${retryCount + 1} failed (regular client):`, error.code, error.message);
+            } else {
+              insertErr = null;
+              console.log('✅ Barber profile created successfully (regular client)');
+              break;
+            }
+          } catch (e) {
+            insertErr = e;
+            console.log(`Barber insert attempt ${retryCount + 1} exception (regular client):`, e);
           }
         }
 
-        // If foreign key constraint error, wait and retry
-        if (insertErr?.code === '23503' && retryCount < maxRetries - 1) {
-          console.log(`Retrying barber profile creation (attempt ${retryCount + 2}/${maxRetries})`);
-          await new Promise(resolve => setTimeout(resolve, 2000 * (retryCount + 1)));
+        // If foreign key constraint error or other retryable errors, wait and retry
+        if ((insertErr?.code === '23503' || insertErr?.code === '23505') && retryCount < maxRetries - 1) {
+          const waitTime = 1500 * (retryCount + 1); // Progressive backoff
+          console.log(`Retrying barber profile creation (attempt ${retryCount + 2}/${maxRetries}) in ${waitTime}ms...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
           retryCount++;
         } else {
           break;
@@ -149,12 +177,13 @@ export async function ensureProfiles(desiredRole?: Role, sessionUser?: any) {
       }
 
       if (insertErr) {
-        console.error('ensureProfiles: insert barber error after retries', {
+        console.error('❌ ensureProfiles: insert barber error after all retries', {
           code: insertErr?.code,
           message: insertErr?.message,
           details: insertErr?.details,
           hint: insertErr?.hint,
-          full: insertErr
+          userId: user.id,
+          attempts: retryCount + 1
         });
         return;
       }
@@ -190,7 +219,9 @@ export async function ensureProfiles(desiredRole?: Role, sessionUser?: any) {
 
     let insertErr: any = null;
     let retryCount = 0;
-    const maxRetries = 3;
+    const maxRetries = 5; // Increased retries
+
+    console.log('Attempting to create client profile with payload:', clientPayload);
 
     while (retryCount < maxRetries) {
       if (serviceRoleKey && serviceUrl) {
@@ -201,29 +232,38 @@ export async function ensureProfiles(desiredRole?: Role, sessionUser?: any) {
           const { error } = await admin.from('clients').insert(clientPayload);
           if (error) {
             insertErr = error;
+            console.log(`Client insert attempt ${retryCount + 1} failed (service role):`, error.code, error.message);
           } else {
             insertErr = null;
-            console.log('Client profile created successfully (service role)');
+            console.log('✅ Client profile created successfully (service role)');
             break;
           }
         } catch (e) {
           insertErr = e;
+          console.log(`Client insert attempt ${retryCount + 1} exception (service role):`, e);
         }
       } else {
-        const { error } = await supabase.from('clients').insert(clientPayload);
-        if (error) {
-          insertErr = error;
-        } else {
-          insertErr = null;
-          console.log('Client profile created successfully');
-          break;
+        try {
+          const { error } = await supabase.from('clients').insert(clientPayload);
+          if (error) {
+            insertErr = error;
+            console.log(`Client insert attempt ${retryCount + 1} failed (regular client):`, error.code, error.message);
+          } else {
+            insertErr = null;
+            console.log('✅ Client profile created successfully (regular client)');
+            break;
+          }
+        } catch (e) {
+          insertErr = e;
+          console.log(`Client insert attempt ${retryCount + 1} exception (regular client):`, e);
         }
       }
 
-      // If foreign key constraint error, wait and retry
-      if (insertErr?.code === '23503' && retryCount < maxRetries - 1) {
-        console.log(`Retrying client profile creation (attempt ${retryCount + 2}/${maxRetries})`);
-        await new Promise(resolve => setTimeout(resolve, 2000 * (retryCount + 1)));
+      // If foreign key constraint error or other retryable errors, wait and retry
+      if ((insertErr?.code === '23503' || insertErr?.code === '23505') && retryCount < maxRetries - 1) {
+        const waitTime = 1500 * (retryCount + 1); // Progressive backoff
+        console.log(`Retrying client profile creation (attempt ${retryCount + 2}/${maxRetries}) in ${waitTime}ms...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
         retryCount++;
       } else {
         break;
@@ -231,12 +271,13 @@ export async function ensureProfiles(desiredRole?: Role, sessionUser?: any) {
     }
 
     if (insertErr) {
-      console.error('ensureProfiles: insert client error after retries', {
+      console.error('❌ ensureProfiles: insert client error after all retries', {
         code: insertErr?.code,
         message: insertErr?.message,
         details: insertErr?.details,
         hint: insertErr?.hint,
-        full: insertErr
+        userId: user.id,
+        attempts: retryCount + 1
       });
       return;
     }

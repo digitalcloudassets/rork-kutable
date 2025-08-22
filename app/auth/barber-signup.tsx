@@ -14,7 +14,7 @@ import {
 import { Stack, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabaseClient';
-import { ensureProfiles } from '@/lib/profileBootstrap';
+
 import { brandConfig, BRAND } from '../../config/brand';
 
 export default function BarberSignUpScreen() {
@@ -27,19 +27,14 @@ export default function BarberSignUpScreen() {
   const [isLoading, setIsLoading] = useState(false);
 
 
+  // If already logged in, skip signup immediately
   useEffect(() => {
-    // If already logged in, do NOT prompt again; go to onboarding.
     (async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-          // Ensure barber profile exists if role says barber
-          const role = session.user.user_metadata?.role === 'barber' ? 'barber' : 'client';
-          if (role === 'barber') {
-            // Pass the session user to avoid auth errors
-            await ensureProfiles('barber', session.user);
-          }
-          router.replace('/onboarding/barber'); // <- go straight to wizard
+          console.log('User already logged in, redirecting to onboarding');
+          router.replace('/onboarding/barber');
         }
       } catch (error) {
         console.error('Error checking existing session:', error);
@@ -66,7 +61,9 @@ export default function BarberSignUpScreen() {
     setIsLoading(true);
 
     try {
-      // Sign up with Supabase Auth
+      console.log('Starting barber signup process...');
+      
+      // 1) Sign up with role=barber metadata
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -77,7 +74,6 @@ export default function BarberSignUpScreen() {
             shopName,
             role: 'barber',
           },
-          emailRedirectTo: Platform.OS === 'web' ? `${window.location.origin}/auth/callback` : undefined,
         },
       });
 
@@ -85,18 +81,21 @@ export default function BarberSignUpScreen() {
         throw authError;
       }
 
+      console.log('Signup successful, user created:', authData.user?.id);
+
+      // 2) With confirm OFF, session should be available immediately
+      // Reinforce metadata to ensure it's set properly
       if (authData.user) {
-        // Safety: reinforce metadata in case confirm flow delays it
-        await supabase.auth.updateUser({ data: { role: 'barber' } });
+        console.log('Updating user metadata...');
+        await supabase.auth.updateUser({ 
+          data: { role: 'barber', name, phone, shopName } 
+        });
 
-        // Double-set metadata just to be safe on confirm flows
-        await supabase.auth.updateUser({ data: { role: 'barber', name } });
-
-        // Create barber row now to avoid race later - pass the user data
-        await ensureProfiles('barber', authData.user);
-
-        // Move into the onboarding wizard; no re-signup loop
+        console.log('Redirecting to onboarding...');
+        // 3) Go straight to onboarding - let AuthProvider handle profile creation
         router.replace('/onboarding/barber');
+      } else {
+        throw new Error('No user returned from signup');
       }
     } catch (error: any) {
       console.error('Sign up error:', error);
@@ -112,7 +111,7 @@ export default function BarberSignUpScreen() {
         errorMessage = error.details;
       }
       
-      Alert.alert('Error', errorMessage);
+      Alert.alert('Sign up failed', errorMessage);
     } finally {
       setIsLoading(false);
     }
