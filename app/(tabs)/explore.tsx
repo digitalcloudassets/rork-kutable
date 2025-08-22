@@ -16,7 +16,7 @@ import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { Tokens } from "@/theme/tokens";
 import { Screen } from "@/components/Screen";
-import { apiClient } from "@/lib/api";
+import { supabase } from "@/lib/supabaseClient";
 import type { Barber, Service } from "@/types/models";
 import { seedData } from "@/lib/seedData";
 import { EmptyState } from "@/components/EmptyState";
@@ -30,7 +30,95 @@ export default function ExploreScreen() {
 
   const { data: barbers, isLoading, error, refetch } = useQuery({
     queryKey: ["barbers", searchQuery, selectedServiceId],
-    queryFn: () => apiClient.barbers.search({ q: searchQuery || undefined, serviceId: selectedServiceId }),
+    queryFn: async () => {
+      try {
+        let query = supabase
+          .from('barbers')
+          .select(`
+            id,
+            name,
+            email,
+            phone,
+            shop_name,
+            shop_address,
+            photo_url,
+            rating,
+            services (
+              id,
+              name,
+              description,
+              price,
+              duration,
+              active
+            )
+          `)
+          .eq('active', true);
+
+        // Apply search filter
+        if (searchQuery) {
+          query = query.or(`name.ilike.%${searchQuery}%,shop_name.ilike.%${searchQuery}%`);
+        }
+
+        const { data, error } = await query;
+        
+        if (error) {
+          console.error('Error fetching barbers:', error);
+          // Fallback to seed data if database query fails
+          return seedData.barbers.filter(barber => {
+            const matchesSearch = !searchQuery || 
+              barber.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              (barber.shopName && barber.shopName.toLowerCase().includes(searchQuery.toLowerCase()));
+            
+            const matchesService = !selectedServiceId ||
+              barber.services.some(service => service.id === selectedServiceId && service.active);
+            
+            return matchesSearch && matchesService;
+          });
+        }
+
+        // Transform data to match expected format
+        const transformedBarbers = (data || []).map((barber: any) => ({
+          id: barber.id,
+          name: barber.name,
+          email: barber.email,
+          phone: barber.phone,
+          shopName: barber.shop_name,
+          shopAddress: barber.shop_address,
+          photoUrl: barber.photo_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face',
+          rating: barber.rating,
+          services: (barber.services || []).filter((service: any) => service.active).map((service: any) => ({
+            id: service.id,
+            name: service.name,
+            description: service.description,
+            price: service.price,
+            duration: service.duration,
+            active: service.active,
+          })),
+        }));
+
+        // Apply service filter
+        const filteredBarbers = selectedServiceId
+          ? transformedBarbers.filter((barber: Barber) => 
+              barber.services.some((service: Service) => service.id === selectedServiceId)
+            )
+          : transformedBarbers;
+
+        return filteredBarbers;
+      } catch (err) {
+        console.error('Error in barbers query:', err);
+        // Fallback to seed data
+        return seedData.barbers.filter(barber => {
+          const matchesSearch = !searchQuery || 
+            barber.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (barber.shopName && barber.shopName.toLowerCase().includes(searchQuery.toLowerCase()));
+          
+          const matchesService = !selectedServiceId ||
+            barber.services.some(service => service.id === selectedServiceId && service.active);
+          
+          return matchesSearch && matchesService;
+        });
+      }
+    },
     retry: 2,
     retryDelay: 1000,
   });
@@ -38,15 +126,19 @@ export default function ExploreScreen() {
   // Get all unique services for filter chips
   const allServices = useMemo(() => {
     const serviceMap = new Map<string, Service>();
-    seedData.barbers.forEach(barber => {
-      barber.services.forEach(service => {
+    
+    // Use barbers data if available, otherwise fallback to seed data
+    const barbersToUse = barbers || seedData.barbers;
+    
+    barbersToUse.forEach((barber: Barber) => {
+      barber.services.forEach((service: Service) => {
         if (service.active && !serviceMap.has(service.id)) {
           serviceMap.set(service.id, service);
         }
       });
     });
     return Array.from(serviceMap.values());
-  }, []);
+  }, [barbers]);
 
   const handleRefresh = async () => {
     setRefreshing(true);

@@ -41,8 +41,10 @@ export async function assertSameSupabaseProject() {
     const serverHost: string = j?.serverHost || 'unknown';
 
     if (clientHost !== serverHost) {
-      console.error('ERROR Supabase project mismatch', { clientHost, serverHost });
-      // Optional: surface to UI during dev with an Alert if you want.
+      // Only log in development to avoid noise in production
+      if (__DEV__) {
+        console.error('ERROR Supabase project mismatch', { clientHost, serverHost });
+      }
     }
   } catch {
     console.warn('Supabase health check failed');

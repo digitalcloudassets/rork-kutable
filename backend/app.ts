@@ -3,22 +3,6 @@ import { cors } from 'hono/cors';
 import { getAdminClient } from './lib/supabase';
 import { resolveEnv, supabaseHost, Bindings } from './lib/env';
 import stripe from './stripe';
-import availability from './availability';
-import services from './services';
-import diag from './diag';
-
-// Import API handlers (only those with default exports)
-import { POST as barbersSearch } from './api/barbers/search';
-import { GET as barbersProfile } from './api/barbers/profile';
-import earningsSummary from './api/earnings/summary';
-import payoutsList from './api/payouts/list';
-import bookings from './bookings';
-import paymentsCreateIntent from './api/payments/create-intent';
-import paymentsWebhook from './api/payments/webhook';
-import galleryList from './api/gallery/list';
-import galleryDelete from './api/gallery/delete';
-import galleryUpload from './api/gallery/upload';
-import reviewsApi from './api/reviews/index';
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -227,86 +211,6 @@ app.get('/api/health/integration', async (c) => {
 
 // Mount Stripe module under /api/stripe
 app.route('/api/stripe', stripe);
-
-// Mount availability module
-app.route('/', availability);
-
-// Mount services module
-app.route('/', services);
-
-// Mount bookings module
-app.route('/', bookings);
-
-// Mount diagnostics module
-app.route('/', diag);
-
-// Services endpoints are now handled by the mounted services module
-
-// Availability endpoints are now handled by the mounted availability module
-
-// Bookings endpoints are now handled by the mounted bookings module
-
-// Barbers endpoints
-app.post('/api/barbers/search', async (c) => {
-  return await barbersSearch(c.req.raw);
-});
-
-app.get('/api/barbers/profile', async (c) => {
-  return await barbersProfile(c.req.raw);
-});
-
-// Earnings endpoints
-app.get('/api/earnings/summary', async (c) => {
-  const response = await earningsSummary(c.req.raw);
-  const data = await response.json();
-  c.status(response.status as any);
-  return c.json(data);
-});
-
-// Payouts endpoints
-app.get('/api/payouts/list', async (c) => {
-  const response = await payoutsList(c.req.raw);
-  const data = await response.json();
-  c.status(response.status as any);
-  return c.json(data);
-});
-
-
-
-// Bookings endpoints are now handled by the mounted bookings module
-
-// Payments endpoints
-app.post('/api/payments/create-intent', async (c) => {
-  return await paymentsCreateIntent(c.req.raw, null);
-});
-
-app.post('/api/payments/webhook', async (c) => {
-  try {
-    const response = await paymentsWebhook(c.req.raw);
-    const data = await response.json();
-    c.status(response.status as any);
-    return c.json(data);
-  } catch (error: any) {
-    console.error('Error in payments webhook:', error);
-    return c.json({ error: 'Internal server error' }, 500);
-  }
-});
-
-// Gallery endpoints
-app.post('/api/gallery/list', async (c) => {
-  return galleryList(c.req.raw);
-});
-
-app.post('/api/gallery/delete', async (c) => {
-  return galleryDelete(c.req.raw);
-});
-
-app.post('/api/gallery/upload', async (c) => {
-  return galleryUpload(c.req.raw);
-});
-
-// Reviews endpoints
-app.route('/api/reviews', reviewsApi);
 
 
 
