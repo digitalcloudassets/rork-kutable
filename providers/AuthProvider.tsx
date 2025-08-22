@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useMe
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase, isSupabaseConfigured, clearAuthStorage } from "@/lib/supabaseClient";
 import { ensureProfiles } from "@/lib/profileBootstrap";
+import { apiClient } from "@/lib/api";
+import { useRouter, usePathname } from "expo-router";
 
 import type { User } from "@/types/models";
 
@@ -23,6 +25,8 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+  const pathname = usePathname();
   
 
 
@@ -317,6 +321,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         if (mounted && session?.user) {
           await loadUserFromSession(session.user);
+          
+          // Route guard: if logged-in barber, ensure profile and push to onboarding if needed
+          const role = session.user.user_metadata?.role === 'barber' ? 'barber' : 'client';
+          if (role === 'barber') {
+            await ensureProfiles('barber', session.user);
+
+            // Check if Stripe is connected
+            try {
+              const status = await apiClient.stripe.getAccountStatus({ barberId: session.user.id });
+              const needsOnboarding = !(status?.chargesEnabled && status?.payoutsEnabled);
+              const onOnboarding = pathname?.startsWith('/onboarding');
+              const onAuth = pathname?.startsWith('/auth');
+              
+              if (needsOnboarding && !onOnboarding && !onAuth) {
+                router.replace('/onboarding/barber');
+              }
+            } catch {
+              // If status fails, still go to onboarding wizard to attempt connect
+              const onOnboarding = pathname?.startsWith('/onboarding');
+              const onAuth = pathname?.startsWith('/auth');
+              if (!onOnboarding && !onAuth) {
+                router.replace('/onboarding/barber');
+              }
+            }
+          }
         } else if (mounted) {
           // Fallback to stored user for offline support
           await loadStoredUser();
@@ -388,7 +417,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       mounted = false;
     };
-  }, [loadUserFromSession, loadStoredUser, saveUser]);
+  }, [loadUserFromSession, loadStoredUser, saveUser, pathname, router]);
 
   const contextValue = useMemo(() => ({
     user,

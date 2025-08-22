@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { Stack, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/providers/AuthProvider';
+import { ensureProfiles } from '@/lib/profileBootstrap';
 import { brandConfig, BRAND } from '../../config/brand';
 import type { User } from '@/types/models';
 
@@ -27,6 +28,19 @@ export default function BarberSignUpScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { setUser } = useAuth();
+
+  useEffect(() => {
+    // If already logged in, do NOT prompt again; go to onboarding.
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        // Ensure barber profile exists if role says barber
+        const role = session.user.user_metadata?.role === 'barber' ? 'barber' : 'client';
+        if (role === 'barber') await ensureProfiles('barber', session.user);
+        router.replace('/onboarding/barber'); // <- go straight to wizard
+      }
+    })();
+  }, []);
 
   const handleSignUp = async () => {
     if (!name.trim() || !email.trim() || !phone.trim() || !shopName.trim() || !password.trim()) {
@@ -70,35 +84,14 @@ export default function BarberSignUpScreen() {
         // Safety: reinforce metadata in case confirm flow delays it
         await supabase.auth.updateUser({ data: { role: 'barber' } });
 
-        // Wait a moment for the auth state to propagate
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Double-set metadata just to be safe on confirm flows
+        await supabase.auth.updateUser({ data: { role: 'barber', name } });
 
-        // Profile creation will be handled by the AuthProvider's onAuthStateChange
-        // when the SIGNED_IN event is triggered, so we don't need to call ensureProfiles here
-        console.log('User account created, profile creation will be handled by auth state change');
+        // Create barber row now to avoid race later
+        await ensureProfiles('barber');
 
-        // Create user object for local state
-        const user: User = {
-          id: authData.user.id,
-          role: 'barber',
-          name: name.trim(),
-          phone: phone.trim(),
-          email: email.trim().toLowerCase(),
-        };
-
-        setUser(user);
-        
-        Alert.alert(
-          'Success',
-          'Account created successfully! Please check your email to verify your account.',
-          [{ 
-            text: 'OK', 
-            onPress: () => {
-              // Route to dashboard - the auth provider will handle profile creation
-              router.replace('/(tabs)/dashboard');
-            }
-          }]
-        );
+        // Move into the onboarding wizard; no re-signup loop
+        router.replace('/onboarding/barber');
       }
     } catch (error: any) {
       console.error('Sign up error:', error);

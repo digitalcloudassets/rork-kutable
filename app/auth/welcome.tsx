@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,9 +9,26 @@ import {
 import { Stack, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Scissors, Users } from 'lucide-react-native';
+import { supabase } from '@/lib/supabaseClient';
+import { ensureProfiles } from '@/lib/profileBootstrap';
 import { brandConfig, BRAND } from '../../config/brand';
 
 export default function WelcomeScreen() {
+  useEffect(() => {
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const role = session.user.user_metadata?.role === 'barber' ? 'barber' : 'client';
+        if (role === 'barber') {
+          await ensureProfiles('barber', session.user);
+          router.replace('/onboarding/barber'); // go to onboarding for barbers
+        } else {
+          router.replace('/'); // client home
+        }
+      }
+    })();
+  }, []);
+
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />

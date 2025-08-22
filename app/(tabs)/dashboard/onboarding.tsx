@@ -79,22 +79,8 @@ export default function OnboardingScreen() {
   };
 
   const handleConnectStripe = async () => {
-    try {
-      setIsConnecting(true);
-      if (!user?.id) throw new Error('Not signed in');
-
-      const { accountId } = await apiClient.stripe.createOrFetchAccount({ barberId: user.id });
-      const { url } = await apiClient.stripe.createAccountLink({ barberId: user.id });
-
-      await WebBrowser.openBrowserAsync(url);
-      setIsPolling(true);
-    } catch (e: any) {
-      const msg = typeof e?.message === 'string' ? e.message : 'Failed to start Stripe onboarding';
-      console.error('Stripe onboarding error:', e);
-      Alert.alert('Connection Error', msg);
-    } finally {
-      setIsConnecting(false);
-    }
+    // Navigate to the unified onboarding wizard instead of handling Stripe directly
+    router.push('/onboarding/barber');
   };
 
   // Polling function to check account status
@@ -228,20 +214,14 @@ export default function OnboardingScreen() {
           ) : (
             <>
               <TouchableOpacity
-                style={[styles.primaryButton, isConnecting && styles.disabledButton]}
+                style={styles.primaryButton}
                 onPress={handleConnectStripe}
-                disabled={isConnecting}
+                testID="connect-stripe-button"
               >
-                {isConnecting ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <>
-                    <ExternalLink size={20} color="#fff" />
-                    <Text style={styles.primaryButtonText}>
-                      {needsSetup ? "Resume Stripe Setup" : "Connect with Stripe"}
-                    </Text>
-                  </>
-                )}
+                <ExternalLink size={20} color="#fff" />
+                <Text style={styles.primaryButtonText}>
+                  {needsSetup ? "Complete Setup" : "Continue Setup"}
+                </Text>
               </TouchableOpacity>
               
               <TouchableOpacity
