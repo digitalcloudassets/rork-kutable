@@ -72,18 +72,23 @@ export default function BarberOnboarding() {
     }
   };
 
-  const pollStripeStatus = async (barberId: string) => {
+  const pollStripeStatus = async (id: string) => {
     const start = Date.now();
-    while (Date.now() - start < 90000) {
-      const st = await apiClient.stripe.getAccountStatus({ barberId });
-      if (st?.chargesEnabled && st?.payoutsEnabled) {
-        setStep('done');
-        Alert.alert('Connected', 'Payouts enabled. You\'re ready to accept payments.');
-        return;
-      }
-      await new Promise(r => setTimeout(r, 3000));
+    const timeout = 120_000; // 2 minutes
+    const sleep = (ms:number)=>new Promise(r=>setTimeout(r,ms));
+
+    while (Date.now() - start < timeout) {
+      try {
+        const st = await apiClient.stripe.getAccountStatus({ barberId: id });
+        if (st?.chargesEnabled && st?.payoutsEnabled) {
+          setStep('done');
+          return;
+        }
+      } catch {}
+      await sleep(3000);
     }
-    Alert.alert('Still connecting', 'Finish Stripe onboarding to enable payouts.');
+    // After timeout, just return to the wizard page with instructions
+    Alert.alert('Keep going in Stripe', 'Finish onboarding, then come back to the app.');
   };
 
   const openStripeOnboarding = useCallback(async () => {
