@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -28,7 +29,7 @@ export default function BarberOnboarding() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [barberId, setBarberId] = useState<string | null>(null);
-  const [isPolling, setIsPolling] = useState(false);
+
 
   useEffect(() => {
     (async () => {
@@ -75,49 +76,38 @@ export default function BarberOnboarding() {
       if (!barberId) throw new Error('Not signed in');
       setLoading(true);
 
-      // Ensure account exists
+      // Create/fetch account then get onboarding link
       await apiClient.stripe.createOrFetchAccount({ barberId });
-
-      // Get onboarding link
       const { url } = await apiClient.stripe.createAccountLink({ barberId });
 
-      // Prefer in-app browser; fallback to system browser
+      // Prefer in-app browser; fallback to system browser if needed
       await WebBrowser.openBrowserAsync(url, {
         enableBarCollapsing: true,
         showTitle: true,
         dismissButtonStyle: 'done',
       });
-      // After close, poll status:
-      await pollStripeStatus(barberId);
+
+      // Poll until payouts are enabled (no deep-link dependency)
+      const start = Date.now();
+      while (Date.now() - start < 90000) {
+        const st = await apiClient.stripe.getAccountStatus({ barberId });
+        if (st?.chargesEnabled && st?.payoutsEnabled) {
+          setStep('done');
+          Alert.alert('Connected', 'Payouts enabled. You\'re ready to accept payments.');
+          return;
+        }
+        await new Promise(r => setTimeout(r, 3000));
+      }
+      Alert.alert('Still connecting', 'Finish Stripe onboarding to enable payouts.');
     } catch (e: any) {
-      console.error('Stripe onboarding error:', e);
-      Alert.alert('Connection Error', e?.message || 'Could not open Stripe onboarding');
+      try { await Linking.openURL(e?.url || 'about:blank'); }
+      catch { Alert.alert('Connection Error', e?.message || 'Could not open Stripe onboarding'); }
     } finally {
       setLoading(false);
     }
   }, [barberId]);
 
-  const pollStripeStatus = async (id: string) => {
-    const started = Date.now();
-    const timeoutMs = 90_000;
-    const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
 
-    setIsPolling(true);
-    while (Date.now() - started < timeoutMs) {
-      try {
-        const status = await apiClient.stripe.getAccountStatus({ barberId: id });
-        if (status?.chargesEnabled && status?.payoutsEnabled) {
-          setStep('done');
-          setIsPolling(false);
-          Alert.alert('Connected', 'Payouts are enabled. You are ready to accept payments.');
-          return;
-        }
-      } catch {/* ignore; keep polling */}
-      await wait(3000);
-    }
-    setIsPolling(false);
-    Alert.alert('Still connecting', 'Finish Stripe onboarding to enable payouts.');
-  };
 
   const handleContinue = () => {
     if (step === 'done') {
@@ -183,7 +173,7 @@ export default function BarberOnboarding() {
             <Text style={styles.title}>Connect payouts with Stripe</Text>
             <Text style={styles.subtitle}>
               Stripe Connect is how you get paid. We&apos;ll take you to Stripe to verify your identity and
-              set up payouts to your bank. This is secure and takes a few minutes.
+              set your payout bank. It&apos;s secure and takes a few minutes.
             </Text>
           </View>
           
@@ -204,12 +194,12 @@ export default function BarberOnboarding() {
           
           <View style={styles.actions}>
             <TouchableOpacity
-              style={[styles.primaryButton, (loading || isPolling) && styles.disabledButton]}
+              style={[styles.primaryButton, loading && styles.disabledButton]}
               onPress={openStripeOnboarding}
-              disabled={loading || isPolling}
+              disabled={loading}
               testID="connect-stripe-button"
             >
-              {loading || isPolling ? (
+              {loading ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
                 <>
@@ -229,10 +219,7 @@ export default function BarberOnboarding() {
           </View>
           
           <Text style={styles.disclaimer}>
-            {isPolling 
-              ? "Waiting for Stripe setup completion..."
-              : "You can come back here anytime to finish. We&apos;ll enable payments after you complete onboarding."
-            }
+            You can come back here anytime to finish. We&apos;ll enable payments after you complete onboarding.
           </Text>
         </View>
       </SafeAreaView>
