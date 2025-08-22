@@ -22,14 +22,31 @@ type EnvVals = {
 };
 
 function fromProcess(name: string): string | undefined {
-  try { return (globalThis as any)?.process?.env?.[name]; } catch { return undefined; }
+  try { 
+    const env = (globalThis as any)?.process?.env;
+    return env?.[name]; 
+  } catch { 
+    return undefined; 
+  }
 }
 
 export function resolveEnv(bindings?: Bindings): EnvVals {
-  const pick = (...names: string[]) =>
-    names
-      .map(n => (bindings?.[n as keyof Bindings] as string | undefined) ?? fromProcess(n))
-      .find(v => v && String(v).trim())?.trim();
+  const pick = (...names: string[]) => {
+    for (const name of names) {
+      // Try bindings first (Cloudflare Workers)
+      const bindingValue = bindings?.[name as keyof Bindings] as string | undefined;
+      if (bindingValue && String(bindingValue).trim()) {
+        return String(bindingValue).trim();
+      }
+      
+      // Try process.env (Node.js)
+      const processValue = fromProcess(name);
+      if (processValue && String(processValue).trim()) {
+        return String(processValue).trim();
+      }
+    }
+    return undefined;
+  };
 
   const supabaseUrl =
     pick('SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_URL') ||
