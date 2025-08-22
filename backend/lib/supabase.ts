@@ -6,9 +6,10 @@ import { createClient } from '@supabase/supabase-js';
  * Returns null if environment variables are not configured
  */
 export function getAdminClient() {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseServiceRole = process.env.SUPABASE_SERVICE_ROLE;
-  
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceRole =
+    process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY;
+
   if (!supabaseUrl || !supabaseServiceRole) {
     console.warn('Supabase environment variables not configured');
     return null;

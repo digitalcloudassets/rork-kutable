@@ -29,7 +29,7 @@ app.use('/*', cors({
 }));
 
 // helper: base URL
-function baseUrlFrom(req: Request) {
+function getBaseUrl(req: Request) {
   const fromEnv = process.env.APP_BASE_URL;
   if (fromEnv) return fromEnv.replace(/\/$/, '');
   try {
@@ -150,7 +150,7 @@ app.get('/api/health/snapshot', async (c) => {
     } catch { return false; }
   };
 
-  const BASE = baseUrlFrom(c.req.raw);
+  const BASE = getBaseUrl(c.req.raw);
   if (BASE) {
     snapshot.endpoints.services_list = await testEndpoint(`${BASE}/api/services/list`, {
       method: 'POST',
@@ -167,6 +167,25 @@ app.get('/api/health/snapshot', async (c) => {
   }
 
   return c.json(snapshot);
+});
+
+// GET /api/health/integration
+app.get('/api/health/integration', async (c) => {
+  const supa = getAdminClient();
+  const stripeIsSet = !!process.env.STRIPE_SECRET_KEY;
+  let canQueryBarbers = false;
+  try {
+    if (supa) {
+      const { error } = await supa.from('barbers').select('id').limit(1);
+      canQueryBarbers = !error || (error as any).code === 'PGRST116' /* no rows */;
+    }
+  } catch {}
+  return c.json({
+    base: getBaseUrl(c.req.raw),
+    supabaseConfigured: !!supa,
+    stripeConfigured: stripeIsSet,
+    canQueryBarbers,
+  });
 });
 
 // Mount Stripe module
