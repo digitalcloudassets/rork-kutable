@@ -2,7 +2,7 @@ import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
 
 type Role = 'barber' | 'client';
 
-export async function ensureProfiles(desiredRole?: Role) {
+export async function ensureProfiles(desiredRole?: Role, sessionUser?: any) {
   try {
     // Skip if Supabase is not configured
     if (!isSupabaseConfigured()) {
@@ -10,11 +10,30 @@ export async function ensureProfiles(desiredRole?: Role) {
       return;
     }
     
-    const { data: { user }, error: userErr } = await supabase.auth.getUser();
-    if (userErr) {
-      console.error('ensureProfiles: getUser error', userErr);
-      return;
+    let user = sessionUser;
+    
+    // If no session user provided, try to get current user
+    if (!user) {
+      const { data: { user: currentUser }, error: userErr } = await supabase.auth.getUser();
+      if (userErr) {
+        console.error('ensureProfiles: getUser error', userErr);
+        // If JWT is invalid, try to get session instead
+        if (userErr.message?.includes('JWT') || userErr.message?.includes('sub claim')) {
+          console.log('JWT error detected, trying to get session instead');
+          const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
+          if (sessionErr || !session?.user) {
+            console.error('ensureProfiles: session error', sessionErr);
+            return;
+          }
+          user = session.user;
+        } else {
+          return;
+        }
+      } else {
+        user = currentUser;
+      }
     }
+    
     if (!user) {
       console.log('ensureProfiles: No authenticated user found');
       return;

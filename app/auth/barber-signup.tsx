@@ -77,7 +77,7 @@ export default function BarberSignUpScreen() {
 
         try {
           // After sign-up, create only the matching profile row
-          await ensureProfiles('barber');
+          await ensureProfiles('barber', authData.user);
 
           // Format phone to E.164
           const phoneE164 = formatToE164(phone.trim());

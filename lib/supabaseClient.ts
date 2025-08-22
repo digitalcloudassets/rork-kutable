@@ -43,9 +43,16 @@ const createSupabaseClient = () => {
     }
     
     console.log('Creating Supabase client with URL:', url);
-    return createClient(url!, anon!, {
-      auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: false, storage: AsyncStorage },
+    const client = createClient(url!, anon!, {
+      auth: { 
+        autoRefreshToken: true, 
+        persistSession: true, 
+        detectSessionInUrl: false, 
+        storage: AsyncStorage
+      },
     });
+    
+    return client;
   } catch (error) {
     console.error('Error creating Supabase client:', error);
     // Return mock client as fallback
