@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -91,40 +91,27 @@ export default function BarberOnboarding() {
     Alert.alert('Keep going in Stripe', 'Finish onboarding, then come back to the app.');
   };
 
-  const openStripeOnboarding = useCallback(async () => {
+  const openStripeOnboarding = async () => {
     try {
       if (!barberId) throw new Error('Not signed in');
       setLoading(true);
 
       await apiClient.stripe.createOrFetchAccount({ barberId });
-      const { url, fallback } = await apiClient.stripe.createAccountLink({ barberId });
+      const { url } = await apiClient.stripe.createAccountLink({ barberId });
 
-      // Build the redirectUrl (must match your scheme)
-      const redirectUrl = 'myapp://onboarding/stripe/return';
+      const redirectUrl = Linking.createURL('/onboarding/stripe/return'); // kutable://onboarding/stripe/return
 
-      // Use Auth Session so the browser closes and returns to app automatically
-      const res = await WebBrowser.openAuthSessionAsync(url, redirectUrl, {
+      await WebBrowser.openAuthSessionAsync(url, redirectUrl, {
         preferEphemeralSession: Platform.OS === 'ios',
         showInRecents: true,
       });
 
-      // Possible results: "success" (returned via deep link), "cancel", "dismiss"
-      if (res.type === 'success' || res.type === 'dismiss') {
-        // On iOS "success" includes a url; on Android you may get "dismiss"
-        await pollStripeStatus(barberId);
-      } else if (res.type === 'cancel') {
-        // User closed early — still attempt a quick status check
-        await pollStripeStatus(barberId);
-      } else {
-        // Fallback: open in system browser
-        await Linking.openURL(fallback?.return || url);
-      }
-    } catch (e: any) {
-      Alert.alert('Stripe', e?.message || 'Could not open Stripe');
+      // After close/return, poll status to unlock the app
+      await pollStripeStatus(barberId);
     } finally {
       setLoading(false);
     }
-  }, [barberId]);
+  };
 
 
 
