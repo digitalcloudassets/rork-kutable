@@ -43,10 +43,8 @@ function getBaseUrl(req: Request, bindings?: Bindings) {
   }
 }
 
-// GET /api/health/ping
-app.get('/api/health/ping', (c) => c.json({ ok: true, time: new Date().toISOString() }));
+app.get('/api/ping', c => c.text('ok'));
 
-// GET /api/health/supabase
 app.get('/api/health/supabase', async c => {
   const env = resolveEnv(c.env);
   const supa = getAdminClient(c.env);
@@ -54,14 +52,10 @@ app.get('/api/health/supabase', async c => {
   try {
     if (supa) {
       const { error } = await supa.from('barbers').select('id').limit(1);
-      // No rows is fine; only a DB/permission error means false
       canQuery = !error || (error as any)?.code === 'PGRST116';
     }
   } catch {}
-  return c.json({
-    serverHost: supabaseHost(env.supabaseUrl),
-    canQueryBarbers: canQuery,
-  });
+  return c.json({ serverHost: supabaseHost(env.supabaseUrl), canQueryBarbers: canQuery });
 });
 
 // GET /api/health/env
