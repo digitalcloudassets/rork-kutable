@@ -47,7 +47,33 @@ export async function ensureProfiles(desiredRole?: Role, sessionUser?: any) {
     }
 
     // Wait a bit to ensure user is fully created in auth.users table
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Verify user exists in auth.users table before proceeding
+    try {
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE;
+      const serviceUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+      
+      if (serviceRoleKey && serviceUrl) {
+        const admin = createClient(serviceUrl, serviceRoleKey, {
+          auth: { autoRefreshToken: false, persistSession: false },
+        });
+        
+        const { data: authUser, error: authError } = await admin.auth.admin.getUserById(user.id);
+        if (authError || !authUser?.user) {
+          console.error('User not found in auth.users table:', authError);
+          // Wait longer and try once more
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          const { data: authUser2, error: authError2 } = await admin.auth.admin.getUserById(user.id);
+          if (authError2 || !authUser2?.user) {
+            console.error('User still not found in auth.users table after retry:', authError2);
+            return;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Could not verify user in auth.users table:', e);
+    }
 
     const role: Role = desiredRole ?? (user.user_metadata?.role === 'barber' ? 'barber' : 'client');
 
@@ -123,7 +149,13 @@ export async function ensureProfiles(desiredRole?: Role, sessionUser?: any) {
       }
 
       if (insertErr) {
-        console.error('ensureProfiles: insert barber error after retries', insertErr);
+        console.error('ensureProfiles: insert barber error after retries', {
+          code: insertErr?.code,
+          message: insertErr?.message,
+          details: insertErr?.details,
+          hint: insertErr?.hint,
+          full: insertErr
+        });
         return;
       }
       return;
@@ -199,7 +231,13 @@ export async function ensureProfiles(desiredRole?: Role, sessionUser?: any) {
     }
 
     if (insertErr) {
-      console.error('ensureProfiles: insert client error after retries', insertErr);
+      console.error('ensureProfiles: insert client error after retries', {
+        code: insertErr?.code,
+        message: insertErr?.message,
+        details: insertErr?.details,
+        hint: insertErr?.hint,
+        full: insertErr
+      });
       return;
     }
   } catch (e) {
