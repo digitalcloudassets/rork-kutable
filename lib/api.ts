@@ -110,10 +110,9 @@ export const apiClient = {
         body: JSON.stringify(data),
       });
     },
-    unblock: async (data: any) => {
-      return api('/api/availability/unblock', {
-        method: 'POST',
-        body: JSON.stringify(data),
+    unblock: async (data: { barberId: string; blockId: string }) => {
+      return api(`/api/availability/block/${data.blockId}?barberId=${data.barberId}`, {
+        method: 'DELETE',
       });
     },
   },
