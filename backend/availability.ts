@@ -1,107 +1,92 @@
 import { Hono } from 'hono';
-import { getAdminClient } from './lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 
 const app = new Hono();
+const admin = () => createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE!);
 
-// List blocks (optionally by range)
+// List blocks (optional range)
 app.post('/api/availability/list', async c => {
   const { barberId, startISO, endISO } = await c.req.json();
-  if (!barberId) return c.json({ error: 'barberId required' }, 400);
-  
-  const supa = getAdminClient();
-  if (!supa) return c.json({ error: 'Database not configured' }, 500);
-  
-  let q = supa.from('availability_blocks').select('*').eq('barber_id', barberId).order('start_utc', { ascending: true });
+  if (!barberId) return c.json({ error:'barberId required' }, 400);
+  const db = admin();
+  let q = db.from('availability_blocks').select('*').eq('barber_id', barberId).order('start_utc', { ascending:true });
   if (startISO) q = q.gte('start_utc', new Date(startISO).toISOString());
-  if (endISO) q = q.lte('end_utc', new Date(endISO).toISOString());
-  const { data, error } = await q; 
-  if (error) return c.json({ error: error.message }, 500);
+  if (endISO)   q = q.lte('end_utc', new Date(endISO).toISOString());
+  const { data, error } = await q;
+  if (error) return c.json({ error:error.message }, 500);
   return c.json({ blocks: data ?? [] });
 });
 
-// Create block (overlap checks)
+// Create block (overlap checks vs blocks + bookings)
 app.post('/api/availability/block', async c => {
   const { barberId, startISO, endISO, reason } = await c.req.json();
-  if (!barberId || !startISO || !endISO) return c.json({ error: 'barberId, startISO, endISO required' }, 400);
-  
-  const supa = getAdminClient();
-  if (!supa) return c.json({ error: 'Database not configured' }, 500);
-  
+  if (!barberId || !startISO || !endISO) return c.json({ error:'barberId, startISO, endISO required' }, 400);
+  const db = admin();
   const start = new Date(startISO).toISOString();
   const end   = new Date(endISO).toISOString();
-  
-  // overlap bookings (not cancelled/refunded)
-  const { count: bookCnt } = await supa.from('bookings').select('*', { count: 'exact', head: true })
-    .eq('barber_id', barberId).not('status','in','("cancelled","refunded")').lt('start_utc', end).gt('end_utc', start);
-  if ((bookCnt ?? 0) > 0) return c.json({ error: 'Overlaps with booking' }, 409);
-  
-  // overlap blocks
-  const { count: blkCnt } = await supa.from('availability_blocks').select('*', { count: 'exact', head: true })
+
+  const { count: blk } = await db.from('availability_blocks').select('*', { head:true, count:'exact' })
     .eq('barber_id', barberId).lt('start_utc', end).gt('end_utc', start);
-  if ((blkCnt ?? 0) > 0) return c.json({ error: 'Overlaps with block' }, 409);
-  
-  const { data, error } = await supa.from('availability_blocks').insert({ barber_id: barberId, start_utc: start, end_utc: end, reason: reason ?? null }).select('*').single();
-  if (error) return c.json({ error: error.message }, 500);
+  if ((blk ?? 0) > 0) return c.json({ error:'Overlaps with block' }, 409);
+
+  const { count: bks } = await db.from('bookings').select('*', { head:true, count:'exact' })
+    .eq('barber_id', barberId).not('status','in','("cancelled","refunded")')
+    .lt('start_utc', end).gt('end_utc', start);
+  if ((bks ?? 0) > 0) return c.json({ error:'Overlaps with booking' }, 409);
+
+  const { data, error } = await db.from('availability_blocks').insert({
+    barber_id: barberId, start_utc: start, end_utc: end, reason: reason ?? null
+  }).select('*').single();
+  if (error) return c.json({ error:error.message }, 500);
   return c.json({ block: data });
 });
 
 // Delete block
 app.delete('/api/availability/block/:id', async c => {
-  const id = c.req.param('id'); 
-  const barberId = c.req.query('barberId');
-  if (!id || !barberId) return c.json({ error: 'id and barberId required' }, 400);
-  
-  const supa = getAdminClient();
-  if (!supa) return c.json({ error: 'Database not configured' }, 500);
-  
-  const { data: row } = await supa.from('availability_blocks').select('barber_id').eq('id', id).single();
-  if (!row) return c.json({ error: 'Not found' }, 404);
-  if (row.barber_id !== barberId) return c.json({ error: 'Forbidden' }, 403);
-  const { error } = await supa.from('availability_blocks').delete().eq('id', id);
-  if (error) return c.json({ error: error.message }, 500);
-  return c.json({ ok: true });
+  const id = c.req.param('id'); const barberId = c.req.query('barberId');
+  if (!id || !barberId) return c.json({ error:'id & barberId required' }, 400);
+  const db = admin();
+  const { data: row } = await db.from('availability_blocks').select('barber_id').eq('id', id).single();
+  if (!row) return c.json({ error:'Not found' }, 404);
+  if (row.barber_id !== barberId) return c.json({ error:'Forbidden' }, 403);
+  const { error } = await db.from('availability_blocks').delete().eq('id', id);
+  if (error) return c.json({ error:error.message }, 500);
+  return c.json({ ok:true });
 });
 
-// Open slots: simple 30-min grid 09:00–17:00 local, excluding blocks & bookings
+// Open slots (09:00–17:00, 30-min grid or service duration)
 app.get('/api/availability/open-slots', async c => {
   const barberId = c.req.query('barberId');
-  const serviceId = c.req.query('serviceId'); // optional if you want duration per service later
+  const serviceId = c.req.query('serviceId');
   const dateStr = c.req.query('date'); // YYYY-MM-DD
-  if (!barberId || !dateStr) return c.json({ error: 'barberId and date required' }, 400);
+  if (!barberId || !dateStr) return c.json({ error:'barberId & date required' }, 400);
 
-  const supa = getAdminClient();
-  if (!supa) return c.json({ error: 'Database not configured' }, 500);
-  
-  // get service duration (default 30)
+  const db = admin();
   let duration = 30;
   if (serviceId) {
-    const { data: s } = await supa.from('services').select('duration_minutes').eq('id', serviceId).single();
-    if (s?.duration_minutes) duration = s.duration_minutes;
+    const { data: svc } = await db.from('services').select('duration_minutes').eq('id', serviceId).single();
+    if (svc?.duration_minutes) duration = svc.duration_minutes;
   }
-  const dayStart = new Date(`${dateStr}T09:00:00.000Z`);
-  const dayEnd   = new Date(`${dateStr}T17:00:00.000Z`);
 
-  // fetch blocks & bookings for the day
-  const { data: blocks } = await supa.from('availability_blocks').select('start_utc,end_utc')
+  // Use local day window in UTC to avoid TZ offset overlap issues
+  const startLocal = new Date(`${dateStr}T09:00:00`);
+  const endLocal   = new Date(`${dateStr}T17:00:00`);
+  const dayStart = new Date(startLocal.getTime() - startLocal.getTimezoneOffset()*60000);
+  const dayEnd   = new Date(endLocal.getTime()   - endLocal.getTimezoneOffset()*60000);
+
+  const { data: blocks } = await db.from('availability_blocks').select('start_utc,end_utc')
     .eq('barber_id', barberId).lt('start_utc', dayEnd.toISOString()).gt('end_utc', dayStart.toISOString());
-  const { data: books } = await supa.from('bookings').select('start_utc,end_utc,status')
+  const { data: books } = await db.from('bookings').select('start_utc,end_utc,status')
     .eq('barber_id', barberId).not('status','in','("cancelled","refunded")')
     .lt('start_utc', dayEnd.toISOString()).gt('end_utc', dayStart.toISOString());
 
-  // generate grid
-  const slots: string[] = [];
-  const stepMs = 30 * 60 * 1000;
-  const durMs  = duration * 60 * 1000;
-  for (let t = dayStart.getTime(); t + durMs <= dayEnd.getTime(); t += stepMs) {
-    const s = new Date(t);
-    const e = new Date(t + durMs);
-
-    const overlaps = (arr: any[]) => arr?.some(x =>
-      new Date(x.start_utc).getTime() < e.getTime() &&
-      new Date(x.end_utc).getTime()   > s.getTime()
-    );
+  const step = 30 * 60 * 1000, dur = duration * 60 * 1000;
+  const slots:string[] = [];
+  for (let t = dayStart.getTime(); t + dur <= dayEnd.getTime(); t += step) {
+    const s = new Date(t), e = new Date(t + dur);
+    const overlaps = (arr:any[]) => arr?.some(x =>
+      new Date(x.start_utc).getTime() < e.getTime() && new Date(x.end_utc).getTime() > s.getTime());
     if (overlaps(blocks || []) || overlaps(books || [])) continue;
-
     slots.push(s.toISOString());
   }
   return c.json({ slots });

@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { getAdminClient } from './lib/supabase';
 import stripe from './stripe';
+import availability from './availability';
 
 // Import API handlers (only those with default exports)
 import servicesList from './api/services/list';
@@ -10,11 +11,6 @@ import servicesDelete from './api/services/delete';
 import servicesCreate from './api/services/create';
 import servicesUpdate from './api/services/update';
 import servicesToggle from './api/services/toggle';
-import availabilityList from './api/availability/list';
-import availabilityBlock from './api/availability/block';
-import availabilityUnblock from './api/availability/unblock';
-import availabilityOpenSlots from './api/availability/open-slots';
-import { deleteAvailabilityBlock } from './availability';
 import { POST as barbersSearch } from './api/barbers/search';
 import { GET as barbersProfile } from './api/barbers/profile';
 import earningsSummary from './api/earnings/summary';
@@ -183,6 +179,9 @@ app.get('/api/health/snapshot', async (c) => {
 // Mount Stripe module
 app.route('/', stripe);
 
+// Mount availability module
+app.route('/', availability);
+
 // Services endpoints
 app.post('/api/services/list', async (c) => {
   const response = await servicesList(c.req.raw);
@@ -226,42 +225,7 @@ app.post('/api/services/toggle', async (c) => {
   return c.json(data);
 });
 
-// Availability endpoints
-app.post('/api/availability/list', async (c) => {
-  const response = await availabilityList(c.req.raw);
-  const data = await response.json();
-  c.status(response.status as any);
-  return c.json(data);
-});
-
-app.post('/api/availability/block', async (c) => {
-  const response = await availabilityBlock(c.req.raw);
-  const data = await response.json();
-  c.status(response.status as any);
-  return c.json(data);
-});
-
-app.post('/api/availability/unblock', async (c) => {
-  const response = await availabilityUnblock(c.req.raw);
-  const data = await response.json();
-  c.status(response.status as any);
-  return c.json(data);
-});
-
-app.get('/api/availability/open-slots', async (c) => {
-  const response = await availabilityOpenSlots(c.req.raw);
-  const data = await response.json();
-  c.status(response.status as any);
-  return c.json(data);
-});
-
-app.delete('/api/availability/block/:id', async (c) => {
-  const blockId = c.req.param('id');
-  const response = await deleteAvailabilityBlock(c.req.raw, blockId);
-  const data = await response.json();
-  c.status(response.status as any);
-  return c.json(data);
-});
+// Availability endpoints are now handled by the mounted availability module
 
 // Barbers endpoints
 app.post('/api/barbers/search', async (c) => {

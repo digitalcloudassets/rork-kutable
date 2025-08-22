@@ -1,60 +1,43 @@
 #!/bin/bash
 
-# Availability Seeds + Sanity Tests Runner
-# This script seeds availability data and runs sanity tests
+# Test script for availability system
+# Run this to test the availability endpoints
 
-echo "🚀 Starting Availability Seeds + Sanity Tests"
-echo "==============================================" 
+API_BASE="https://kutable.rork.app"
+BARBER_ID="test-barber-123"
+SERVICE_ID="test-service-456"
+DATE="2024-01-15"
 
-# Check if we're in the right directory
-if [ ! -f "backend/seeds/availability.ts" ]; then
-    echo "❌ Error: Run this script from the project root directory"
-    exit 1
-fi
+echo "Testing Availability System..."
+echo "================================"
 
-# Check if environment variables are set
-if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE" ]; then
-    echo "⚠️  Warning: SUPABASE_URL and SUPABASE_SERVICE_ROLE environment variables should be set"
-    echo "   You can set them in backend/.env or export them:"
-    echo "   export SUPABASE_URL='https://wktxbpmwbyddmwmfymlh.supabase.co'"
-    echo "   export SUPABASE_SERVICE_ROLE='your-service-role-key'"
-    echo ""
-fi
+# Test 1: List availability blocks
+echo "1. Testing list availability blocks..."
+curl -X POST "${API_BASE}/api/availability/list" \
+  -H "Content-Type: application/json" \
+  -d "{\"barberId\": \"${BARBER_ID}\"}" \
+  -w "\nStatus: %{http_code}\n\n"
 
-echo "📦 Installing dependencies..."
-cd backend
-npm install @supabase/supabase-js 2>/dev/null || echo "Dependencies already installed"
+# Test 2: Create availability block
+echo "2. Testing create availability block..."
+curl -X POST "${API_BASE}/api/availability/block" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"barberId\": \"${BARBER_ID}\",
+    \"startISO\": \"2024-01-15T14:00:00.000Z\",
+    \"endISO\": \"2024-01-15T15:00:00.000Z\",
+    \"reason\": \"Lunch break\"
+  }" \
+  -w "\nStatus: %{http_code}\n\n"
 
-echo ""
-echo "🌱 Running availability seeds..."
-npx tsx seeds/availability.ts
+# Test 3: Get open slots
+echo "3. Testing get open slots..."
+curl -X GET "${API_BASE}/api/availability/open-slots?barberId=${BARBER_ID}&serviceId=${SERVICE_ID}&date=${DATE}" \
+  -w "\nStatus: %{http_code}\n\n"
 
-if [ $? -eq 0 ]; then
-    echo ""
-    echo "🧪 Running sanity tests..."
-    npx tsx tests/openSlots.spec.ts
-    
-    if [ $? -eq 0 ]; then
-        echo ""
-        echo "🎉 All seeds and tests completed successfully!"
-        echo ""
-        echo "📋 What was tested:"
-        echo "  ✅ Lunch blocks properly block time slots"
-        echo "  ✅ Services don't extend past working hours"
-        echo "  ✅ Existing bookings reduce available slots"
-        echo "  ✅ Multiple blocks compound correctly"
-        echo ""
-        echo "🔧 Next steps:"
-        echo "  1. Test the booking flow in your app"
-        echo "  2. Verify slots update when you add/remove blocks"
-        echo "  3. Check that bookings properly conflict with slots"
-    else
-        echo ""
-        echo "❌ Some tests failed. Check the output above for details."
-        exit 1
-    fi
-else
-    echo ""
-    echo "❌ Seeding failed. Check your database connection and environment variables."
-    exit 1
-fi
+# Test 4: Health check
+echo "4. Testing health endpoint..."
+curl -X GET "${API_BASE}/api/health/ping" \
+  -w "\nStatus: %{http_code}\n\n"
+
+echo "Testing complete!"

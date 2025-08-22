@@ -20,7 +20,10 @@ export const apiClient = {
   // Services endpoints
   services: {
     list: async ({ barberId }: { barberId: string }) => {
-      return api(`/api/services/list?barberId=${barberId}`);
+      return api('/api/services/list', {
+        method: 'POST',
+        body: JSON.stringify({ barberId }),
+      });
     },
     create: async (data: any) => {
       return api('/api/services/create', {
@@ -64,10 +67,10 @@ export const apiClient = {
   // Bookings endpoints
   bookings: {
     list: async ({ barberId, userId }: { barberId?: string; userId?: string }) => {
-      const params = new URLSearchParams();
-      if (barberId) params.append('barberId', barberId);
-      if (userId) params.append('userId', userId);
-      return api(`/api/bookings/list?${params.toString()}`);
+      return api('/api/bookings/list', {
+        method: 'POST',
+        body: JSON.stringify({ barberId, userId }),
+      });
     },
     create: async (data: any) => {
       return api('/api/bookings/create', {
@@ -92,8 +95,10 @@ export const apiClient = {
   // Availability endpoints
   availability: {
     list: async (params: any) => {
-      const searchParams = new URLSearchParams(params);
-      return api(`/api/availability/list?${searchParams.toString()}`);
+      return api('/api/availability/list', {
+        method: 'POST',
+        body: JSON.stringify(params),
+      });
     },
     openSlots: async (params: any) => {
       const searchParams = new URLSearchParams(params);
@@ -140,10 +145,10 @@ export const apiClient = {
   // Barbers endpoints
   barbers: {
     search: async (params: any = {}) => {
-      const searchParams = new URLSearchParams();
-      if (params.q) searchParams.append('q', params.q);
-      if (params.serviceId) searchParams.append('serviceId', params.serviceId);
-      return api(`/api/barbers/search?${searchParams.toString()}`);
+      return api('/api/barbers/search', {
+        method: 'POST',
+        body: JSON.stringify(params),
+      });
     },
   },
 };
