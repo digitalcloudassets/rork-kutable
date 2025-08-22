@@ -12,8 +12,8 @@ function getStripe(c: any) {
 
 
 
-// POST /api/stripe/create-or-fetch-account
-stripeApp.post('/api/stripe/create-or-fetch-account', async c => {
+// POST /create-or-fetch-account (mounted under /api/stripe)
+stripeApp.post('/create-or-fetch-account', async c => {
   c.header('Content-Type', 'application/json; charset=utf-8');
   c.header('Cache-Control', 'no-store');
 
@@ -45,8 +45,8 @@ stripeApp.post('/api/stripe/create-or-fetch-account', async c => {
   return c.json({ accountId });
 });
 
-// POST /api/stripe/account-link
-stripeApp.post('/api/stripe/account-link', async c => {
+// POST /account-link (mounted under /api/stripe)
+stripeApp.post('/account-link', async c => {
   c.header('Content-Type', 'application/json; charset=utf-8');
   c.header('Cache-Control', 'no-store');
 
@@ -83,8 +83,8 @@ stripeApp.post('/api/stripe/account-link', async c => {
   });
 });
 
-// GET /api/stripe/account-status
-stripeApp.get('/api/stripe/account-status', async c => {
+// GET /account-status (mounted under /api/stripe)
+stripeApp.get('/account-status', async c => {
   c.header('Content-Type', 'application/json; charset=utf-8');
   c.header('Cache-Control', 'no-store');
 

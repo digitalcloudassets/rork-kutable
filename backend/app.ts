@@ -231,8 +231,8 @@ app.get('/api/health/integration', async (c) => {
   });
 });
 
-// Mount Stripe module
-app.route('/', stripe);
+// Mount Stripe module under /api/stripe
+app.route('/api/stripe', stripe);
 
 // Mount availability module
 app.route('/', availability);
