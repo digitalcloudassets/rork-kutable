@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { getAdminClient, getSupabaseHost } from './lib/supabase';
+import { resolveEnv } from './lib/env';
 import stripe from './stripe';
 import availability from './availability';
 import services from './services';
@@ -30,8 +31,10 @@ app.use('/*', cors({
 
 // helper: base URL
 function getBaseUrl(req: Request) {
-  const fromEnv = process.env.APP_BASE_URL;
-  if (fromEnv) return fromEnv.replace(/\/$/, '');
+  const { appBaseUrl } = resolveEnv();
+  if (appBaseUrl && appBaseUrl !== 'https://kutable.rork.app') {
+    return appBaseUrl.replace(/\/$/, '');
+  }
   try {
     const u = new URL(req.url);
     return `${u.protocol}//${u.host}`;
@@ -61,11 +64,12 @@ app.get('/api/health/supabase', async c => {
 
 // GET /api/health/env
 app.get('/api/health/env', (c) => {
+  const env = resolveEnv();
   return c.json({
-    appBaseUrl: !!process.env.APP_BASE_URL,
-    supabaseUrl: !!(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL),
-    serviceRole: !!(process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY),
-    stripeSecret: !!process.env.STRIPE_SECRET_KEY,
+    appBaseUrl: !!env.appBaseUrl,
+    supabaseUrl: !!env.supabaseUrl,
+    serviceRole: !!env.supabaseServiceKey,
+    stripeSecret: !!env.stripeSecret,
     webhookSecret: !!process.env.STRIPE_WEBHOOK_SECRET,
     platformFeeBps: !!process.env.PLATFORM_FEE_BPS,
     platformFeeFlatCents: !!process.env.PLATFORM_FEE_FLAT_CENTS,
@@ -92,7 +96,7 @@ app.get('/api/health/snapshot', async (c) => {
       gallery: null as number | null,
     },
     stripe: {
-      keysLoaded: !!process.env.STRIPE_SECRET_KEY,
+      keysLoaded: !!resolveEnv().stripeSecret,
       connectedAccounts: 0,
       exampleConnected: null as string | null,
     },
@@ -147,7 +151,7 @@ app.get('/api/health/snapshot', async (c) => {
       }
 
       // Stripe connected accounts via DB
-      if (process.env.STRIPE_SECRET_KEY) {
+      if (resolveEnv().stripeSecret) {
         try {
           const { data: rows } = await supabase
             .from('barbers')
@@ -196,7 +200,7 @@ app.get('/api/health/snapshot', async (c) => {
 // GET /api/health/integration
 app.get('/api/health/integration', async (c) => {
   const supa = getAdminClient();
-  const stripeIsSet = !!process.env.STRIPE_SECRET_KEY;
+  const { stripeSecret } = resolveEnv();
   let canQueryBarbers = false;
   try {
     if (supa) {
@@ -207,7 +211,7 @@ app.get('/api/health/integration', async (c) => {
   return c.json({
     base: getBaseUrl(c.req.raw),
     supabaseConfigured: !!supa,
-    stripeConfigured: stripeIsSet,
+    stripeConfigured: !!stripeSecret,
     canQueryBarbers,
   });
 });
