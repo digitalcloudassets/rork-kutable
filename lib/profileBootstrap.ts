@@ -7,8 +7,34 @@ function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
 
 function toPlainError(err: any) {
   if (!err) return { message: 'Unknown error' };
-  if (err.message) return { message: err.message, code: err.code, details: err.details, hint: err.hint };
-  try { return JSON.parse(JSON.stringify(err)); } catch { return { message: String(err) }; }
+  
+  // Handle Supabase error objects
+  if (typeof err === 'object') {
+    const result: any = {};
+    
+    // Copy all enumerable properties
+    for (const key in err) {
+      if (err.hasOwnProperty(key)) {
+        result[key] = err[key];
+      }
+    }
+    
+    // Also copy non-enumerable properties that are commonly used
+    const commonProps = ['message', 'code', 'details', 'hint', 'name', 'stack'];
+    for (const prop of commonProps) {
+      if (err[prop] !== undefined && result[prop] === undefined) {
+        result[prop] = err[prop];
+      }
+    }
+    
+    // If we got something, return it
+    if (Object.keys(result).length > 0) {
+      return result;
+    }
+  }
+  
+  // Fallback to string representation
+  return { message: String(err) };
 }
 
 function nameFromMeta(meta: any, email?: string | null) {
