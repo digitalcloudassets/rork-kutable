@@ -136,6 +136,26 @@ export const apiClient = {
     topServices: (p: { barberId: string; range: 'month' }) =>
       postJson<{ topServices: { serviceId: string; serviceName: string; bookingsCount: number; grossCents: number }[] }>(`/analytics/top-services`, p),
   },
+  earnings: {
+    summary: (p: { barberId: string; range: 'today' | 'week' | 'month' }) =>
+      postJson<{ gross: number; fees: number; net: number; range?: string }>(`/earnings/summary`, p),
+  },
+  payouts: {
+    list: (p: { barberId: string }) =>
+      postJson<{ id: string; amount: number; status: string; date: string; arrivalDate?: string }[]>(`/payouts/list`, p),
+  },
+  bookings: {
+    list: (p: { userId?: string; barberId?: string }) =>
+      postJson<any[]>(`/bookings/list`, p),
+    cancel: (p: { bookingId: string; reason?: string; userId: string }) =>
+      postJson<{ ok: boolean }>(`/bookings/cancel`, p),
+    reschedule: (p: { bookingId: string; newStartISO: string; userId: string }) =>
+      postJson<{ ok: boolean }>(`/bookings/reschedule`, p),
+  },
+  barbers: {
+    search: (p: { query?: string; location?: string }) =>
+      postJson<any[]>(`/barbers/search`, p),
+  },
   test: () => ({ status: 'API client loaded successfully' }),
 };
 

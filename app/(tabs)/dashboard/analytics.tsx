@@ -8,12 +8,13 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
-import { BarChart3, TrendingUp, DollarSign, Users, Calendar, XCircle } from 'lucide-react-native';
+import { BarChart3, TrendingUp, DollarSign, Users, Calendar, XCircle, Scissors } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api';
 import { useAuth } from '@/providers/AuthProvider';
 import { Screen } from '@/components/Screen';
 import { Tokens } from '@/theme/tokens';
+import { EmptyCard } from '@/components/EmptyState';
 import type { AnalyticsSummary, TimeSeriesPoint, TopService } from '@/backend/types';
 
 type RangeType = 'week' | 'month';
@@ -255,12 +256,16 @@ export default function AnalyticsScreen() {
                   })}
                 </View>
               ) : (
-                <View style={styles.emptyChart}>
-                  <BarChart3 size={48} color={Tokens.textMuted} />
-                  <Text style={styles.emptyChartText}>
-                    {selectedRange === 'week' ? 'No bookings this week' : 'No bookings this month'}
-                  </Text>
-                </View>
+                <EmptyCard
+                  icon={BarChart3}
+                  title="No data yet"
+                  subtitle={
+                    selectedRange === 'week' 
+                      ? 'No bookings this week. Your chart will appear here once you have appointments.'
+                      : 'No bookings this month. Your chart will appear here once you have appointments.'
+                  }
+                  testID="analytics-empty-chart"
+                />
               )}
             </View>
           </View>
@@ -297,14 +302,16 @@ export default function AnalyticsScreen() {
                   </View>
                 ))
               ) : (
-                <View style={styles.emptyServices}>
-                  <Text style={styles.emptyServicesText}>
-                    {summary?.bookingsCount === 0 
-                      ? 'No completed bookings this month'
-                      : 'No services data available'
-                    }
-                  </Text>
-                </View>
+                <EmptyCard
+                  icon={Scissors}
+                  title="No service data"
+                  subtitle={
+                    summary?.bookingsCount === 0 
+                      ? 'Complete your first booking to see your top services here.'
+                      : 'Service performance data will appear here once available.'
+                  }
+                  testID="analytics-empty-services"
+                />
               )}
             </View>
           </View>
@@ -472,16 +479,7 @@ const styles = StyleSheet.create({
     color: Tokens.textMuted,
     textAlign: 'center',
   },
-  emptyChart: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 120,
-  },
-  emptyChartText: {
-    fontSize: 14,
-    color: Tokens.textMuted,
-    marginTop: 8,
-  },
+
   servicesList: {
     backgroundColor: Tokens.surface,
     borderRadius: 12,
@@ -534,12 +532,5 @@ const styles = StyleSheet.create({
     backgroundColor: Tokens.accent,
     borderRadius: 2,
   },
-  emptyServices: {
-    padding: 24,
-    alignItems: 'center',
-  },
-  emptyServicesText: {
-    fontSize: 14,
-    color: Tokens.textMuted,
-  },
+
 });

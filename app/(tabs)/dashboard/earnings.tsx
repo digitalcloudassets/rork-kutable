@@ -14,6 +14,7 @@ import { Tokens } from '@/theme/tokens';
 import { apiClient } from '@/lib/api';
 import { getUserId } from '@/lib/session';
 import { validateEnv } from '@/config/env';
+import { EmptyCard } from '@/components/EmptyState';
 
 interface EarningsSummary {
   gross: number;
@@ -271,16 +272,18 @@ export default function EarningsScreen() {
           </View>
           
           {payouts.length === 0 ? (
-            <View style={styles.emptyState}>
-              <DollarSign size={48} color={Tokens.textMuted} />
-              <Text style={styles.emptyStateTitle}>No payouts yet</Text>
-              <Text style={styles.emptyStateText}>
-                {earnings.net > 0 
+            <EmptyCard
+              icon={DollarSign}
+              title="No payouts yet"
+              subtitle={
+                earnings.net > 0 
                   ? 'Complete more bookings to trigger your first payout'
                   : 'Complete bookings and connect Stripe to start earning payouts'
-                }
-              </Text>
-            </View>
+              }
+              actionLabel={earnings.net === 0 ? "Setup Stripe" : undefined}
+              onAction={earnings.net === 0 ? () => console.log('Navigate to Stripe setup') : undefined}
+              testID="earnings-no-payouts"
+            />
           ) : (
             <View style={styles.payoutsList}>
               {payouts.map((payout) => (
@@ -414,26 +417,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Tokens.accent,
   },
-  emptyState: {
-    backgroundColor: Tokens.surface,
-    borderRadius: 16,
-    padding: 40,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Tokens.border,
-  },
-  emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Tokens.text,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyStateText: {
-    fontSize: 14,
-    color: Tokens.textMuted,
-    textAlign: 'center',
-  },
+
   payoutsList: {
     gap: 12,
   },
