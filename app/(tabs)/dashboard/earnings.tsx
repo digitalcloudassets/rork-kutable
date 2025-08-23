@@ -23,13 +23,38 @@ interface EarningsSummary {
   range?: string;
 }
 
+type PayoutStatus =
+  | 'pending'
+  | 'in_transit'
+  | 'paid'
+  | 'failed'
+  | 'canceled'
+  | 'completed';
+
 interface Payout {
   id: string;
   amount: number;
-  status: 'pending' | 'in_transit' | 'paid' | 'failed' | 'canceled' | 'completed';
+  status: PayoutStatus;
   date: string;
   arrivalDate?: string;
 }
+
+const normalizePayoutStatus = (s?: string): PayoutStatus => {
+  const k = (s ?? '').toLowerCase().replace('-', '_');
+  switch (k) {
+    case 'pending': return 'pending';
+    case 'in_transit': return 'in_transit';
+    case 'paid': return 'paid';
+    case 'failed': return 'failed';
+    case 'canceled': return 'canceled';
+    case 'completed': return 'completed';
+    case 'succeeded':
+    case 'success':
+    case 'paid_out': return 'paid';
+    case 'processing': return 'pending';
+    default: return 'pending';
+  }
+};
 
 type TimeRange = 'today' | 'week' | 'month';
 
@@ -132,7 +157,15 @@ export default function EarningsScreen() {
       validateEnv(); // Check environment variables
       const data = await apiClient.payouts.list({ barberId: uid });
       console.log('Payouts data received:', data?.length || 0, 'payouts');
-      setPayouts(data || []);
+      setPayouts(
+        (data || []).map(r => ({
+          id: r.id,
+          amount: r.amount,
+          status: normalizePayoutStatus(r.status),
+          date: r.date,
+          arrivalDate: r.arrivalDate,
+        }))
+      );
     } catch (error: any) {
       console.error('Error fetching payouts list:', error);
       setError(`Failed to load payouts: ${error.message}`);
