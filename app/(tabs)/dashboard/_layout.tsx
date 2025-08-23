@@ -30,31 +30,31 @@ export default function DashboardLayout() {
       <Stack.Screen 
         name="services" 
         options={{ 
-          title: "Manage Services",
+          headerShown: false,
         }} 
       />
       <Stack.Screen 
         name="calendar" 
         options={{ 
-          title: "Calendar",
+          headerShown: false,
         }} 
       />
       <Stack.Screen 
         name="gallery" 
         options={{ 
-          title: "Gallery",
+          headerShown: false,
         }} 
       />
       <Stack.Screen 
         name="earnings" 
         options={{ 
-          title: "Earnings",
+          headerShown: false,
         }} 
       />
       <Stack.Screen 
         name="analytics" 
         options={{ 
-          title: "Analytics",
+          headerShown: false,
         }} 
       />
       <Stack.Screen 

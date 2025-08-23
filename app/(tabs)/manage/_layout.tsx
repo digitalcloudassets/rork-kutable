@@ -18,7 +18,7 @@ export default function ManageLayout() {
       <Stack.Screen
         name="index"
         options={{
-          title: "Manage",
+          headerShown: false,
         }}
       />
     </Stack>
