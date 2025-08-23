@@ -3,14 +3,15 @@ import { useAuth } from '@/providers/AuthProvider';
 import { usePushNotifications } from '@/utils/usePushNotifications';
 
 export function PushNotificationManager() {
-  const { user } = useAuth();
+  const { user, ready } = useAuth();
   const { registerForPushNotifications } = usePushNotifications(user);
 
   useEffect(() => {
-    if (user) {
+    // Safety guard: only register if auth is ready and we have a user
+    if (ready && user) {
       registerForPushNotifications();
     }
-  }, [user, registerForPushNotifications]);
+  }, [ready, user, registerForPushNotifications]);
 
   return null; // This component doesn't render anything
 }
