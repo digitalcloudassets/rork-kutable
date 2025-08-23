@@ -5,9 +5,12 @@ import { useAuth } from "@/providers/AuthProvider";
 import { Tokens } from "@/theme/tokens";
 
 export default function TabLayout() {
-  const { user } = useAuth();
-  const isBarber = user?.role === "barber";
-  const isClient = user?.role === "client";
+  const { role, ready } = useAuth();
+  const isBarber = role === "barber";
+  const isClient = role === "client";
+
+  // Don't render tabs until auth is ready
+  if (!ready) return null;
 
   return (
     <Tabs
