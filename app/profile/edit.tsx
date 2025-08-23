@@ -33,7 +33,7 @@ interface BarberProfile {
 
 export default function EditProfileScreen() {
   const router = useRouter();
-  const { user, setUser } = useAuth();
+  const { user, refresh } = useAuth();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [profile, setProfile] = useState<BarberProfile>({
@@ -167,13 +167,8 @@ export default function EditProfileScreen() {
         }
       }
 
-      // Update user context
-      setUser({
-        ...user,
-        name: profile.name,
-        phone: profile.phone_e164 || "",
-        photoUrl: profile.photo_url,
-      });
+      // Refresh auth context to get updated user data
+      await refresh();
 
       Alert.alert(
         "Success",

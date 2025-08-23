@@ -16,9 +16,14 @@ import * as ImagePicker from 'expo-image-picker';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { BRAND } from '../../../config/brand';
 import { useAuth } from '@/providers/AuthProvider';
-import { api } from '@/lib/api';
-import { httpsify } from '@/lib/url';
-import type { GalleryItem } from '@/types/models';
+import { supabase } from '@/lib/supabaseClient';
+import { uploadGalleryImage } from '@/lib/uploadAvatar';
+
+type GalleryItem = {
+  name: string;
+  url: string;
+  path: string;
+};
 
 const { width } = Dimensions.get('window');
 const ITEM_SIZE = (width - 60) / 3; // 3 columns with padding
@@ -30,18 +35,25 @@ export default function GalleryScreen() {
 
   const { data: galleryItems = [], isLoading } = useQuery({
     queryKey: ['gallery', user?.id],
-    queryFn: () => api('/api/gallery/list', {
-      method: 'POST',
-      body: JSON.stringify({ barberId: user?.id || '' })
-    }),
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase.storage.from('gallery').list(user.id + '/');
+      if (error) throw error;
+      
+      return data?.map((file: any) => ({
+        name: file.name,
+        path: `${user.id}/${file.name}`,
+        url: supabase.storage.from('gallery').getPublicUrl(`${user.id}/${file.name}`).data.publicUrl
+      })) || [];
+    },
     enabled: !!user?.id,
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (path: string) => api('/api/gallery/delete', {
-      method: 'POST',
-      body: JSON.stringify({ barberId: user?.id || '', path })
-    }),
+    mutationFn: async (path: string) => {
+      const { error } = await supabase.storage.from('gallery').remove([path]);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gallery', user?.id] });
     },
@@ -111,36 +123,10 @@ export default function GalleryScreen() {
     try {
       setUploading(true);
       
-      // Create unique filename
-      const timestamp = Date.now();
-      const extension = asset.uri.split('.').pop() || 'jpg';
-      const filename = `${timestamp}.${extension}`;
-      const path = `gallery/${user?.id}/${filename}`;
-
-      // Create file object for upload
-      const file = {
-        uri: asset.uri,
-        name: filename,
-        type: `image/${extension}`,
-      } as any;
-
-      // Upload using API
-      const formData = new FormData();
-      formData.append('barberId', user?.id || '');
-      formData.append('path', path);
-      formData.append('file', file as any);
+      const url = await uploadGalleryImage(asset.uri);
       
-      const data = await api('/api/gallery/upload', {
-        method: 'POST',
-        headers: {},
-        body: formData
-      });
-      
-      // Update local cache
-      queryClient.setQueryData(['gallery', user?.id], (old: GalleryItem[] = []) => [
-        data.item,
-        ...old,
-      ]);
+      // Refresh the gallery list
+      queryClient.invalidateQueries({ queryKey: ['gallery', user?.id] });
 
       Alert.alert('Success', 'Photo uploaded successfully!');
     } catch (error) {
@@ -170,11 +156,13 @@ export default function GalleryScreen() {
     <TouchableOpacity
       style={styles.galleryItem}
       onLongPress={() => handleDeletePhoto(item)}
+      testID={`gallery-item-${item.name}`}
     >
-      <Image source={{ uri: httpsify(item.url) }} style={styles.galleryImage} />
+      <Image source={{ uri: item.url }} style={styles.galleryImage} />
       <TouchableOpacity
         style={styles.deleteButton}
         onPress={() => handleDeletePhoto(item)}
+        testID={`delete-button-${item.name}`}
       >
         <Trash2 size={16} color="#fff" />
       </TouchableOpacity>
@@ -186,6 +174,7 @@ export default function GalleryScreen() {
       style={[styles.galleryItem, styles.addButton]}
       onPress={handleAddPhoto}
       disabled={uploading}
+      testID="add-gallery-photo"
     >
       {uploading ? (
         <ActivityIndicator size="small" color={BRAND.ACCENT} />
@@ -221,6 +210,7 @@ export default function GalleryScreen() {
               style={styles.emptyButton}
               onPress={handleAddPhoto}
               disabled={uploading}
+              testID="add-first-photo"
             >
               {uploading ? (
                 <ActivityIndicator size="small" color={BRAND.TEXT_PRIMARY} />
