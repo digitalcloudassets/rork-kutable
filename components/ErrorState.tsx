@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { AlertTriangle, RefreshCw } from 'lucide-react-native';
+import { AlertTriangle, RefreshCw, AlertCircle } from 'lucide-react-native';
 import { BRAND } from '../config/brand';
 
 interface ErrorStateProps {
@@ -52,6 +52,58 @@ export function ErrorState({
   );
 }
 
+interface InlineErrorProps {
+  message: string;
+  onDismiss?: () => void;
+  testID?: string;
+}
+
+export function InlineError({ message, onDismiss, testID }: InlineErrorProps) {
+  return (
+    <View style={styles.inlineContainer} testID={testID}>
+      <AlertCircle size={16} color="#EF4444" />
+      <Text style={styles.inlineMessage}>{message}</Text>
+      {onDismiss && (
+        <TouchableOpacity onPress={onDismiss} style={styles.dismissButton}>
+          <Text style={styles.dismissText}>×</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+}
+
+// Helper function to get user-friendly error messages
+export function getFriendlyErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    // Handle specific error types
+    if (error.message.includes('Not signed in')) {
+      return 'Please sign in to continue';
+    }
+    if (error.message.includes('overlaps')) {
+      return error.message;
+    }
+    if (error.message.includes('confirmed bookings')) {
+      return error.message;
+    }
+    if (error.message.includes('Failed to')) {
+      return error.message;
+    }
+    if (error.message.includes('Network')) {
+      return 'Network error. Please check your connection and try again.';
+    }
+    if (error.message.includes('timeout')) {
+      return 'Request timed out. Please try again.';
+    }
+    return error.message;
+  }
+  
+  if (typeof error === 'string') {
+    return error;
+  }
+  
+  return 'An unexpected error occurred. Please try again.';
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -90,6 +142,32 @@ const styles = StyleSheet.create({
   retryButtonText: {
     color: BRAND.TEXT_PRIMARY,
     fontSize: 16,
+    fontWeight: '600',
+  },
+  inlineContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginVertical: 8,
+    gap: 8,
+  },
+  inlineMessage: {
+    flex: 1,
+    fontSize: 14,
+    color: '#DC2626',
+    lineHeight: 18,
+  },
+  dismissButton: {
+    padding: 4,
+  },
+  dismissText: {
+    fontSize: 18,
+    color: '#DC2626',
     fontWeight: '600',
   },
 });

@@ -54,12 +54,47 @@ type StripeStatus = {
   detailsSubmitted: boolean;
 };
 
+// Service types
+type Service = {
+  id: string;
+  name: string;
+  durationMinutes: number;
+  priceCents: number;
+  description?: string;
+  active: boolean;
+};
+
+type CreateServiceRequest = {
+  barberId: string;
+  name: string;
+  durationMinutes: number;
+  priceCents: number;
+  description?: string;
+};
+
+type UpdateServiceRequest = {
+  id: string;
+  barberId: string;
+  name: string;
+  durationMinutes: number;
+  priceCents: number;
+  description?: string;
+  active?: boolean;
+};
+
+type AvailabilityBlock = {
+  barberId: string;
+  startISO: string;
+  endISO: string;
+  reason?: string;
+};
+
 export const apiClient = {
   misc: {
     // Reuse health for "ping" and "db"
-    ping:   () => getJson<{ serverHost: string }>(`/stripe-connect/health`),
+    ping: () => getJson<{ serverHost: string }>(`/stripe-connect/health`),
     supabase: () => getJson<{ serverHost: string; canQuery: boolean }>(`/stripe-connect/health`),
-    envdump:  () => getJson<{ missing: Record<string, boolean> }>(`/stripe-connect/health`),
+    envdump: () => getJson<{ missing: Record<string, boolean> }>(`/stripe-connect/health`),
   },
   stripe: {
     createOrFetchAccount: (p: { barberId: string }) =>
@@ -71,6 +106,29 @@ export const apiClient = {
     health: () =>
       getJson<{ serverHost: string; canQuery: boolean; hasStripe: boolean }>(`/stripe-connect/health`),
   },
+  services: {
+    list: (p: { barberId: string }) =>
+      postJson<{ services: Service[] }>(`/services/list`, p),
+    create: (p: CreateServiceRequest) =>
+      postJson<{ service: Service }>(`/services/create`, p),
+    update: (p: UpdateServiceRequest) =>
+      postJson<{ service: Service }>(`/services/update`, p),
+    delete: (p: { barberId: string; serviceId: string }) =>
+      postJson<{ ok: boolean }>(`/services/delete`, p),
+    upsert: (p: { barberId: string; service: Partial<Service> & { name: string; durationMinutes: number; priceCents: number } }) =>
+      postJson<{ service: Service }>(`/services/upsert`, p),
+  },
+  availability: {
+    list: (p: { barberId: string; startISO?: string; endISO?: string }) =>
+      postJson<{ blocks: any[] }>(`/availability/list`, p),
+    block: (p: AvailabilityBlock) =>
+      postJson<{ block: any }>(`/availability/block`, p),
+    unblock: (p: { barberId: string; blockId: string }) =>
+      postJson<{ ok: boolean }>(`/availability/unblock`, p),
+    openSlots: (p: { barberId: string; date: string; serviceId?: string }) =>
+      getJson<{ slots: string[] }>(`/availability/open-slots?barberId=${encodeURIComponent(p.barberId)}&date=${encodeURIComponent(p.date)}${p.serviceId ? `&serviceId=${encodeURIComponent(p.serviceId)}` : ''}`),
+  },
+  test: () => ({ status: 'API client loaded successfully' }),
 };
 
 if (typeof console !== 'undefined') console.log('[API_BASE]', API_BASE);
