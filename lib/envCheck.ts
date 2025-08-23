@@ -1,5 +1,4 @@
 import { apiClient } from '@/lib/api';
-
 export async function assertSameSupabaseProject() {
-  try { await apiClient.stripe.health(); } catch { /* don't block UI */ }
+  try { await apiClient.stripe.health(); } catch {}
 }
