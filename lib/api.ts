@@ -47,18 +47,27 @@ async function getJson<T>(path: string): Promise<T> {
   return fetch(`${API_BASE}${path}`, { headers, cache: 'no-store' }).then((r) => toJson<T>(r));
 }
 
-type IdPayload = { barberId: string };
+type StripeStatus = {
+  hasAccount: boolean;
+  chargesEnabled: boolean;
+  payoutsEnabled: boolean;
+  detailsSubmitted: boolean;
+};
 
 export const apiClient = {
+  misc: {
+    // Reuse health for "ping" and "db"
+    ping:   () => getJson<{ serverHost: string }>(`/stripe-connect/health`),
+    supabase: () => getJson<{ serverHost: string; canQuery: boolean }>(`/stripe-connect/health`),
+    envdump:  () => getJson<{ missing: Record<string, boolean> }>(`/stripe-connect/health`),
+  },
   stripe: {
-    createOrFetchAccount: (p: IdPayload) =>
+    createOrFetchAccount: (p: { barberId: string }) =>
       postJson<{ accountId: string }>(`/stripe-connect/create-or-fetch-account`, p),
-    createAccountLink: (p: IdPayload) =>
+    createAccountLink: (p: { barberId: string }) =>
       postJson<{ url: string }>(`/stripe-connect/account-link`, p),
-    getAccountStatus: (p: IdPayload) =>
-      getJson<{ chargesEnabled: boolean; payoutsEnabled: boolean }>(
-        `/stripe-connect/account-status?barberId=${encodeURIComponent(p.barberId)}`
-      ),
+    getAccountStatus: (p: { barberId: string }) =>
+      getJson<StripeStatus>(`/stripe-connect/account-status?barberId=${encodeURIComponent(p.barberId)}`),
     health: () =>
       getJson<{ serverHost: string; canQuery: boolean; hasStripe: boolean }>(`/stripe-connect/health`),
   },
