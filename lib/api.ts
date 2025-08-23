@@ -128,6 +128,14 @@ export const apiClient = {
     openSlots: (p: { barberId: string; date: string; serviceId?: string }) =>
       getJson<{ slots: string[] }>(`/availability/open-slots?barberId=${encodeURIComponent(p.barberId)}&date=${encodeURIComponent(p.date)}${p.serviceId ? `&serviceId=${encodeURIComponent(p.serviceId)}` : ''}`),
   },
+  analytics: {
+    summary: (p: { barberId: string; range: 'week' | 'month' }) =>
+      postJson<{ bookingsCount: number; grossCents: number; netCents: number; avgTicketCents: number; cancellationsCount: number }>(`/analytics/summary`, p),
+    timeseries: (p: { barberId: string; start: string; end: string; bucket: string }) =>
+      postJson<{ timeSeries: { date: string; bookingsCount: number; grossCents: number }[] }>(`/analytics/timeseries`, p),
+    topServices: (p: { barberId: string; range: 'month' }) =>
+      postJson<{ topServices: { serviceId: string; serviceName: string; bookingsCount: number; grossCents: number }[] }>(`/analytics/top-services`, p),
+  },
   test: () => ({ status: 'API client loaded successfully' }),
 };
 

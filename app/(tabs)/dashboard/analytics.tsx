@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { BarChart3, TrendingUp, DollarSign, Users, Calendar, XCircle } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '@/lib/api';
+import { apiClient } from '@/lib/api';
 import { useAuth } from '@/providers/AuthProvider';
 import { Screen } from '@/components/Screen';
 import { Tokens } from '@/theme/tokens';
@@ -19,7 +19,7 @@ import type { AnalyticsSummary, TimeSeriesPoint, TopService } from '@/backend/ty
 type RangeType = 'week' | 'month';
 
 export default function AnalyticsScreen() {
-  const { user } = useAuth();
+  const { user, role, ready } = useAuth();
   const [selectedRange, setSelectedRange] = useState<RangeType>('month');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -27,11 +27,11 @@ export default function AnalyticsScreen() {
     queryKey: ['analytics-summary', user?.id, selectedRange],
     queryFn: async () => {
       console.log(`Fetching analytics summary for barber ${user?.id}, range: ${selectedRange}`);
-      const result = await api.analytics.summary({ barberId: user?.id || '', range: selectedRange });
+      const result = await apiClient.analytics.summary({ barberId: user?.id || '', range: selectedRange });
       console.log(`Analytics summary result:`, result);
       return result;
     },
-    enabled: !!user && user.role === 'barber',
+    enabled: !!user && role === 'barber',
   });
 
   const { data: timeseries, isLoading: timeseriesLoading } = useQuery({
@@ -47,7 +47,7 @@ export default function AnalyticsScreen() {
       }
       
       console.log(`Fetching timeseries data for barber ${user?.id}, range: ${selectedRange}`);
-      const result = await api.analytics.timeseries({
+      const result = await apiClient.analytics.timeseries({
         barberId: user?.id || '',
         start: start.toISOString(),
         end: now.toISOString(),
@@ -56,18 +56,18 @@ export default function AnalyticsScreen() {
       console.log(`Timeseries result:`, result?.timeSeries?.length || 0, 'data points');
       return result;
     },
-    enabled: !!user && user.role === 'barber',
+    enabled: !!user && role === 'barber',
   });
 
   const { data: topServices, isLoading: servicesLoading } = useQuery({
     queryKey: ['analytics-top-services', user?.id],
     queryFn: async () => {
       console.log(`Fetching top services for barber ${user?.id}`);
-      const result = await api.analytics.topServices({ barberId: user?.id || '', range: 'month' });
+      const result = await apiClient.analytics.topServices({ barberId: user?.id || '', range: 'month' });
       console.log(`Top services result:`, result?.topServices?.length || 0, 'services');
       return result;
     },
-    enabled: !!user && user.role === 'barber',
+    enabled: !!user && role === 'barber',
   });
 
   const handleRefresh = async () => {
@@ -76,7 +76,17 @@ export default function AnalyticsScreen() {
     setRefreshing(false);
   };
 
-  if (!user || user.role !== 'barber') {
+  if (!ready) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Tokens.accent} />
+        </View>
+      </View>
+    );
+  }
+
+  if (!user || role !== 'barber') {
     return (
       <View style={styles.container}>
         <View style={styles.emptyState}>
@@ -206,11 +216,11 @@ export default function AnalyticsScreen() {
             </View>
             
             <View style={styles.chartContainer}>
-              {timeseries?.timeSeries?.length > 0 ? (
+              {timeseries?.timeSeries && timeseries.timeSeries.length > 0 ? (
                 <View style={styles.barChart}>
                   {timeseries.timeSeries.slice(-7).map((point: TimeSeriesPoint, index: number) => {
-                    const maxBookings = Math.max(...timeseries.timeSeries.map((p: TimeSeriesPoint) => p.bookingsCount), 1);
-                    const maxRevenue = Math.max(...timeseries.timeSeries.map((p: TimeSeriesPoint) => p.grossCents), 1);
+                    const maxBookings = Math.max(...(timeseries?.timeSeries?.map((p: TimeSeriesPoint) => p.bookingsCount) || [1]), 1);
+                    const maxRevenue = Math.max(...(timeseries?.timeSeries?.map((p: TimeSeriesPoint) => p.grossCents) || [1]), 1);
                     const bookingHeight = maxBookings > 0 ? Math.max((point.bookingsCount / maxBookings) * 80, 2) : 2;
                     const revenueHeight = maxRevenue > 0 ? Math.max((point.grossCents / maxRevenue) * 80, 2) : 2;
                     
@@ -259,7 +269,7 @@ export default function AnalyticsScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Top Services (This Month)</Text>
             <View style={styles.servicesList}>
-              {topServices?.topServices?.length > 0 ? (
+              {topServices?.topServices && topServices.topServices.length > 0 ? (
                 topServices.topServices.map((service: TopService, index: number) => (
                   <View key={service.serviceId} style={styles.serviceItem}>
                     <View style={styles.serviceRank}>
@@ -277,7 +287,7 @@ export default function AnalyticsScreen() {
                           styles.serviceProgressBar,
                           {
                             width: `${Math.min(
-                              (service.grossCents / (topServices.topServices[0]?.grossCents || 1)) * 100,
+                              (service.grossCents / (topServices?.topServices?.[0]?.grossCents || 1)) * 100,
                               100
                             )}%`,
                           },
